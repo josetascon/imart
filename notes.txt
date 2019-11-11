@@ -1,0 +1,36 @@
+---------------------------------------------
+Documentation
+Use doxygen and sphinx mix
+
+
+---------------------------------------------
+Command line parser
+
+Options:
+
+1- Boost.Program_options >>> https://www.boost.org/doc/libs/1_58_0/doc/html/program_options.html
+    Advantages, everybody has boost
+    Disadvantages, install boost
+
+2- argh >>> https://github.com/adishavit/argh
+    Advantages: single file (header only)
+
+2- Argument Helper >>> http://graphics.stanford.edu/~drussel/Argument_helper/index.html
+    Advantages: single file (header + source)
+                better code than argh
+    Disadvantages: clean and rename (upper case)
+    Code: ext folder
+
+
+---------------------------------------------
+Multidimensional library
+Description: Allow to suppport any dimension and channels library. This is a future plan
+
+For now. Only 2D and 3D images are supported without orientation or center.
+
+
+
+---------------------------------------------
+Array in C
+1D storage of arrays is selected. 
+See reasons here. https://stackoverflow.com/questions/17259877/1d-or-2d-array-whats-faster
