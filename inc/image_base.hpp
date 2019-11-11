@@ -24,13 +24,16 @@
 
 
 // Definitions
-typedef float pixel_type;
+// typedef float pixel_type;
 
 // Class image_base_2d
-// template <typename pixel_type>
+template <typename pixel_type>
 class image_base_2d
 {
 private:
+    // Type definitions
+    using ImageType = itk::Image<pixel_type, 2>;
+
     // ===========================================
     // Internal Variables
     // ===========================================
@@ -155,12 +158,13 @@ public:
 };
 
 // Template constructions
-// template class image_base_2d<unsigned char>;  // 1 byte
-// template class image_base_2d<unsigned short>; // 2 byte
-// template class image_base_2d<short>;          // 2 byte
-// template class image_base_2d<int>;            // 4 byte
-// template class image_base_2d<float>;          // 4 byte
-// template class image_base_2d<double>;         // 8 byte
+template class image_base_2d<unsigned char>;  // 1 byte
+template class image_base_2d<unsigned short>; // 2 byte
+template class image_base_2d<short>;          // 2 byte
+template class image_base_2d<unsigned int>;   // 4 byte
+template class image_base_2d<int>;            // 4 byte
+template class image_base_2d<float>;          // 4 byte
+template class image_base_2d<double>;         // 8 byte
 
 
 #endif
