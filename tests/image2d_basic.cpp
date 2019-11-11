@@ -1,8 +1,8 @@
 /*
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
-* @Last Modified by:   jose
-* @Last Modified time: 2019-11-07 13:29:53
+* @Last Modified by:   Jose Tascon
+* @Last Modified time: 2019-11-11 15:08:23
 */
 
 // std libs
@@ -18,7 +18,7 @@ int main()
     //      Testing ImageBase2D basic features
     // ============================================
     // Create empty imame
-    image_base_2d image0;     
+    image_base_2d<int> image0;     
 
     std::cout << "===================== ";
     std::cout << "Test class image_base_2d, basic features";
@@ -52,7 +52,7 @@ int main()
 
 
     // Create medium size image 
-    image_base_2d image1(4, 3);
+    image_base_2d<float> image1(4, 3);
 
     std::cout << std::endl;
     std::cout << "===================== ";
@@ -91,7 +91,7 @@ int main()
 
 
     // Create medium size image 
-    image_base_2d image2(128, 64);
+    image_base_2d<double> image2(128, 64);
 
     // std::cout << std::endl;
     std::cout << "===================== ";
@@ -134,8 +134,8 @@ int main()
     
     std::shared_ptr<float[]> buffer(new float[6] {1.1, 2.1, 3.1, 4.1, 5.1, 6.1});
 
-    image_base_2d image3(5,3);
-    image_base_2d image4(buffer, 3,2);
+    image_base_2d<float> image3(5,3);
+    image_base_2d<float> image4(buffer, 3,2);
     
 
     std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;

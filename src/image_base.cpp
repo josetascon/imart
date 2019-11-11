@@ -1,8 +1,8 @@
 /*
 * @Author: jose
 * @Date:   2019-11-05 13:55:00
-* @Last Modified by:   jose
-* @Last Modified time: 2019-11-08 11:14:34
+* @Last Modified by:   Jose Tascon
+* @Last Modified time: 2019-11-11 15:09:26
 */
 
 #include "image_base.hpp"
@@ -16,14 +16,16 @@
 // Create Functions
 // ===========================================
 // Constructor
-image_base_2d::image_base_2d()
+template <typename pixel_type>
+image_base_2d<pixel_type>::image_base_2d()
 {
     init(0, 0);
     data.reset();
 };
 
 // Constructor
-image_base_2d::image_base_2d(int w, int h)
+template <typename pixel_type>
+image_base_2d<pixel_type>::image_base_2d(int w, int h)
 {
     init(w, h);
     data.reset();
@@ -32,7 +34,8 @@ image_base_2d::image_base_2d(int w, int h)
 };
 
 // Constructor
-image_base_2d::image_base_2d(std::shared_ptr<pixel_type[]> buffer, int w, int h)
+template <typename pixel_type>
+image_base_2d<pixel_type>::image_base_2d(std::shared_ptr<pixel_type[]> buffer, int w, int h)
 {
     init(w, h);
     data.reset();
@@ -40,13 +43,15 @@ image_base_2d::image_base_2d(std::shared_ptr<pixel_type[]> buffer, int w, int h)
 };
 
 // Destructor
-image_base_2d::~image_base_2d()
+template <typename pixel_type>
+image_base_2d<pixel_type>::~image_base_2d()
 {
     data.reset();
 };
 
 // Empty init
-void image_base_2d::init(int w, int h)
+template <typename pixel_type>
+void image_base_2d<pixel_type>::init(int w, int h)
 {   
     dim = 2;
     channels = 1;
@@ -60,7 +65,8 @@ void image_base_2d::init(int w, int h)
 };
 
 // Copy metadata
-void image_base_2d::update(image_base_2d & input)
+template <typename pixel_type>
+void image_base_2d<pixel_type>::update(image_base_2d<pixel_type> & input)
 {
     width = input.get_width();
     height = input.get_height();
@@ -102,42 +108,50 @@ void image_base_2d::update(image_base_2d & input)
 // ===========================================
 // Get Functions
 // ===========================================
-int image_base_2d::get_width()
+template <typename pixel_type>
+int image_base_2d<pixel_type>::get_width()
 {
     return width;
 };
 
-int image_base_2d::get_height()
+template <typename pixel_type>
+int image_base_2d<pixel_type>::get_height()
 {
     return height;
 };
 
-int image_base_2d::get_total_elements()
+template <typename pixel_type>
+int image_base_2d<pixel_type>::get_total_elements()
 {
     return width*height;
 };
 
-std::vector<int> image_base_2d::get_size()
+template <typename pixel_type>
+std::vector<int> image_base_2d<pixel_type>::get_size()
 {
     return size;
 };
 
-std::vector<pixel_type> image_base_2d::get_spacing()
+template <typename pixel_type>
+std::vector<pixel_type> image_base_2d<pixel_type>::get_spacing()
 {
     return spacing;
 };
 
-std::vector<pixel_type> image_base_2d::get_origin()
+template <typename pixel_type>
+std::vector<pixel_type> image_base_2d<pixel_type>::get_origin()
 {
     return origin;
 };
 
-std::shared_ptr<pixel_type[]> image_base_2d::get_data()
+template <typename pixel_type>
+std::shared_ptr<pixel_type[]> image_base_2d<pixel_type>::get_data()
 {
     return data;
 };
 
-int image_base_2d::get_ptr_count()
+template <typename pixel_type>
+int image_base_2d<pixel_type>::get_ptr_count()
 {
     return data.use_count();
 };
@@ -145,12 +159,14 @@ int image_base_2d::get_ptr_count()
 // ===========================================
 // Print Functions
 // ===========================================
-void image_base_2d::print(std::string msg)
+template <typename pixel_type>
+void image_base_2d<pixel_type>::print(std::string msg)
 {
     std::cout << image_base_2d::info(msg);
 };
 
-void image_base_2d::print_data()
+template <typename pixel_type>
+void image_base_2d<pixel_type>::print_data()
 {
     // std::cout << "Image data:" << std::endl;
     // std::cout << "["
@@ -166,13 +182,15 @@ void image_base_2d::print_data()
     std::cout << std::endl;
 };
 
-void image_base_2d::print_ptr_count()
+template <typename pixel_type>
+void image_base_2d<pixel_type>::print_ptr_count()
 {
     std::cout << "internal image ptr count: ";
     std::cout << data.use_count() << std::endl; // print existing shared pointer
 };
 
-std::string image_base_2d::info(std::string msg)
+template <typename pixel_type>
+std::string image_base_2d<pixel_type>::info(std::string msg)
 {
     std::stringstream ss;
     std::string title = "Image Information";
@@ -206,7 +224,8 @@ std::string image_base_2d::info(std::string msg)
 // ===========================================
 // Overloading Functions
 // ===========================================
-void image_base_2d::operator = (image_base_2d & input)
+template <typename pixel_type>
+void image_base_2d<pixel_type>::operator = (image_base_2d<pixel_type> & input)
 {
     // delete &data;
     data.reset();
