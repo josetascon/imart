@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 13:55:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-11 15:09:26
+* @Last Modified time: 2019-11-12 10:51:51
 */
 
 #include "image_base.hpp"
@@ -80,6 +80,48 @@ void image_base_2d<pixel_type>::update(image_base_2d<pixel_type> & input)
 // ===========================================
 // Interface Functions
 // ===========================================
+template <typename pixel_type>
+void image_base_2d<pixel_type>::read(std::string file_name)
+{
+    // Type definitions
+    using itkImageType = itk::Image<pixel_type, 2>;
+    using itkReaderType = itk::ImageFileReader<itkImageType>;
+    // typedef itk::Image<pixel_type, 2>           itkImageType;
+    // typedef itk::ImageFileReader<itkImageType>  itkReaderType;
+    // typedef typename itkImageType::Pointer      itkImagePointerType;
+    // typedef typename itkReaderType::Pointer     itkReaderPointerType;
+
+    // // Objects
+    // itkImagePointerType image_itk = itkImageType::New();
+    // itkReaderPointerType reader = itkReaderType::New();
+    typename itkImageType::Pointer image_itk = itkImageType::New();
+    typename itkReaderType::Pointer reader = itkReaderType::New();
+
+    // Set the image filename itk
+    reader->SetFileName(file_name);
+    reader->Update();
+
+    // Read the image from reader
+    image_itk = reader->GetOutput();
+    // std::cout << image_itk;
+
+    typename itkImageType::RegionType region = image_itk->GetLargestPossibleRegion();
+    typename itkImageType::SizeType size = region.GetSize();
+    pixel_type * p = image_itk->GetBufferPointer();
+    int w = size[0];
+    int h = size[1];
+
+    // image_base_2d(w,h); // empty current image and create new
+    init(w, h);
+    data.reset();
+    data = std::shared_ptr<pixel_type[]>(new pixel_type[width*height]);
+
+    // Copy of the image
+    for(int k=0; k<w*h; k++)
+    {
+        data[k] = *(p+k);
+    };
+};
 
 // template <size_t type_itk>
 // void image_base_2d::read_itk(itk::Image< type_itk, 2 > image_itk)
@@ -97,7 +139,7 @@ void image_base_2d<pixel_type>::update(image_base_2d<pixel_type> & input)
 //     image_base_2d(w,h); // empty current image and create new
 
 //     // Copy of the image
-//     for(register int k=0; k<w*h; k++)
+//     for(int k=0; k<w*h; k++)
 //     {
 //         *(data+k) = *(p+k);
 //     };
@@ -166,8 +208,9 @@ void image_base_2d<pixel_type>::print(std::string msg)
 };
 
 template <typename pixel_type>
-void image_base_2d<pixel_type>::print_data()
+void image_base_2d<pixel_type>::print_data(std::string msg)
 {
+    if (msg != "") { std::cout << msg << std::endl; };
     // std::cout << "Image data:" << std::endl;
     // std::cout << "["
     for(int i=0; i<height; i++)
@@ -228,9 +271,38 @@ template <typename pixel_type>
 void image_base_2d<pixel_type>::operator = (image_base_2d<pixel_type> & input)
 {
     // delete &data;
-    data.reset();
-    data = input.get_data();
-    update(input);
+    this->data.reset();
+    this->data = input.get_data();
+    this->update(input);
+};
+
+template <typename pixel_type>
+image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator + (image_base_2d<pixel_type> & input)
+{
+    // std::cout << "assert images size" << std::endl;
+    assert(this->get_width()==input.get_width());
+    assert(this->get_height()==input.get_height());
+
+    int w = input.get_width();
+    int h = input.get_height();
+    int elements = w*h;
+    // std::cout << "Image size: [" << w << ", "<< h << "]\n";
+    static image_base_2d<pixel_type> result(w, h);
+
+    // Create pointers
+    // std::cout << "create correct\n";
+    std::shared_ptr<pixel_type[]> p1 = this->get_data();
+    std::shared_ptr<pixel_type[]> p2 = input.get_data();
+    std::shared_ptr<pixel_type[]> p3 = result.get_data();
+
+    // std::cout << "pointers correct\n";
+
+    for(int k=0; k<elements; k++)
+    {
+        // p1[k] = p1[k] + p2[k];
+        p3[k] = p1[k] + p2[k];
+    };
+    return result;
 };
 
 // image_base_2d& operator + (image_base_2d & image2)
@@ -244,3 +316,79 @@ void image_base_2d<pixel_type>::operator = (image_base_2d<pixel_type> & input)
 //             }
 //     }
 // };
+
+
+template <typename pixel_type>
+image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator - (image_base_2d<pixel_type> & input)
+{
+    // std::cout << "assert images size" << std::endl;
+    assert(this->get_width()==input.get_width());
+    assert(this->get_height()==input.get_height());
+
+    int w = input.get_width();
+    int h = input.get_height();
+    int elements = w*h;
+    // std::cout << "Image size: [" << w << ", "<< h << "]\n";
+    static image_base_2d<pixel_type> result(w, h);
+
+    // Create pointers
+    std::shared_ptr<pixel_type[]> p1 = this->get_data();
+    std::shared_ptr<pixel_type[]> p2 = input.get_data();
+    std::shared_ptr<pixel_type[]> p3 = result.get_data();
+
+    for(int k=0; k<elements; k++)
+    {
+        p3[k] = p1[k] - p2[k];
+    };
+    return result;
+};
+
+template <typename pixel_type>
+image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator * (image_base_2d<pixel_type> & input)
+{
+    // std::cout << "assert images size" << std::endl;
+    assert(this->get_width()==input.get_width());
+    assert(this->get_height()==input.get_height());
+
+    int w = input.get_width();
+    int h = input.get_height();
+    int elements = w*h;
+    // std::cout << "Image size: [" << w << ", "<< h << "]\n";
+    static image_base_2d<pixel_type> result(w, h);
+
+    // Create pointers
+    std::shared_ptr<pixel_type[]> p1 = this->get_data();
+    std::shared_ptr<pixel_type[]> p2 = input.get_data();
+    std::shared_ptr<pixel_type[]> p3 = result.get_data();
+
+    for(int k=0; k<elements; k++)
+    {
+        p3[k] = p1[k] * p2[k];
+    };
+    return result;
+};
+
+template <typename pixel_type>
+image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator / (image_base_2d<pixel_type> & input)
+{
+    // std::cout << "assert images size" << std::endl;
+    assert(this->get_width()==input.get_width());
+    assert(this->get_height()==input.get_height());
+
+    int w = input.get_width();
+    int h = input.get_height();
+    int elements = w*h;
+    // std::cout << "Image size: [" << w << ", "<< h << "]\n";
+    static image_base_2d<pixel_type> result(w, h);
+
+    // Create pointers
+    std::shared_ptr<pixel_type[]> p1 = this->get_data();
+    std::shared_ptr<pixel_type[]> p2 = input.get_data();
+    std::shared_ptr<pixel_type[]> p3 = result.get_data();
+
+    for(int k=0; k<elements; k++)
+    {
+        p3[k] = p1[k] / p2[k];
+    };
+    return result;
+};

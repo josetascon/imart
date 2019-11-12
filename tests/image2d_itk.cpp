@@ -1,8 +1,8 @@
 /*
 * @Author: jose
 * @Date:   2019-11-07 10:12:34
-* @Last Modified by:   jose
-* @Last Modified time: 2019-11-08 10:41:54
+* @Last Modified by:   Jose Tascon
+* @Last Modified time: 2019-11-12 09:54:50
 */
 
 // std libs
@@ -38,22 +38,17 @@ int main(int argc, char *argv[])
     // reader->SetFileName("images/cameraman20x16.tif");
     reader->SetFileName(argv[1]);
     reader->Update();
-
-    // Print data
-    // image
     
     // Read the image from reader
     image_itk = reader->GetOutput();
-
-    std::cout << "Image description (itk):\n" << image_itk;
-
     ImageType::RegionType region = image_itk->GetLargestPossibleRegion();
     ImageType::SizeType size = region.GetSize();
+    std::unique_ptr<unsigned short> buffer(image_itk->GetBufferPointer()); // buffer = image->GetBufferPointer();
 
+    // Print data
+    std::cout << "Image description (itk):\n" << image_itk;
     std::cout << "\nImage size: " << size << std::endl;
     std::cout << "Image buffer address: " << image_itk->GetBufferPointer() << std::endl;
-
-    std::unique_ptr<unsigned short> buffer(image_itk->GetBufferPointer()); // buffer = image->GetBufferPointer();
     std::cout << "Local pointer (unique) address: " << buffer.get() << std::endl;
     buffer.release(); // release the data to avoid double free error
 
@@ -61,16 +56,23 @@ int main(int argc, char *argv[])
 
     int width = size[0];
     int height = size[1];
-    // print the pixels
+    // Print the pixel values
     std::cout << "\nPixel values\n";
-    for (register int i=0; i<width; i++)
+    for (register int i=0; i<height; i++)
     {
-        for (register int j=0; j<height; j++)
+        for (register int j=0; j<width; j++)
         {
             std::cout << *(p++) << " ";
         }
         std::cout << "\n";
     };
+
+    // Read the image with image_base_2d interface of itk
+    image_base_2d<unsigned short> image1;
+    image1.read(argv[1]);
+    image1.print("Our Image");
+    image1.print_data("Pixel values:");
+    std::cout << "Image ptr count: " << image1.get_ptr_count() << std::endl;
 
     return 0;
 };
