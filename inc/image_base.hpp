@@ -14,9 +14,11 @@
 #include <memory>       // smart pointers
 #include <vector>       // std::vector
 #include <typeinfo>     // operator typeid
+#include <assert.h>       // assert
 
 // images itk
 #include <itkImage.h>
+#include <itkImageFileReader.h>
 
 // parallel
 // openmp
@@ -31,9 +33,6 @@ template <typename pixel_type>
 class image_base_2d
 {
 private:
-    // Type definitions
-    using ImageType = itk::Image<pixel_type, 2>;
-
     // ===========================================
     // Internal Variables
     // ===========================================
@@ -89,7 +88,7 @@ public:
     // Interface Functions
     // ===========================================
     // interface with ITK, eigen?
-    void read();
+    void read(std::string file_name);
 
     void write();
 
@@ -135,7 +134,7 @@ public:
     // ===========================================
     void print(std::string msg = "");
 
-    void print_data();
+    void print_data(std::string msg = "");
 
     void print_ptr_count();
 
@@ -145,6 +144,11 @@ public:
     // Overloading Functions
     // ===========================================
     void operator = (image_base_2d & input);
+
+    image_base_2d<pixel_type> & operator + (image_base_2d & input);
+    image_base_2d<pixel_type> & operator - (image_base_2d & input);
+    image_base_2d<pixel_type> & operator * (image_base_2d & input);
+    image_base_2d<pixel_type> & operator / (image_base_2d & input);
 
     // TODO
     // create operator << to print info of image as image_info function

@@ -7,7 +7,10 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/images/cameraman20x16.tif
 add_library(tests image2d_basic.cpp image2d_itk.cpp)
 
 add_executable(image2d_basic image2d_basic.cpp)
-target_link_libraries(image2d_basic src tests)
+target_link_libraries(image2d_basic src tests ${link_targets})
 
 add_executable(image2d_itk image2d_itk.cpp)
 target_link_libraries(image2d_itk src tests ${link_targets})
+
+add_executable(image2d_arithmetic image2d_arithmetic.cpp)
+target_link_libraries(image2d_arithmetic src tests ${link_targets})
