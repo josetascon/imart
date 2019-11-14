@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-11 15:08:23
+* @Last Modified time: 2019-11-14 10:51:10
 */
 
 // std libs
@@ -155,7 +155,37 @@ int main()
 
     std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;
     std::cout << "image4 ptr count: " << image4.get_ptr_count() << std::endl;
+
+    // Create different image objects
+    std::cout << std::endl;
+    std::cout << "===================== ";
+    std::cout << "Test class image_base_2d, initilization";
+    std::cout << " =====================";
+    std::cout << std::endl;
+
+    image_base_2d<float> image5(6,6);
+    // image_base_2d<unsigned int> image6(4,7);
     
+    image5.print("image5");
+    image5.zeros();
+    image5.print_data("zeros:");
+    image5.ones();
+    image5.print_data("ones:");
+    image5.random();
+    image5.print_data("random:");
+
+
+    std::cout << std::endl;
+    std::cout << "===================== ";
+    std::cout << "Test class image_base_2d, access elements";
+    std::cout << " =====================";
+    std::cout << std::endl;
+    std::cout << "image5[0] = " << image5(0) << std::endl;
+    std::cout << "image5[11] = " << image5(11) << std::endl;
+    std::cout << "image5[35] = " << image5(35) << std::endl;
+    std::cout << "image5[2,3] = " << image5(0,0) << std::endl;
+    std::cout << "image5[2,3] = " << image5(2,3) << std::endl;
+    std::cout << "image5[5,4] = " << image5(5,4) << std::endl;
 
     return 0;
 };

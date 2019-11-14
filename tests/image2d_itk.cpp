@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-07 10:12:34
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-12 09:54:50
+* @Last Modified time: 2019-11-12 15:50:39
 */
 
 // std libs
@@ -58,9 +58,9 @@ int main(int argc, char *argv[])
     int height = size[1];
     // Print the pixel values
     std::cout << "\nPixel values\n";
-    for (register int i=0; i<height; i++)
+    for (int i=0; i<height; i++)
     {
-        for (register int j=0; j<width; j++)
+        for (int j=0; j<width; j++)
         {
             std::cout << *(p++) << " ";
         }
