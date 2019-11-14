@@ -13,12 +13,16 @@
 #include <sstream>      // stringstream
 #include <memory>       // smart pointers
 #include <vector>       // std::vector
+#include <random>       // random
 #include <typeinfo>     // operator typeid
 #include <assert.h>       // assert
 
 // images itk
 #include <itkImage.h>
 #include <itkImageFileReader.h>
+
+// extra matrix eigen
+#include <eigen3/Eigen/Core>
 
 // parallel
 // openmp
@@ -82,7 +86,7 @@ public:
 
     void init(int w, int h);
 
-    void update(image_base_2d & input);
+    void update(image_base_2d<pixel_type> & input);
 
     // ===========================================
     // Interface Functions
@@ -94,9 +98,7 @@ public:
 
     // template <size_t type_itk>
     // void read_itk(itk::Image< type_itk, 2 > image_itk);
-
-    void write_itk();
-
+    // void write_itk();
 
     // ===========================================
     // Get Functions
@@ -141,25 +143,89 @@ public:
     std::string info(std::string msg = "");
 
     // ===========================================
-    // Overloading Functions
+    // Initialization Functions
     // ===========================================
-    void operator = (image_base_2d & input);
+    void zeros();
+    void ones();
+    void identity(); //TODO
+    void random(pixel_type min=0.0, pixel_type max=1.0);
 
-    image_base_2d<pixel_type> & operator + (image_base_2d & input);
-    image_base_2d<pixel_type> & operator - (image_base_2d & input);
-    image_base_2d<pixel_type> & operator * (image_base_2d & input);
-    image_base_2d<pixel_type> & operator / (image_base_2d & input);
+    // ===========================================
+    // Overloading Operators
+    // ===========================================
+    // Access
+    pixel_type operator () (int e);
+    pixel_type operator () (int w, int h);
+
+    // Equal
+    image_base_2d<pixel_type> & operator = (image_base_2d<pixel_type> input);
+    
+    // Image to Image
+    image_base_2d<pixel_type> operator + (image_base_2d<pixel_type> & input);
+    image_base_2d<pixel_type> operator - (image_base_2d<pixel_type> & input);
+    image_base_2d<pixel_type> operator * (image_base_2d<pixel_type> & input);
+    image_base_2d<pixel_type> operator / (image_base_2d<pixel_type> & input);
+
+    // Scalar
+    image_base_2d<pixel_type> operator + (pixel_type scalar);
+    image_base_2d<pixel_type> operator - (pixel_type scalar);
+    image_base_2d<pixel_type> operator * (pixel_type scalar);
+    image_base_2d<pixel_type> operator / (pixel_type scalar);
+
+    // Friend classes to support double side
+    friend image_base_2d<pixel_type> operator + (pixel_type scalar, image_base_2d<pixel_type> & input)
+    {
+        return input + scalar;
+    };
+
+    friend image_base_2d<pixel_type> operator - (pixel_type scalar, image_base_2d<pixel_type> & input)
+    {
+        static image_base_2d<pixel_type> result(input.get_width(), input.get_height());
+        std::shared_ptr<pixel_type[]> p1 = input.get_data();
+        std::shared_ptr<pixel_type[]> p2 = result.get_data();
+
+        for(int k=0; k<input.num_elements; k++)
+        {
+            p2[k] = scalar - p1[k];
+        };
+        return result;
+    };
+
+    friend image_base_2d<pixel_type> operator * (pixel_type scalar, image_base_2d<pixel_type> & input)
+    {
+        return input * scalar;
+    };
+
+    friend image_base_2d<pixel_type> operator / (pixel_type scalar, image_base_2d<pixel_type> & input)
+    {
+        static image_base_2d<pixel_type> result(input.get_width(), input.get_height());
+        std::shared_ptr<pixel_type[]> p1 = input.get_data();
+        std::shared_ptr<pixel_type[]> p2 = result.get_data();
+
+        for(int k=0; k<input.num_elements; k++)
+        {
+            p2[k] = scalar/p1[k];
+        };
+        return result;
+    };
+
+    // ===========================================
+    // Functions
+    // ===========================================
+    // Matrix product
+    image_base_2d<pixel_type> _x_(image_base_2d<pixel_type> & input);
 
     // TODO
     // create operator << to print info of image as image_info function
-    // class operations: +,-,*,/
-    // initialize data with zeros or one
-    // transpose, normalize (0 to 1)
+    // class operations: +,-,*,/  [DONE]
+    // initialize data with zeros, ones, random [DONE]
+    // filters: normalize (0 to 1), padding, gaussian, convolution, gradient, fft?
     // scalar operations: scalar*Image
-    // functions: add, substract, multiply, divide, pow, convolution, gradient, fft?
-    // extra functions: copy
+    // functions in_place: transpose, add, substract, multiply, divide, pow
+    // extra functions: copy, cast
 
 };
+
 
 // Template constructions
 template class image_base_2d<unsigned char>;  // 1 byte
@@ -169,6 +235,5 @@ template class image_base_2d<unsigned int>;   // 4 byte
 template class image_base_2d<int>;            // 4 byte
 template class image_base_2d<float>;          // 4 byte
 template class image_base_2d<double>;         // 8 byte
-
 
 #endif

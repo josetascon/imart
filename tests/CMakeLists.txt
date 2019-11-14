@@ -14,3 +14,6 @@ target_link_libraries(image2d_itk src tests ${link_targets})
 
 add_executable(image2d_arithmetic image2d_arithmetic.cpp)
 target_link_libraries(image2d_arithmetic src tests ${link_targets})
+
+add_executable(image2d_benchmarks image2d_benchmarks.cpp)
+target_link_libraries(image2d_benchmarks src tests ${link_targets} "benchmark")

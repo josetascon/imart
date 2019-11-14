@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 13:55:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-12 10:51:51
+* @Last Modified time: 2019-11-14 17:39:46
 */
 
 #include "image_base.hpp"
@@ -165,7 +165,7 @@ int image_base_2d<pixel_type>::get_height()
 template <typename pixel_type>
 int image_base_2d<pixel_type>::get_total_elements()
 {
-    return width*height;
+    return num_elements;
 };
 
 template <typename pixel_type>
@@ -265,19 +265,73 @@ std::string image_base_2d<pixel_type>::info(std::string msg)
 };
 
 // ===========================================
-// Overloading Functions
+// Initialization Functions
 // ===========================================
 template <typename pixel_type>
-void image_base_2d<pixel_type>::operator = (image_base_2d<pixel_type> & input)
+void image_base_2d<pixel_type>::zeros()
+{
+    for(int k=0; k<num_elements; k++)
+    {
+        data[k] = (pixel_type)0.0; // casting to pixel_type
+    };
+};
+
+template <typename pixel_type>
+void image_base_2d<pixel_type>::ones()
+{
+    for(int k=0; k<num_elements; k++)
+    {
+        data[k] = (pixel_type)1.0; // casting to pixel_type
+    };
+};
+
+template <typename pixel_type>
+void image_base_2d<pixel_type>::random(pixel_type min, pixel_type max)
+{
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    // std::default_random_engine gen(rd()); //Standard random generator()
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> uniform(min, max);
+
+    for(int k=0; k<num_elements; k++)
+    {
+        data[k] = (pixel_type)uniform(gen); // casting to pixel_type
+    };
+        
+};
+
+// ===========================================
+// Overloading Operators
+// ===========================================
+// Access
+template <typename pixel_type>
+pixel_type image_base_2d<pixel_type>::operator () (int e)
+{
+    assert(e < num_elements);
+    return this->get_data()[e];
+};
+
+template <typename pixel_type>
+pixel_type image_base_2d<pixel_type>::operator () (int w, int h)
+{
+    assert(w < width && h < height);
+    return this->get_data()[w+h*width];
+};
+
+// Equal
+template <typename pixel_type>
+image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator = (image_base_2d<pixel_type> input)
 {
     // delete &data;
     this->data.reset();
     this->data = input.get_data();
     this->update(input);
+    return *this;
 };
 
+// Image to Image
 template <typename pixel_type>
-image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator + (image_base_2d<pixel_type> & input)
+image_base_2d<pixel_type> image_base_2d<pixel_type>::operator + (image_base_2d<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
     assert(this->get_width()==input.get_width());
@@ -287,7 +341,7 @@ image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator + (image_base_2d
     int h = input.get_height();
     int elements = w*h;
     // std::cout << "Image size: [" << w << ", "<< h << "]\n";
-    static image_base_2d<pixel_type> result(w, h);
+    image_base_2d<pixel_type> result(w, h);
 
     // Create pointers
     // std::cout << "create correct\n";
@@ -305,21 +359,8 @@ image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator + (image_base_2d
     return result;
 };
 
-// image_base_2d& operator + (image_base_2d & image2)
-// {
-//     int mat[3][3];
-//     for(int i=0; i<3; i++)
-//     {
-//             for(int j=0; j<3; j++)
-//             {
-//                     mat[i][j]=a[i][j]+x.a[i][j];
-//             }
-//     }
-// };
-
-
 template <typename pixel_type>
-image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator - (image_base_2d<pixel_type> & input)
+image_base_2d<pixel_type> image_base_2d<pixel_type>::operator - (image_base_2d<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
     assert(this->get_width()==input.get_width());
@@ -329,7 +370,7 @@ image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator - (image_base_2d
     int h = input.get_height();
     int elements = w*h;
     // std::cout << "Image size: [" << w << ", "<< h << "]\n";
-    static image_base_2d<pixel_type> result(w, h);
+    image_base_2d<pixel_type> result(w, h);
 
     // Create pointers
     std::shared_ptr<pixel_type[]> p1 = this->get_data();
@@ -344,7 +385,7 @@ image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator - (image_base_2d
 };
 
 template <typename pixel_type>
-image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator * (image_base_2d<pixel_type> & input)
+image_base_2d<pixel_type> image_base_2d<pixel_type>::operator * (image_base_2d<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
     assert(this->get_width()==input.get_width());
@@ -354,7 +395,7 @@ image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator * (image_base_2d
     int h = input.get_height();
     int elements = w*h;
     // std::cout << "Image size: [" << w << ", "<< h << "]\n";
-    static image_base_2d<pixel_type> result(w, h);
+    image_base_2d<pixel_type> result(w, h);
 
     // Create pointers
     std::shared_ptr<pixel_type[]> p1 = this->get_data();
@@ -369,7 +410,7 @@ image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator * (image_base_2d
 };
 
 template <typename pixel_type>
-image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator / (image_base_2d<pixel_type> & input)
+image_base_2d<pixel_type> image_base_2d<pixel_type>::operator / (image_base_2d<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
     assert(this->get_width()==input.get_width());
@@ -379,7 +420,7 @@ image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator / (image_base_2d
     int h = input.get_height();
     int elements = w*h;
     // std::cout << "Image size: [" << w << ", "<< h << "]\n";
-    static image_base_2d<pixel_type> result(w, h);
+    image_base_2d<pixel_type> result(w, h);
 
     // Create pointers
     std::shared_ptr<pixel_type[]> p1 = this->get_data();
@@ -390,5 +431,93 @@ image_base_2d<pixel_type> & image_base_2d<pixel_type>::operator / (image_base_2d
     {
         p3[k] = p1[k] / p2[k];
     };
+    return result;
+};
+
+// Scalar right hand side
+// Scalar left hand side defined in header due to use of friend functions
+template <typename pixel_type>
+image_base_2d<pixel_type> image_base_2d<pixel_type>::operator + (pixel_type scalar)
+{
+    image_base_2d<pixel_type> result(width, height);
+    std::shared_ptr<pixel_type[]> p1 = this->get_data();
+    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+
+    for(int k=0; k<num_elements; k++)
+    {
+        p2[k] = p1[k] + scalar;
+    };
+    return result;
+};
+
+template <typename pixel_type>
+image_base_2d<pixel_type> image_base_2d<pixel_type>::operator - (pixel_type scalar)
+{
+    image_base_2d<pixel_type> result(width, height);
+    std::shared_ptr<pixel_type[]> p1 = this->get_data();
+    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+
+    for(int k=0; k<num_elements; k++)
+    {
+        p2[k] = p1[k] - scalar;
+    };
+    return result;
+};
+
+template <typename pixel_type>
+image_base_2d<pixel_type> image_base_2d<pixel_type>::operator * (pixel_type scalar)
+{
+    image_base_2d<pixel_type> result(width, height);
+    std::shared_ptr<pixel_type[]> p1 = this->get_data();
+    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+
+    for(int k=0; k<num_elements; k++)
+    {
+        p2[k] = p1[k] * scalar;
+    };
+    return result;
+};
+
+template <typename pixel_type>
+image_base_2d<pixel_type> image_base_2d<pixel_type>::operator / (pixel_type scalar)
+{
+    image_base_2d<pixel_type> result(width, height);
+    std::shared_ptr<pixel_type[]> p1 = this->get_data();
+    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+
+    for(int k=0; k<num_elements; k++)
+    {
+        p2[k] = p1[k] / scalar;
+    };
+    return result;
+};
+
+// ===========================================
+// Functions
+// ===========================================
+// Matrix product
+template <typename pixel_type>
+image_base_2d<pixel_type> image_base_2d<pixel_type>::_x_(image_base_2d<pixel_type> & input)
+{
+    using Map = Eigen::Map<Eigen::Matrix<pixel_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >;
+    image_base_2d<pixel_type> result(input.width, height);
+    // std::shared_ptr<image_base_2d<pixel_type>> result = 
+    // std::shared_ptr<image_base_2d<pixel_type>>(new image_base_2d<pixel_type>(height, input.width));
+    // result.print();
+    std::cout << "ptr: " << result.get_data() << std::endl;
+
+    Map A(get_data().get(), height, width);
+    Map B(input.get_data().get(), input.get_height(), input.get_width());
+    Map C(result.get_data().get(), result.get_height(), result.get_width());
+
+    // std::cout << A << std::endl;
+    // std::cout << std::endl;
+    // std::cout << B << std::endl;
+    // std::cout << std::endl;
+    // std::cout << A*B << std::endl;
+    // std::cout << std::endl;
+
+    C = (A*B);
+    // C = (A.transpose()*B.transpose()).transpose(); // transpose function doesn't cost anything (average=12ns)
     return result;
 };

@@ -1,4 +1,10 @@
 ---------------------------------------------
+Benchmarking
+hyperfine (package) for command line benchmark
+google benchmark for function benchmarking
+
+
+---------------------------------------------
 Documentation
 Use doxygen and sphinx mix
 
@@ -34,3 +40,7 @@ For now. Only 2D and 3D images are supported without orientation or center.
 Array in C
 1D storage of arrays is selected. 
 See reasons here. https://stackoverflow.com/questions/17259877/1d-or-2d-array-whats-faster
+
+
+
+
