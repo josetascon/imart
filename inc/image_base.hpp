@@ -135,11 +135,8 @@ public:
     // Print Functions
     // ===========================================
     void print(std::string msg = "");
-
     void print_data(std::string msg = "");
-
     void print_ptr_count();
-
     std::string info(std::string msg = "");
 
     // ===========================================
@@ -178,18 +175,18 @@ public:
         return input + scalar;
     };
 
-    friend image_base_2d<pixel_type> operator - (pixel_type scalar, image_base_2d<pixel_type> & input)
-    {
-        static image_base_2d<pixel_type> result(input.get_width(), input.get_height());
-        std::shared_ptr<pixel_type[]> p1 = input.get_data();
-        std::shared_ptr<pixel_type[]> p2 = result.get_data();
+    // friend image_base_2d<pixel_type> operator - (pixel_type scalar, image_base_2d<pixel_type> & input)
+    // {
+    //     static image_base_2d<pixel_type> result(input.get_width(), input.get_height());
+    //     std::shared_ptr<pixel_type[]> p1 = input.get_data();
+    //     std::shared_ptr<pixel_type[]> p2 = result.get_data();
 
-        for(int k=0; k<input.num_elements; k++)
-        {
-            p2[k] = scalar - p1[k];
-        };
-        return result;
-    };
+    //     for(int k=0; k<input.num_elements; k++)
+    //     {
+    //         p2[k] = scalar - p1[k];
+    //     };
+    //     return result;
+    // };
 
     friend image_base_2d<pixel_type> operator * (pixel_type scalar, image_base_2d<pixel_type> & input)
     {
@@ -226,6 +223,19 @@ public:
 
 };
 
+template <typename pixel_type>
+inline image_base_2d<pixel_type> operator - (pixel_type scalar, image_base_2d<pixel_type> & input)
+{
+    static image_base_2d<pixel_type> result(input.get_width(), input.get_height());
+    std::shared_ptr<pixel_type[]> p1 = input.get_data();
+    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+
+    for(int k=0; k<input.get_total_elements(); k++)
+    {
+        p2[k] = scalar - p1[k];
+    };
+    return result;
+};
 
 // Template constructions
 template class image_base_2d<unsigned char>;  // 1 byte
