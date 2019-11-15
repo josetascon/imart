@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-07 10:12:34
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-12 15:50:39
+* @Last Modified time: 2019-11-15 11:22:18
 */
 
 // std libs
@@ -14,7 +14,7 @@
 #include <itkImageFileReader.h>
 
 // local libs
-#include "../inc/image_base.hpp"
+#include "../src/image_2d.h"
 
 
 int main(int argc, char *argv[])
@@ -67,8 +67,8 @@ int main(int argc, char *argv[])
         std::cout << "\n";
     };
 
-    // Read the image with image_base_2d interface of itk
-    image_base_2d<unsigned short> image1;
+    // Read the image with image_2d interface of itk
+    image_2d<unsigned short> image1;
     image1.read(argv[1]);
     image1.print("Our Image");
     image1.print_data("Pixel values:");

@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-13 09:20:57
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-14 17:33:29
+* @Last Modified time: 2019-11-15 11:34:44
 */
 
 
@@ -13,7 +13,7 @@
 #include <benchmark/benchmark.h>
 
 // local libs
-#include "../inc/image_base.hpp"
+#include "../src/image_2d.h"
 
 
 // Testing google benchmark library
@@ -24,7 +24,7 @@ static void BM_Image_Init(benchmark::State& state)
     
     for (auto _ : state) {
         // This code gets timed
-        image_base_2d<double> img1(100000000,1);
+        image_2d<double> img1(100000000,1);
         // SomeFunction();
     };
 };
@@ -32,7 +32,7 @@ static void BM_Image_Init(benchmark::State& state)
 static void BM_Image_Zero(benchmark::State& state)
 {
     // Perform setup here
-    image_base_2d<double> img1(100000000,1);
+    image_2d<double> img1(100000000,1);
 
     for (auto _ : state) {
         // This code gets timed
@@ -44,7 +44,7 @@ static void BM_Image_Zero(benchmark::State& state)
 static void BM_Image_Random(benchmark::State& state)
 {
     // Perform setup here
-    image_base_2d<double> img1(100000000,1);
+    image_2d<double> img1(100000000,1);
 
     for (auto _ : state) {
         // This code gets timed
@@ -56,9 +56,9 @@ static void BM_Image_Random(benchmark::State& state)
 static void BM_Image_Sum(benchmark::State& state)
 {
     // Perform setup here
-    image_base_2d<double> img1(100000000,2);
-    image_base_2d<double> img2(100000000,2);
-    image_base_2d<double> img3(100000000,2);
+    image_2d<double> img1(100000000,2);
+    image_2d<double> img2(100000000,2);
+    image_2d<double> img3(100000000,2);
 
     for (auto _ : state) {
         // This code gets timed
