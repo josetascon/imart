@@ -1,17 +1,32 @@
 /*
 * @Author: jose
 * @Date:   2019-01-21 09:36:17
-* @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-15 11:11:16
+* @Last Modified by:   jose
+* @Last Modified time: 2019-01-21 09:40:26
 */
 
-/*
-#include "opencl_config.h"
+#ifndef __OPENCL_CONFIG_H__
+#define __OPENCL_CONFIG_H__
+
+#include <fstream>
+#include <string>
+#include <cassert>
+
+#include <CL/cl.hpp>
+
+cl::Program create_program(const std::string& file);
+
+
+
+
+
+
+
 
 cl::Program create_program(const std::string& file)
 {
 
-	// Get the platform
+    // Get the platform
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
 
@@ -40,4 +55,6 @@ cl::Program create_program(const std::string& file)
     auto err = program.build("-cl-std=CL2.1");
     return program;
 }
-*/
+
+
+#endif

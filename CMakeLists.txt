@@ -1,7 +1,7 @@
 # Author: José D. Tascón-Vidarte <josedtascon@gmail.com>
 
 cmake_minimum_required(VERSION 3.8)
-project(ParallelRegistration)
+project(ParallelRegistration C CXX)
 
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 7)
@@ -43,7 +43,7 @@ endif()
 #                  Build
 # ===========================================
 # Core includes
-include_directories(inc inc/utils)
+include_directories(src src/utils)
 add_subdirectory(src)
 # subdirs(src)
 

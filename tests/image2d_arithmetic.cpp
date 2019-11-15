@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-07 10:13:08
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-14 16:33:05
+* @Last Modified time: 2019-11-15 11:09:19
 */
 
 
@@ -11,7 +11,7 @@
 #include <memory>
 
 // local libs
-#include "../inc/image_base.hpp"
+#include "../src/image_2d.h"
 
 int main()
 {
@@ -20,16 +20,16 @@ int main()
     // ============================================
     std::cout << std::endl;
     std::cout << "===================== ";
-    std::cout << "Test class image_base_2d, warmup addition";
+    std::cout << "Test class image_2d, warmup addition";
     std::cout << " =====================";
     std::cout << std::endl;
     std::shared_ptr<float[]> buffer1(new float[6] {1.1, 2.1, 3.1, 4.1, 5.1, 6.1});
     std::shared_ptr<float[]> buffer2(new float[6] {2.1, 1.1, 0.1, -0.9, -1.9, -2.9});
     
 
-    image_base_2d<float> image1(buffer1, 3,2);
-    image_base_2d<float> image2(buffer2, 3,2);
-    image_base_2d<float> image3;
+    image_2d<float> image1(buffer1, 3,2);
+    image_2d<float> image2(buffer2, 3,2);
+    image_2d<float> image3;
 
     std::cout << "Adding 2 images:" << std::endl;
     std::cout << "image3 = image1 + image2" << std::endl;
@@ -48,12 +48,12 @@ int main()
 
     std::cout << std::endl;
     std::cout << "===================== ";
-    std::cout << "Test class image_base_2d, scalar operations";
+    std::cout << "Test class image_2d, scalar operations";
     std::cout << " =====================";
     std::cout << std::endl;
 
-    image_base_2d<int> image4(3,4);
-    image_base_2d<int> image5(3,4);
+    image_2d<int> image4(3,4);
+    image_2d<int> image5(3,4);
     image4.ones();
 
     image4.print_data("image4 :");
@@ -76,22 +76,22 @@ int main()
 
     std::cout << std::endl;
     std::cout << "===================== ";
-    std::cout << "Test class image_base_2d, arithmetic operations";
+    std::cout << "Test class image_2d, arithmetic operations";
     std::cout << " =====================";
     std::cout << std::endl;
     
 
     std::cout << std::endl;
     std::cout << "===================== ";
-    std::cout << "Test class image_base_2d, matrix operations";
+    std::cout << "Test class image_2d, matrix operations";
     std::cout << " =====================";
     std::cout << std::endl;
 
     std::shared_ptr<float[]> buffer3(new float[6] {1.1, 2.2, 3.1, 4.1, 2.2, 1.1});
     std::shared_ptr<float[]> buffer4(new float[3] {2.0, 0.5, 1.0});
-    image_base_2d<float> matrix1(buffer3, 3,2);
-    image_base_2d<float> matrix2(buffer4, 1,3);
-    image_base_2d<float> matrix3(1,2);
+    image_2d<float> matrix1(buffer3, 3,2);
+    image_2d<float> matrix2(buffer4, 1,3);
+    image_2d<float> matrix3(1,2);
 
     matrix3 = matrix1._x_(matrix2);
     matrix1.print_data("matrix1:");
@@ -101,9 +101,9 @@ int main()
 
     std::shared_ptr<float[]> buffer5(new float[6] {1.1, 2.1, 3.1, 4.1, 2.1, 1.1});
     std::shared_ptr<float[]> buffer6(new float[12] {2.0, 1.5, 2.0, 1.0, 3.0, 1.0, 5.0, 2.5, 0.5, 1.0, 0.0, 0.5});
-    image_base_2d<float> matrix4(buffer5, 3,2);
-    image_base_2d<float> matrix5(buffer6, 4,3);
-    image_base_2d<float> matrix6(4,2);
+    image_2d<float> matrix4(buffer5, 3,2);
+    image_2d<float> matrix5(buffer6, 4,3);
+    image_2d<float> matrix6(4,2);
     // matrix6.print();
 
     matrix6 = matrix4._x_(matrix5);
