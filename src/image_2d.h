@@ -15,7 +15,7 @@
 #include <vector>       // std::vector
 #include <random>       // random
 #include <typeinfo>     // operator typeid
-#include <assert.h>       // assert
+#include <cassert>       // assert
 
 // local lib
 #include "image_base.h"

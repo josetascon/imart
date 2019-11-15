@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-07 10:12:34
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-15 11:22:18
+* @Last Modified time: 2019-11-15 16:24:39
 */
 
 // std libs
@@ -15,6 +15,7 @@
 
 // local libs
 #include "../src/image_2d.h"
+#include "../src/utils/timer.h"
 
 
 int main(int argc, char *argv[])
@@ -66,13 +67,22 @@ int main(int argc, char *argv[])
         }
         std::cout << "\n";
     };
+    std::cout << std::endl;
 
     // Read the image with image_2d interface of itk
+    timer tt("ms");
+    tt.start();
     image_2d<unsigned short> image1;
     image1.read(argv[1]);
+    tt.lap();
+    tt.finish();
+
     image1.print("Our Image");
     image1.print_data("Pixel values:");
     std::cout << "Image ptr count: " << image1.get_ptr_count() << std::endl;
+    
+    tt.print();
+    std::cout << tt;
 
     return 0;
 };
