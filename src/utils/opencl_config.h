@@ -22,7 +22,9 @@ cl::Program create_program(const std::string& file);
 
 
 
-
+// ===========================================
+//              Functions here
+// ===========================================
 cl::Program create_program(const std::string& file)
 {
 

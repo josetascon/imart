@@ -13,7 +13,7 @@
 #include <iostream>     // std::cout
 #include <memory>       // smart pointers
 #include <vector>       // std::vector
-#include <assert.h>       // assert
+#include <cassert>       // assert
 
 // images 
 #include "image_base.h"
@@ -42,7 +42,7 @@ public:
     transform_base();
 
     // ===========================================
-    // Print Functions
+    // Get Functions
     // ===========================================
     int get_dimension();
     std::string get_type();

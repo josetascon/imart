@@ -15,7 +15,7 @@
 #include <vector>       // std::vector
 #include <random>       // random
 #include <typeinfo>     // operator typeid
-#include <assert.h>       // assert
+#include <cassert>       // assert
 
 // images itk
 #include <itkImage.h>
@@ -45,7 +45,6 @@ protected:
     int height;
     int length;
     int num_elements;
-
     int channels;       // for now will only support one channel
 
     std::vector<int> size;
