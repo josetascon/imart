@@ -25,7 +25,7 @@ set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL OpenMP::OpenMP_CXX)
 # ===========================================
 #               Compiler Flags
 # ===========================================
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 
 
 

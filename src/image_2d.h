@@ -15,26 +15,53 @@
 #include <vector>       // std::vector
 #include <random>       // random
 #include <typeinfo>     // operator typeid
-#include <cassert>       // assert
+#include <cassert>      // assert
 
 // local lib
 #include "image_base.h"
-
+// #include "utils/timer.h"
 
 
 // Class image_base
 template <typename pixel_type>
 class image_2d : public image_base<pixel_type>
 {
+    // Type definitions
+    // using vector_image = std::vector<image_2d<pixel_type>>;
+
+protected:
+    
+    // std::shared_ptr<vector_image> grid;
+    // std::vector<image_2d> grid;
+
 public:
+
+    // std::shared_ptr<vector_image> get_grid();
+
+    
     using image_base<pixel_type>::image_base;
 
-    using image_base<pixel_type>::operator=;
-    using image_base<pixel_type>::operator+;
-    using image_base<pixel_type>::operator-;
-    using image_base<pixel_type>::operator*;
-    using image_base<pixel_type>::operator/;
+    using image_base<pixel_type>::operator =;
+    using image_base<pixel_type>::operator +;
+    using image_base<pixel_type>::operator -;
+    using image_base<pixel_type>::operator *;
+    using image_base<pixel_type>::operator /;
+
+    using image_base<pixel_type>::operator ();
+
+    
+
+    // TODO
+    // assigment of index is not working e.g. image_2d(0,0) = 7
 };
+
+
+// ===========================================
+//      Functions of Class image_2d
+// ===========================================
+
+
+
 
 
 
