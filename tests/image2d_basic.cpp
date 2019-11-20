@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-15 11:50:31
+* @Last Modified time: 2019-11-18 13:15:31
 */
 
 // std libs
@@ -49,6 +49,8 @@ int main()
     std::cout << "external image ptr count: ";
     std::cout << image0.get_data().use_count();
     std::cout << std::endl;
+
+    std::cout << image0;
 
 
     // Create medium size image 

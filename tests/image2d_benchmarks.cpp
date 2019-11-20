@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-13 09:20:57
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-15 11:34:44
+* @Last Modified time: 2019-11-18 15:06:29
 */
 
 
@@ -53,6 +53,20 @@ static void BM_Image_Random(benchmark::State& state)
     };
 };
 
+static void BM_Image_Equal(benchmark::State& state)
+{
+    // Perform setup here
+    image_2d<double> img1(100000000,1);
+    image_2d<double> img2(100000000,1);
+    img1.ones();
+
+    for (auto _ : state) {
+        // This code gets timed
+        img2 = img1;
+        // SomeFunction();
+    };
+};
+
 static void BM_Image_Sum(benchmark::State& state)
 {
     // Perform setup here
@@ -67,11 +81,28 @@ static void BM_Image_Sum(benchmark::State& state)
     };
 };
 
+
+static void BM_Image_Matrix_Mult(benchmark::State& state)
+{
+    // Perform setup here
+    image_2d<double> img1(2000,1000);
+    image_2d<double> img2(1000,2000);
+    image_2d<double> img3(1000,1000);
+
+    for (auto _ : state) {
+        // This code gets timed
+        img3 = img1._x_(img2);
+        // SomeFunction();
+    };
+};
+
 // Register the function as a benchmark
 // BENCHMARK(BM_Image_Init);
-// BENCHMARK(BM_Image_Zero);
-BENCHMARK(BM_Image_Random);
+BENCHMARK(BM_Image_Zero);
+// BENCHMARK(BM_Image_Random);
+// BENCHMARK(BM_Image_Equal);
 // BENCHMARK(BM_Image_Sum);
+// BENCHMARK(BM_Image_Matrix_Mult);
 
 // Run the benchmark
 BENCHMARK_MAIN();

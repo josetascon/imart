@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-07 10:13:08
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-15 11:09:19
+* @Last Modified time: 2019-11-18 22:27:39
 */
 
 
@@ -56,7 +56,7 @@ int main()
     image_2d<int> image5(3,4);
     image4.ones();
 
-    image4.print_data("image4 :");
+    image4.print_data("image4:");
     image5 = image4 + 3;
     image5.print_data("image5 = image4 + 3: ");
     image5 = 8 + image4;
@@ -73,6 +73,13 @@ int main()
     image5.print_data("image5 = image5 / 4: ");
     image5 = 36/image5;
     image5.print_data("image5 = 36/image5: ");
+
+    image_2d<float> image6(3,4);
+    image6.ones();
+    image6 = image6*3.0;
+    image6.print_data("image6:");
+    image6 = image6^2.0;
+    image6.print_data("image6 = image6^2.0: ");
 
     std::cout << std::endl;
     std::cout << "===================== ";
