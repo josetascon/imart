@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-18 13:15:31
+* @Last Modified time: 2019-11-20 20:45:59
 */
 
 // std libs
@@ -134,11 +134,12 @@ int main()
     std::cout << " =====================";
     std::cout << std::endl;
     
-    std::shared_ptr<float[]> buffer(new float[6] {1.1, 2.1, 3.1, 4.1, 5.1, 6.1});
+    std::shared_ptr<std::vector<float>> buffer = std::make_shared<std::vector<float>>(6);
+    *buffer = {1.1, 2.1, 3.1, 4.1, 5.1, 6.1};
 
     image_2d<float> image3(5,3);
     image_2d<float> image4(buffer, 3,2);
-    
+    // image4 = image4 + image4;
 
     std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;
     std::cout << "image4 ptr count: " << image4.get_ptr_count() << std::endl;

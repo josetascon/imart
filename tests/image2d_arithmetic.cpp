@@ -2,19 +2,25 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-07 10:13:08
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-18 22:27:39
+* @Last Modified time: 2019-11-21 10:37:12
 */
 
 
 // std libs
 #include <iostream>
 #include <memory>
+#include <vector>
 
 // local libs
 #include "../src/image_2d.h"
 
 int main()
 {
+    
+    using ptr_vector_f = image_2d<float>::ptr_vector;
+    using ptr_vector_d = image_2d<double>::ptr_vector;
+
+
     // ============================================
     //      Testing ImageBase2D basic operations
     // ============================================
@@ -23,13 +29,14 @@ int main()
     std::cout << "Test class image_2d, warmup addition";
     std::cout << " =====================";
     std::cout << std::endl;
-    std::shared_ptr<float[]> buffer1(new float[6] {1.1, 2.1, 3.1, 4.1, 5.1, 6.1});
-    std::shared_ptr<float[]> buffer2(new float[6] {2.1, 1.1, 0.1, -0.9, -1.9, -2.9});
-    
+    ptr_vector_d buffer1 = std::make_shared<std::vector<double>>(6);
+    *buffer1 = {1.1, 2.1, 3.1, 4.1, 5.1, 6.1};
+    ptr_vector_d buffer2 = std::make_shared<std::vector<double>>(6);
+    *buffer2 = {2.1, 1.1, 0.1, -0.9, -1.9, -2.9};
 
-    image_2d<float> image1(buffer1, 3,2);
-    image_2d<float> image2(buffer2, 3,2);
-    image_2d<float> image3;
+    image_2d<double> image1(buffer1, 3,2);
+    image_2d<double> image2(buffer2, 3,2);
+    image_2d<double> image3;
 
     std::cout << "Adding 2 images:" << std::endl;
     std::cout << "image3 = image1 + image2" << std::endl;
@@ -87,6 +94,7 @@ int main()
     std::cout << " =====================";
     std::cout << std::endl;
     
+    // TODO **********
 
     std::cout << std::endl;
     std::cout << "===================== ";
@@ -94,8 +102,11 @@ int main()
     std::cout << " =====================";
     std::cout << std::endl;
 
-    std::shared_ptr<float[]> buffer3(new float[6] {1.1, 2.2, 3.1, 4.1, 2.2, 1.1});
-    std::shared_ptr<float[]> buffer4(new float[3] {2.0, 0.5, 1.0});
+    ptr_vector_f buffer3 = std::make_shared<std::vector<float>>(6);
+    *buffer3 = {1.1, 2.2, 3.1, 4.1, 2.2, 1.1};
+    ptr_vector_f buffer4 = std::make_shared<std::vector<float>>(3);
+    *buffer4 = {2.0, 0.5, 1.0};
+
     image_2d<float> matrix1(buffer3, 3,2);
     image_2d<float> matrix2(buffer4, 1,3);
     image_2d<float> matrix3(1,2);
@@ -106,8 +117,11 @@ int main()
     matrix3.print_data("matrix3 = matrix1 x matrix2:");
     // std::cout << "ptr: " << matrix3.get_data() << std::endl;
 
-    std::shared_ptr<float[]> buffer5(new float[6] {1.1, 2.1, 3.1, 4.1, 2.1, 1.1});
-    std::shared_ptr<float[]> buffer6(new float[12] {2.0, 1.5, 2.0, 1.0, 3.0, 1.0, 5.0, 2.5, 0.5, 1.0, 0.0, 0.5});
+    ptr_vector_f buffer5 = std::make_shared<std::vector<float>>(6);
+    *buffer5 = {1.1, 2.1, 3.1, 4.1, 2.1, 1.1};
+    ptr_vector_f buffer6 = std::make_shared<std::vector<float>>(12);
+    *buffer6 = {2.0, 1.5, 2.0, 1.0, 3.0, 1.0, 5.0, 2.5, 0.5, 1.0, 0.0, 0.5};
+
     image_2d<float> matrix4(buffer5, 3,2);
     image_2d<float> matrix5(buffer6, 4,3);
     image_2d<float> matrix6(4,2);

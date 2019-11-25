@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-19 15:18:05
+* @Last Modified time: 2019-11-21 14:09:14
 */
 
 
@@ -23,7 +23,11 @@ int main()
     image_2d<double> image0(10,5);
 
     grid<double> x0;
+    std::cout << "a\n" ;
+    x0.print();
+    
     x0.meshgrid(image0);
+    std::cout << "b\n" ;
 
     x0.print();
     x0.print_data();
