@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-07 10:12:34
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-15 16:24:39
+* @Last Modified time: 2019-11-21 10:53:34
 */
 
 // std libs
@@ -32,6 +32,8 @@ int main(int argc, char *argv[])
     typedef itk::ImageFileReader<ImageType>     ReaderType;
 
     // Objects
+    timer tt1("ms");
+    tt1.start();
     ImageType::Pointer image_itk = ImageType::New();
     ReaderType::Pointer reader = ReaderType::New();
 
@@ -42,6 +44,7 @@ int main(int argc, char *argv[])
     
     // Read the image from reader
     image_itk = reader->GetOutput();
+    tt1.finish();
     ImageType::RegionType region = image_itk->GetLargestPossibleRegion();
     ImageType::SizeType size = region.GetSize();
     std::unique_ptr<unsigned short> buffer(image_itk->GetBufferPointer()); // buffer = image->GetBufferPointer();
@@ -70,19 +73,20 @@ int main(int argc, char *argv[])
     std::cout << std::endl;
 
     // Read the image with image_2d interface of itk
-    timer tt("ms");
-    tt.start();
+    timer tt2("ms");
+    tt2.start();
     image_2d<unsigned short> image1;
     image1.read(argv[1]);
-    tt.lap();
-    tt.finish();
+    // tt.lap();
+    tt2.finish();
 
     image1.print("Our Image");
     image1.print_data("Pixel values:");
     std::cout << "Image ptr count: " << image1.get_ptr_count() << std::endl;
     
-    tt.print();
-    std::cout << tt;
+    tt1.print("Reading image time itk: ");
+    tt2.print("Reading image time ours: ");
+    // std::cout << tt2;
 
     return 0;
 };

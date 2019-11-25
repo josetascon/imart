@@ -14,7 +14,6 @@
 #include <memory>       // smart pointers
 #include <vector>       // std::vector
 #include <random>       // random
-#include <typeinfo>     // operator typeid
 #include <cassert>      // assert
 #include <cmath>        // math (pow)
 
@@ -25,10 +24,12 @@
 // extra matrix eigen
 #include <eigen3/Eigen/Core>
 
+// local libs
+#include "object.h"
+
 // parallel
 // openmp
 // opencl
-
 
 // Definitions
 // typedef float pixel_type;
@@ -44,31 +45,41 @@
 
 // Class image_base
 template <typename pixel_type>
-class image_base
+class image_base: public object<pixel_type>
 {
+public:
     //Type definitions
     // template<typename pixel_t> using vector = std::vector<image_base<pixel_t>>;
+    using ptr_vector = std::shared_ptr<std::vector<pixel_type>>;
+    using ptr_pixels4 = std::unique_ptr<std::array<pixel_type,4>>;
+    using ptr_pixels8 = std::unique_ptr<std::array<pixel_type,8>>;
 
 protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    int dim;
+    // int dim;
     int width;
     int height;
     int length;
     int num_elements;
     int channels;       // for now will only support one channel
 
-    std::vector<int> size;
-    std::vector<pixel_type> spacing;
-    std::vector<pixel_type> origin;
-    std::vector<pixel_type> direction;
+    // std::vector<int> size;
+    // std::vector<pixel_type> spacing;
+    // std::vector<pixel_type> origin;
+    // std::vector<pixel_type> direction; //not supported with interpolation
 
     // Image data
-    std::shared_ptr<pixel_type[]> data; // change float to template
+    ptr_vector data;
+    // std::shared_ptr<pixel_type[]> data; // change float to template
 
     // std::shared_ptr<vector_image> grid;
+
+    // consider these methods as protected
+    virtual void init(int w, int h); //ONLY 2d***
+    virtual void init(int w, int h, int l); //ONLY 3d***
+    virtual void update(const image_base<pixel_type> & input); // copy only properties
 
 public:
 
@@ -80,16 +91,18 @@ public:
     image_base();
     //! Constructor using width and height.
     image_base(int w, int h); //ONLY 2d***
+    //! Constructor using width, height and length.
+    image_base(int w, int h, int l); //ONLY 3d***
     //! Constructor with existing data.
-    image_base(std::shared_ptr<pixel_type[]> buffer, int w, int h); //ONLY 2d***
+    image_base(ptr_vector buffer, int w, int h); //ONLY 2d***
+    //! Constructor with existing data.
+    image_base(ptr_vector buffer, int w, int h, int l); //ONLY 3d***
+
+    image_base(const image_base<pixel_type> & input);
     //! Constructor with file_name (call read()).
     image_base(std::string file_name);
     //! Destructor
     ~image_base();
-
-    // consider these methods as protected
-    void init(int w, int h); //ONLY 2d***
-    void update(image_base<pixel_type> & input);
 
     // ===========================================
     // Interface Functions
@@ -105,38 +118,27 @@ public:
     // ===========================================
     // Get Functions
     // ===========================================
-    //! Get the image dimension.
-    int get_dimension();
     //! Get the image width.
-    int get_width();
+    int get_width() const;
     //! Get the image height.
-    int get_height();
+    int get_height() const;
     //! Get the image length.
-    int get_length();
+    int get_length() const;
     //! Get the number of elements allocated.
-    int get_total_elements();
-    
-    std::vector<int> get_size();
-    std::vector<pixel_type> get_spacing();
-    std::vector<pixel_type> get_origin();
-    std::vector<pixel_type> get_direction();
-    std::shared_ptr<pixel_type[]> get_data();
+    int get_total_elements() const;
 
-    int get_ptr_count();
+    ptr_vector get_data() const;
 
-    // std::shared_ptr<vector_image> get_grid();
+    pixel_type * ptr() const;
+
+    int get_ptr_count() const;
 
     // ===========================================
     // Print Functions
     // ===========================================
-    void print(std::string msg = "");
-    void print_data(std::string msg = "");
+    std::string info(std::string msg);
+    std::string info_data(std::string msg); //ONLY 2d***
     void print_ptr_count();
-    std::string info(std::string msg = "");
-    std::string info_data(std::string msg = ""); //ONLY 2d***
-
-    template<typename pixel_t>
-    friend std::ostream & operator << (std::ostream & os, image_base<pixel_t> & input);
 
     // ===========================================
     // Initialization Functions
@@ -154,14 +156,14 @@ public:
     pixel_type operator () (int w, int h); //ONLY 2d***
 
     // Equal
-    image_base<pixel_type> & operator = (image_base<pixel_type> input);
+    image_base<pixel_type> & operator = (const image_base<pixel_type> & input);
     
     // Image to Image
-    image_base<pixel_type> operator + (image_base<pixel_type> & input);
-    image_base<pixel_type> operator - (image_base<pixel_type> & input);
-    image_base<pixel_type> operator * (image_base<pixel_type> & input);
-    image_base<pixel_type> operator / (image_base<pixel_type> & input);
-    image_base<pixel_type> operator ^ (image_base<pixel_type> & input);
+    image_base<pixel_type> operator + (const image_base<pixel_type> & input);
+    image_base<pixel_type> operator - (const image_base<pixel_type> & input);
+    image_base<pixel_type> operator * (const image_base<pixel_type> & input);
+    image_base<pixel_type> operator / (const image_base<pixel_type> & input);
+    image_base<pixel_type> operator ^ (const image_base<pixel_type> & input);
 
 
     // Scalar
@@ -175,11 +177,11 @@ public:
     template<typename pixel_t>
     friend image_base<pixel_t> operator + (pixel_t scalar, image_base<pixel_t> & input);
     template<typename pixel_t>
-    friend image_base<pixel_t> operator - (pixel_t scalar, image_base<pixel_t> & input);
+    friend image_base<pixel_t> operator - (pixel_t scalar, const image_base<pixel_t> & input);
     template<typename pixel_t>
     friend image_base<pixel_t> operator * (pixel_t scalar, image_base<pixel_t> & input);
     template<typename pixel_t>
-    friend image_base<pixel_t> operator / (pixel_t scalar, image_base<pixel_t> & input);
+    friend image_base<pixel_t> operator / (pixel_t scalar, const image_base<pixel_t> & input);
 
     // ===========================================
     // Functions
@@ -187,6 +189,12 @@ public:
     // Matrix product //ONLY 2d***
     image_base<pixel_type> _x_(image_base<pixel_type> & input);
     // virtual grid meshgrid(); // moved to grid class
+
+    // Access
+    // virtual ptr_pixels2 neighbors(int e);
+    virtual ptr_pixels4 neighbors4(int e);
+    virtual ptr_pixels8 neighbors8(int e);
+
 
     // TODO
     // create operator << to print info of image as image_info function
@@ -221,17 +229,43 @@ image_base<pixel_type>::image_base(int w, int h)
 {
     init(w, h);
     data.reset();
-    data = std::shared_ptr<pixel_type[]>(new pixel_type[width*height]);
+    data = std::make_shared<std::vector<pixel_type>>(width*height);
+    // data = std::shared_ptr<pixel_type[]>(new pixel_type[width*height]);
+    // data = std::make_shared<pixel_type[]>(width*height);
     // data = std::make_shared<float[]>(width*height); // dynamic allocation
 };
 
 // Constructor
 template <typename pixel_type>
-image_base<pixel_type>::image_base(std::shared_ptr<pixel_type[]> buffer, int w, int h)
+image_base<pixel_type>::image_base(int w, int h, int l)
+{
+    init(w, h, l);
+    data.reset();
+    data = std::make_shared<std::vector<pixel_type>>(width*height*length);
+};
+
+// Constructor
+template <typename pixel_type>
+image_base<pixel_type>::image_base(ptr_vector buffer, int w, int h)
 {
     init(w, h);
     data.reset();
     data = buffer;
+};
+
+// Constructor
+template <typename pixel_type>
+image_base<pixel_type>::image_base(ptr_vector buffer, int w, int h, int l)
+{
+    init(w, h, l);
+    data.reset();
+    data = buffer;
+};
+
+template <typename pixel_type>
+image_base<pixel_type>::image_base(const image_base<pixel_type> & input)
+{
+    update(input);
 };
 
 // Destructor
@@ -245,35 +279,53 @@ image_base<pixel_type>::~image_base()
 template <typename pixel_type>
 void image_base<pixel_type>::init(int w, int h)
 {   
-    dim = 2;
+    this->class_name = "image_base";
     channels = 1;
     width = w;
     height = h;
     num_elements = width*height;
 
-    size = std::vector<int>{width, height};
-    spacing = std::vector<pixel_type>(dim, 1.0);
-    origin = std::vector<pixel_type>(dim, 0.0);
-    direction = std::vector<pixel_type>(dim*dim);
+    object<pixel_type>::init(2);
+    // this->dim = 2;
+    // this->size = std::vector<int>{width, height};
+    // this->spacing = std::vector<pixel_type>(this->dim, 1.0);
+    // this->origin = std::vector<pixel_type>(this->dim, 0.0);
+    // this->direction = std::vector<pixel_type>(this->dim*this->dim);
 
-    // initialize direction, identity matrix
-    int den = dim + 1;
-    for(int i=0; i < dim*dim; i++){ if((i%den)==0) { direction[i] = 1.0; }; };
+    // // initialize direction, identity matrix
+    // int den = this->dim + 1;
+    // for(int i=0; i < this->dim*this->dim; i++){ if((i%den)==0) { this->direction[i] = 1.0; }; };
+
+    this->size = std::vector<int>{width, height};
+};
+
+template <typename pixel_type>
+void image_base<pixel_type>::init(int w, int h, int l)
+{   
+    this->class_name = "image_base";
+    channels = 1;
+    width = w;
+    height = h;
+    length = l;
+    num_elements = width*height*length;
+
+    object<pixel_type>::init(3);
+
+    this->size = std::vector<int>{width, height, length};
 };
 
 // Copy metadata
 template <typename pixel_type>
-void image_base<pixel_type>::update(image_base<pixel_type> & input)
+void image_base<pixel_type>::update(const image_base<pixel_type> & input)
 {
     width = input.get_width();
     height = input.get_height();
     length = input.get_length();
     num_elements = input.get_total_elements();
 
-    size = input.get_size();
-    spacing = input.get_spacing();
-    origin = input.get_origin();
-    direction = input.get_direction();
+    data.reset();
+    data = std::make_shared<std::vector<pixel_type>>(num_elements);
+    object<pixel_type>::update(input);
 };
 
 // ===========================================
@@ -305,22 +357,23 @@ void image_base<pixel_type>::read(std::string file_name)
     // std::cout << image_itk;
 
     typename itkImageType::RegionType region = image_itk->GetLargestPossibleRegion();
-    typename itkImageType::SizeType size = region.GetSize();
+    typename itkImageType::SizeType itksize = region.GetSize();
     pixel_type * p = image_itk->GetBufferPointer();
-    int w = size[0];
-    int h = size[1];
+    int w = itksize[0];
+    int h = itksize[1];
 
     // image_base(w,h); // empty current image and create new
 
     this->init(w, h);
     data.reset();
-    data = std::shared_ptr<pixel_type[]>(new pixel_type[width*height]);
+    data = std::make_shared<std::vector<pixel_type>>(width*height);
+    // data = std::shared_ptr<std::vector<pixel_type>>(new pixel_type[width*height]);
 
     // Copy of the image
-    #pragma omp parallel for
+    // #pragma omp parallel for // ** Better times without omp
     for(int k=0; k<w*h; k++)
     {
-        data[k] = *(p+k);
+        (*data)[k] = *(p+k);
     };
 
     //*** TODO COPY spacing, origin and direction
@@ -354,68 +407,45 @@ void image_base<pixel_type>::read(std::string file_name)
 // Get Functions
 // ===========================================
 template <typename pixel_type>
-int image_base<pixel_type>::get_dimension()
-{
-    return dim;
-};
-
-
-template <typename pixel_type>
-int image_base<pixel_type>::get_width()
+int image_base<pixel_type>::get_width() const
 {
     return width;
 };
 
 template <typename pixel_type>
-int image_base<pixel_type>::get_height()
+int image_base<pixel_type>::get_height() const
 {
     return height;
 };
 
 template <typename pixel_type>
-int image_base<pixel_type>::get_length()
+int image_base<pixel_type>::get_length() const
 {
     return length;
 };
 
 template <typename pixel_type>
-int image_base<pixel_type>::get_total_elements()
+int image_base<pixel_type>::get_total_elements() const
 {
     return num_elements;
 };
 
 template <typename pixel_type>
-std::vector<int> image_base<pixel_type>::get_size()
-{
-    return size;
-};
-
-template <typename pixel_type>
-std::vector<pixel_type> image_base<pixel_type>::get_spacing()
-{
-    return spacing;
-};
-
-template <typename pixel_type>
-std::vector<pixel_type> image_base<pixel_type>::get_origin()
-{
-    return origin;
-};
-
-template <typename pixel_type>
-std::vector<pixel_type> image_base<pixel_type>::get_direction()
-{
-    return direction;
-};
-
-template <typename pixel_type>
-std::shared_ptr<pixel_type[]> image_base<pixel_type>::get_data()
+typename image_base<pixel_type>::ptr_vector image_base<pixel_type>::get_data() const
 {
     return data;
 };
 
 template <typename pixel_type>
-int image_base<pixel_type>::get_ptr_count()
+pixel_type * image_base<pixel_type>::ptr() const
+{
+    return data.get()->data();
+    // return (*data).data();
+};
+
+
+template <typename pixel_type>
+int image_base<pixel_type>::get_ptr_count() const
 {
     return data.use_count();
 };
@@ -430,18 +460,6 @@ int image_base<pixel_type>::get_ptr_count()
 // Print Functions
 // ===========================================
 template <typename pixel_type>
-void image_base<pixel_type>::print(std::string msg)
-{
-    std::cout << this->info(msg);
-};
-
-template <typename pixel_type>
-void image_base<pixel_type>::print_data(std::string msg)
-{
-    std::cout << this->info_data(msg) << std::endl;
-};
-
-template <typename pixel_type>
 void image_base<pixel_type>::print_ptr_count()
 {
     std::cout << "internal image ptr count: ";
@@ -454,24 +472,23 @@ std::string image_base<pixel_type>::info(std::string msg)
     std::stringstream ss;
     std::string title = "Image Information";
     if (msg != "") { title = msg; };
-
     // Summary of the image information
-    ss << "\n===== " << title << " =====\n";
-    
-    ss << "Pixel type: \t\t" << typeid(data[0]).name() << std::endl;
+    ss << object<pixel_type>::info(title);
+    // ss << "\n===== " << title << " =====\n";
+    // ss << "Pixel type: \t\t" << typeid((*data)[0]).name() << std::endl;
+    // ss << "Dimensions: \t\t" << dim << std::endl;
     ss << "Pixel channels: \t" << channels << std::endl; 
-    ss << "Dimensions: \t\t" << dim << std::endl;
     
     ss << "Size: \t\t\t[ ";
-    for(int i = 0; i < size.size(); i++) { ss << size[i] << " "; };
+    for(int i = 0; i < this->size.size(); i++) { ss << this->size[i] << " "; };
     ss << "]" << std::endl;
     
     ss << "Length (mm): \t\t[ ";
-    for(int i = 0; i < spacing.size(); i++) { ss << spacing[i] << " "; };
+    for(int i = 0; i < this->spacing.size(); i++) { ss << this->spacing[i] << " "; };
     ss << "]" << std::endl;
 
     ss << "Origin (mm): \t\t[ ";
-    for(int i = 0; i < origin.size(); i++) { ss << origin[i] << " "; };
+    for(int i = 0; i < this->origin.size(); i++) { ss << this->origin[i] << " "; };
     ss << "]" << std::endl;
 
     ss << "Total elements: \t" << num_elements << std::endl; //Get the total number of pixels
@@ -487,24 +504,17 @@ std::string image_base<pixel_type>::info_data(std::string msg)
     if (msg != "") { ss << msg << std::endl; };
     // std::cout << "Image data:" << std::endl;
     // std::cout << "["
-    for(int i=0; i<height; i++)
+    for(int i = 0; i < height; i++)
     {
-        for(int j=0; j<width; j++)
+        for(int j=0; j < width; j++)
         {
-            ss << data[j+i*width] << " ";
+            ss << (*data)[j+i*width] << " "; // valgrind error solved
         };
         ss << std::endl;
     };
     // std::cout << "]";
-    // ss << std::endl;
+    ss << std::endl;
     return ss.str();
-};
-
-template <typename pixel_type>
-std::ostream & operator << (std::ostream & os, image_base<pixel_type> & input)
-{
-    os << input.info("");
-    return os;
 };
 
 // ===========================================
@@ -516,7 +526,7 @@ void image_base<pixel_type>::zeros()
     #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
     {
-        data[k] = (pixel_type)0.0; // casting to pixel_type
+        (*data)[k] = (pixel_type)0.0; // casting to pixel_type
     };
 };
 
@@ -526,7 +536,7 @@ void image_base<pixel_type>::ones()
     #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
     {
-        data[k] = (pixel_type)1.0; // casting to pixel_type
+        (*data)[k] = (pixel_type)1.0; // casting to pixel_type
     };
 };
 
@@ -541,7 +551,7 @@ void image_base<pixel_type>::random(pixel_type min, pixel_type max)
     #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
     {
-        data[k] = (pixel_type)uniform(gen); // casting to pixel_type
+        (*data)[k] = (pixel_type)uniform(gen); // casting to pixel_type
     };
         
 };
@@ -554,75 +564,76 @@ template <typename pixel_type>
 pixel_type image_base<pixel_type>::operator () (int e)
 {
     // assert(e < num_elements);
-    return this->get_data()[e];
+    return (*data)[e];
 };
 
 template <typename pixel_type>
 pixel_type image_base<pixel_type>::operator () (int w, int h)
 {
     // assert(w < width && h < height);
-    return this->get_data()[w+h*width];
+    return (*data)[w+h*width];
 };
 
 // Equal
 template <typename pixel_type>
-image_base<pixel_type> & image_base<pixel_type>::operator = (image_base<pixel_type> input)
+image_base<pixel_type> & image_base<pixel_type>::operator = (const image_base<pixel_type> & input)
 {
     // delete &data;
-    this->data.reset();
-    this->data = input.get_data();
-    this->update(input);
+    update(input);
+    data.reset();
+    data = input.get_data();
     return *this;
 };
 
 // Image to Image
 template <typename pixel_type>
-image_base<pixel_type> image_base<pixel_type>::operator + (image_base<pixel_type> & input)
+image_base<pixel_type> image_base<pixel_type>::operator + (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
     assert(this->get_width()==input.get_width());
     assert(this->get_height()==input.get_height());
 
-    int w = input.get_width();
-    int h = input.get_height();
-    int elements = w*h;
+    // int w = input.get_width();
+    // int h = input.get_height();
+    // int elements = w*h;
+    int elements = input.get_total_elements();
     // std::cout << "Image size: [" << w << ", "<< h << "]\n";
-    image_base<pixel_type> result(w, h);
+    image_base<pixel_type> result(input);
 
     // Create pointers
     // std::cout << "create correct\n";
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = input.get_data();
-    std::shared_ptr<pixel_type[]> p3 = result.get_data();
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = input.ptr();
+    pixel_type * p3 = result.ptr();
 
     // std::cout << "pointers correct\n";
 
     #pragma omp parallel for
     for(int k=0; k<elements; k++)
     {
-        // p1[k] = p1[k] + p2[k];
         p3[k] = p1[k] + p2[k];
     };
     return result;
 };
 
 template <typename pixel_type>
-image_base<pixel_type> image_base<pixel_type>::operator - (image_base<pixel_type> & input)
+image_base<pixel_type> image_base<pixel_type>::operator - (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
     assert(this->get_width()==input.get_width());
     assert(this->get_height()==input.get_height());
 
-    int w = input.get_width();
-    int h = input.get_height();
-    int elements = w*h;
+    // int w = input.get_width();
+    // int h = input.get_height();
+    // int elements = w*h;
+    int elements = input.get_total_elements();
     // std::cout << "Image size: [" << w << ", "<< h << "]\n";
-    image_base<pixel_type> result(w, h);
+    image_base<pixel_type> result(input);
 
     // Create pointers
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = input.get_data();
-    std::shared_ptr<pixel_type[]> p3 = result.get_data();
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = input.ptr();
+    pixel_type * p3 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<elements; k++)
@@ -633,22 +644,23 @@ image_base<pixel_type> image_base<pixel_type>::operator - (image_base<pixel_type
 };
 
 template <typename pixel_type>
-image_base<pixel_type> image_base<pixel_type>::operator * (image_base<pixel_type> & input)
+image_base<pixel_type> image_base<pixel_type>::operator * (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
     assert(this->get_width()==input.get_width());
     assert(this->get_height()==input.get_height());
 
-    int w = input.get_width();
-    int h = input.get_height();
-    int elements = w*h;
+    // int w = input.get_width();
+    // int h = input.get_height();
+    // int elements = w*h;
+    int elements = input.get_total_elements();
     // std::cout << "Image size: [" << w << ", "<< h << "]\n";
-    image_base<pixel_type> result(w, h);
+    image_base<pixel_type> result(input);
 
     // Create pointers
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = input.get_data();
-    std::shared_ptr<pixel_type[]> p3 = result.get_data();
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = input.ptr();
+    pixel_type * p3 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<elements; k++)
@@ -659,22 +671,23 @@ image_base<pixel_type> image_base<pixel_type>::operator * (image_base<pixel_type
 };
 
 template <typename pixel_type>
-image_base<pixel_type> image_base<pixel_type>::operator / (image_base<pixel_type> & input)
+image_base<pixel_type> image_base<pixel_type>::operator / (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
     assert(this->get_width()==input.get_width());
     assert(this->get_height()==input.get_height());
 
-    int w = input.get_width();
-    int h = input.get_height();
-    int elements = w*h;
+    // int w = input.get_width();
+    // int h = input.get_height();
+    // int elements = w*h;
+    int elements = input.get_total_elements();
     // std::cout << "Image size: [" << w << ", "<< h << "]\n";
-    image_base<pixel_type> result(w, h);
+    image_base<pixel_type> result(input);
 
     // Create pointers
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = input.get_data();
-    std::shared_ptr<pixel_type[]> p3 = result.get_data();
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = input.ptr();
+    pixel_type * p3 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<elements; k++)
@@ -685,22 +698,23 @@ image_base<pixel_type> image_base<pixel_type>::operator / (image_base<pixel_type
 };
 
 template <typename pixel_type>
-image_base<pixel_type> image_base<pixel_type>::operator ^ (image_base<pixel_type> & input)
+image_base<pixel_type> image_base<pixel_type>::operator ^ (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
     assert(this->get_width()==input.get_width());
     assert(this->get_height()==input.get_height());
 
-    int w = input.get_width();
-    int h = input.get_height();
-    int elements = w*h;
+    // int w = input.get_width();
+    // int h = input.get_height();
+    // int elements = w*h;
+    int elements = input.get_total_elements();
     // std::cout << "Image size: [" << w << ", "<< h << "]\n";
-    image_base<pixel_type> result(w, h);
+    image_base<pixel_type> result(input);
 
     // Create pointers
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = input.get_data();
-    std::shared_ptr<pixel_type[]> p3 = result.get_data();
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = input.ptr();
+    pixel_type * p3 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<elements; k++)
@@ -714,9 +728,9 @@ image_base<pixel_type> image_base<pixel_type>::operator ^ (image_base<pixel_type
 template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator + (pixel_type scalar)
 {
-    image_base<pixel_type> result(width, height);
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+    image_base<pixel_type> result(*this); // init a image with same poperties
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
@@ -729,9 +743,9 @@ image_base<pixel_type> image_base<pixel_type>::operator + (pixel_type scalar)
 template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator - (pixel_type scalar)
 {
-    image_base<pixel_type> result(width, height);
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+    image_base<pixel_type> result(*this);
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
@@ -744,9 +758,9 @@ image_base<pixel_type> image_base<pixel_type>::operator - (pixel_type scalar)
 template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator * (pixel_type scalar)
 {
-    image_base<pixel_type> result(width, height);
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+    image_base<pixel_type> result(*this);
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
@@ -759,9 +773,9 @@ image_base<pixel_type> image_base<pixel_type>::operator * (pixel_type scalar)
 template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator / (pixel_type scalar)
 {
-    image_base<pixel_type> result(width, height);
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+    image_base<pixel_type> result(*this);
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
@@ -774,9 +788,9 @@ image_base<pixel_type> image_base<pixel_type>::operator / (pixel_type scalar)
 template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator ^ (pixel_type scalar)
 {
-    image_base<pixel_type> result(width, height);
-    std::shared_ptr<pixel_type[]> p1 = this->get_data();
-    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+    image_base<pixel_type> result(*this);
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
@@ -794,11 +808,12 @@ image_base<pixel_type> operator + (pixel_type scalar, image_base<pixel_type> & i
 };
 
 template <typename pixel_type>
-image_base<pixel_type> operator - (pixel_type scalar, image_base<pixel_type> & input)
+image_base<pixel_type> operator - (pixel_type scalar, const image_base<pixel_type> & input)
 {
-    static image_base<pixel_type> result(input.get_width(), input.get_height());
-    std::shared_ptr<pixel_type[]> p1 = input.get_data();
-    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+    image_base<pixel_type> result(input);
+    pixel_type * p1 = input.ptr();
+    pixel_type * p2 = result.ptr();
+    // std::cout << "elements: " << input.get_total_elements() << "\n";
 
     #pragma omp parallel for
     for(int k=0; k<input.get_total_elements(); k++)
@@ -815,16 +830,16 @@ image_base<pixel_type> operator * (pixel_type scalar, image_base<pixel_type> & i
 };
 
 template <typename pixel_type>
-image_base<pixel_type> operator / (pixel_type scalar, image_base<pixel_type> & input)
+image_base<pixel_type> operator / (pixel_type scalar, const image_base<pixel_type> & input)
 {
-    static image_base<pixel_type> result(input.get_width(), input.get_height());
-    std::shared_ptr<pixel_type[]> p1 = input.get_data();
-    std::shared_ptr<pixel_type[]> p2 = result.get_data();
+    image_base<pixel_type> result(input);
+    pixel_type * p1 = input.ptr();
+    pixel_type * p2 = result.ptr();
 
     #pragma omp parallel for
     for(int k=0; k<input.get_total_elements(); k++)
     {
-        p2[k] = scalar/p1[k];
+        p2[k] = scalar / p1[k];
     };
     return result;
 };
@@ -843,9 +858,9 @@ image_base<pixel_type> image_base<pixel_type>::_x_(image_base<pixel_type> & inpu
     // result.print();
     // std::cout << "ptr: " << result.get_data() << std::endl;
 
-    Map A(get_data().get(), height, width);
-    Map B(input.get_data().get(), input.get_height(), input.get_width());
-    Map C(result.get_data().get(), result.get_height(), result.get_width());
+    Map A(ptr(), height, width);
+    Map B(input.ptr(), input.get_height(), input.get_width());
+    Map C(result.ptr(), result.get_height(), result.get_width());
 
     // std::cout << A << std::endl;
     // std::cout << std::endl;
@@ -859,12 +874,24 @@ image_base<pixel_type> image_base<pixel_type>::_x_(image_base<pixel_type> & inpu
     return result;
 };
 
-// moved to grid class
-// template <typename pixel_type>
-// void image_base<pixel_type>::meshgrid()
-// {
-//     ;
-// };
+template <typename pixel_type>
+typename image_base<pixel_type>::ptr_pixels4 image_base<pixel_type>::neighbors4(int e)
+{
+    ptr_pixels4 arr = std::make_unique<std::array<pixel_type,4>>();
+    std::cout << "image_base";
+    return arr;
+}
+
+template <typename pixel_type>
+typename image_base<pixel_type>::ptr_pixels8 image_base<pixel_type>::neighbors8(int e)
+{
+    ptr_pixels8 arr = std::make_unique<std::array<pixel_type,8>>();
+    return arr;
+}
+
+
+
+
 
 // Template constructions
 // template class image_base<unsigned char>;  // 1 byte

@@ -15,13 +15,13 @@
 #include <vector>       // std::vector
 #include <cassert>      // assert
 
-// images 
-#include "image_base.h"
-#include "grid.h"
-
-
 // extra matrix eigen
 #include <eigen3/Eigen/Core>
+
+// local libs 
+#include "object.h"
+#include "image_base.h"
+#include "grid.h"
 
 // parallel
 // openmp
@@ -41,12 +41,15 @@
 
 // Class image_base_2d
 template <typename pixel_type>
-class transform_base
+class transform_base: public object<pixel_type>
 {
 protected:
-    int dim;
-    std::string type;
+    // int dim;
+    // std::string type;
     image_base<pixel_type> parameters;
+    image_base<pixel_type> inverse_parameters;
+
+    virtual void init(int d);
 
 public:
     // ===========================================
@@ -66,16 +69,17 @@ public:
     // ===========================================
     // Print Functions
     // ===========================================
-    void print(std::string msg = "");
+    // void print(std::string msg = "");
     std::string info(std::string msg = "");
 
-    template <typename pixel_type_>
-    friend std::ostream & operator << (std::ostream & os, transform_base<pixel_type_> & input);
+    // template <typename pixel_type_>
+    // friend std::ostream & operator << (std::ostream & os, transform_base<pixel_type_> & input);
     
     // ===========================================
     // Initialization Functions
     // ===========================================
     virtual void identity(); // parameters that do nothing when transform is applied
+    virtual void inverse(); // parameters that do nothing when transform is applied
 
     // ===========================================
     // Functions
@@ -96,27 +100,35 @@ public:
 template <typename pixel_type>
 transform_base<pixel_type>::transform_base()
 {
-    dim = 1;
-    type = "transform base";
-    parameters = image_base<pixel_type>();
+    init(2);
+    this->class_name = "transform base";
+    this->parameters = image_base<pixel_type>();
 };
 
 template <typename pixel_type>
 transform_base<pixel_type>::transform_base(image_base<pixel_type> & params)
 {
-    dim = 1;
-    type = "transform base";
+    init(2);
+    this->class_name = "transform base";
     parameters = params;
+    this->inverse();
+};
+
+template <typename pixel_type>
+void transform_base<pixel_type>::init(int d)
+{
+    parameters = image_base<pixel_type>();
+    object<pixel_type>::init(d);
 };
 
 // ===========================================
 // Print Functions
 // ===========================================
-template <typename pixel_type>
-void transform_base<pixel_type>::print(std::string msg)
-{
-    std::cout << transform_base::info(msg);
-};
+// template <typename pixel_type>
+// void transform_base<pixel_type>::print(std::string msg)
+// {
+//     std::cout << transform_base::info(msg);
+// };
 
 template <typename pixel_type>
 std::string transform_base<pixel_type>::info(std::string msg)
@@ -125,28 +137,23 @@ std::string transform_base<pixel_type>::info(std::string msg)
     std::string title = "Transform Information";
     if (msg != "") { title = msg; };
 
-    // Summary of the image information
-    ss << "\n===== " << title << " =====\n";
-    
-    ss << "Pixel type: \t\t" << typeid(parameters(0)).name() << std::endl;
-    ss << "Transform type: \t" << type << std::endl; 
-    ss << "Dimensions: \t\t" << dim << std::endl;
+    ss << object<pixel_type>::info(title);
     
     ss << "Parameters: \t\t";
-    ss << parameters.info_data();
+    ss << parameters.info_data("");
     // ss << "]" << std::endl;
-    ss << std::endl;
+    // ss << std::endl;
 
     return ss.str();
 };
 
 
-template <typename pixel_type>
-std::ostream & operator << (std::ostream & os, transform_base<pixel_type> & input)
-{
-    os << input.info("");
-    return os;
-};
+// template <typename pixel_type>
+// std::ostream & operator << (std::ostream & os, transform_base<pixel_type> & input)
+// {
+//     os << input.info("");
+//     return os;
+// };
 
 
 // ===========================================
@@ -154,6 +161,12 @@ std::ostream & operator << (std::ostream & os, transform_base<pixel_type> & inpu
 // ===========================================
 template <typename pixel_type>
 void transform_base<pixel_type>::identity()
+{
+    ;
+};
+
+template <typename pixel_type>
+void transform_base<pixel_type>::inverse()
 {
     ;
 };

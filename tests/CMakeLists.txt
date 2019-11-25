@@ -24,3 +24,6 @@ target_link_libraries(image2d_meshgrid src ${link_targets})
 
 add_executable(transform2d_basic transform2d_basic.cpp)
 target_link_libraries(transform2d_basic src ${link_targets})
+
+add_executable(image2d_interpolate image2d_interpolate.cpp)
+target_link_libraries(image2d_interpolate src ${link_targets})
