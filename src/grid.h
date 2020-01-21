@@ -18,7 +18,7 @@
 // images 
 #include "image_base.h"
 #include "image_2d.h"
-// #include "image_3d.h"
+#include "image_3d.h"
 
 template <typename pixel_type>
 class grid: public object<pixel_type>
@@ -46,7 +46,9 @@ protected:
     void init(int dim);
     void update(const grid<pixel_type> & input);
     void update(const image_2d<pixel_type> & input);
+    void update(const image_3d<pixel_type> & input);
     void meshgrid_2d();
+    void meshgrid_3d();
 
 public:
     // ===========================================
@@ -56,6 +58,7 @@ public:
     grid(int dim);
     grid(const grid<pixel_type> & input);
     grid(const image_2d<pixel_type> & input);
+    grid(const image_3d<pixel_type> & input);
 
     ~grid();
     
@@ -88,8 +91,7 @@ public:
     // Functions
     // ===========================================
     void meshgrid(image_2d<pixel_type> & input);
-    // void meshgrid(image_3d<pixel_type> & input);
-
+    void meshgrid(image_3d<pixel_type> & input);
 };
 
 
@@ -121,11 +123,19 @@ grid<pixel_type>::grid(const grid<pixel_type> & input)
 {
     update(input);
 }
+
 template <typename pixel_type>
 grid<pixel_type>::grid(const image_2d<pixel_type> & input)
 {
     update(input);
     meshgrid_2d();
+};
+
+template <typename pixel_type>
+grid<pixel_type>::grid(const image_3d<pixel_type> & input)
+{
+    update(input);
+    meshgrid_3d();
 };
 
 template <typename pixel_type>
@@ -173,6 +183,16 @@ void grid<pixel_type>::update(const image_2d<pixel_type> & input)
     // this->spacing = input.get_spacing();
     // this->origin = input.get_origin();
     // this->direction = input.get_direction();
+}
+
+template <typename pixel_type>
+void grid<pixel_type>::update(const image_3d<pixel_type> & input)
+{
+    int d = input.get_dimension();
+
+    xyz.reset();
+    xyz = std::make_shared<vector_image>(d);
+    object<pixel_type>::update(input);
 }
 
 // ===========================================
@@ -292,10 +312,57 @@ void grid<pixel_type>::meshgrid_2d()
 };
 
 template <typename pixel_type>
+void grid<pixel_type>::meshgrid_3d()
+{
+    // TODO: DIRECTION IS DISABLED ****
+    int w = this->get_size()[0];
+    int h = this->get_size()[1];
+    int l = this->get_size()[2];
+    int elements = w*h*l;
+
+    std::vector<pixel_type> s = this->get_spacing();
+    std::vector<pixel_type> o = this->get_origin();
+    std::vector<pixel_type> d = this->get_direction();
+
+    image_3d<pixel_type> x(w,h,l);
+    image_3d<pixel_type> y(w,h,l);
+    image_3d<pixel_type> z(w,h,l);
+    
+    pixel_type * px = x.ptr();
+    pixel_type * py = y.ptr();
+    pixel_type * pz = z.ptr();
+
+    #pragma omp parallel for
+    for(int k = 0; k < l; k++)
+    {
+        for(int j = 0; j < h; j++)
+        {
+            for(int i = 0; i < w; i++)
+            {
+                px[i + j*w + k*w*h] = s[0]*i + o[0];
+                py[i + j*w + k*w*h] = s[1]*j + o[1];
+                pz[i + j*w + k*w*h] = s[2]*k + o[2];
+            };
+        };
+    };
+
+    (*xyz)[0] = x;
+    (*xyz)[1] = y;
+    (*xyz)[2] = z;
+};
+
+template <typename pixel_type>
 void grid<pixel_type>::meshgrid(image_2d<pixel_type> & input)
 {   
     update(input);
     meshgrid_2d();
+};
+
+template <typename pixel_type>
+void grid<pixel_type>::meshgrid(image_3d<pixel_type> & input)
+{   
+    update(input);
+    meshgrid_3d();
 };
 
 

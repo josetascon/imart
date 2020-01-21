@@ -87,6 +87,7 @@ public:
     virtual std::vector<pixel_type> transform(std::vector<pixel_type> & point);
     virtual grid<pixel_type> transform(grid<pixel_type> & input);
 
+    grid<pixel_type> operator * (grid<pixel_type> & input);
 };
 
 
@@ -184,6 +185,12 @@ template <typename pixel_type>
 grid<pixel_type> transform_base<pixel_type>::transform(grid<pixel_type> & input)
 {
     return input;
+};
+
+template <typename pixel_type>
+grid<pixel_type> transform_base<pixel_type>::operator *(grid<pixel_type> & input)
+{
+    return transform(input);
 };
 
 #endif

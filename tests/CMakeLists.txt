@@ -27,3 +27,7 @@ target_link_libraries(transform2d_basic src ${link_targets})
 
 add_executable(image2d_interpolate image2d_interpolate.cpp)
 target_link_libraries(image2d_interpolate src ${link_targets})
+
+
+add_executable(image3d_basic image3d_basic.cpp)
+target_link_libraries(image3d_basic src ${link_targets})

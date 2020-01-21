@@ -11,7 +11,6 @@
 // std libs
 #include <iostream>     // std::cout
 #include <sstream>      // stringstream
-#include <memory>       // smart pointers
 #include <vector>       // std::vector
 #include <typeinfo>     // operator typeids
 
@@ -42,10 +41,11 @@ public:
     // ===========================================
     // Create Functions
     // ===========================================
-    object();
-    object(int d);
-    object(const object & input);
-    ~object();
+    object();                           // constructor empty
+    object(int d);                      // constructor with dimension
+    object(const object & input);       // constructor with same type
+    
+    ~object();                          // destructor empty
 
     // ===========================================
     // Get Functions
@@ -57,6 +57,13 @@ public:
     std::vector<pixel_type> get_spacing() const;
     std::vector<pixel_type> get_origin() const;
     std::vector<pixel_type> get_direction() const;
+
+    // ===========================================
+    // Set Functions
+    // ===========================================
+    void set_spacing(std::vector<pixel_type> s) const;
+    void set_origin(std::vector<pixel_type> o) const;
+    void set_direction(std::vector<pixel_type> d) const;
     
     // ===========================================
     // Print Functions
@@ -182,6 +189,30 @@ std::vector<pixel_type> object<pixel_type>::get_direction() const
 };
 
 // ===========================================
+// Set Functions
+// ===========================================
+template <typename pixel_type>
+void object<pixel_type>::set_spacing(std::vector<pixel_type> s) const
+{
+    assert(dim == s.size());
+    spacing = s;
+};
+
+template <typename pixel_type>
+void object<pixel_type>::set_origin(std::vector<pixel_type> o) const
+{
+    assert(dim == o.size());
+    origin = o;
+};
+
+template <typename pixel_type>
+void object<pixel_type>::set_direction(std::vector<pixel_type> d) const
+{
+    assert(dim == d.size());
+    direction = d;
+};
+
+// ===========================================
 // Print Functions
 // ===========================================
 template <typename pixel_type>
@@ -229,8 +260,6 @@ std::string object<pixel_type>::info_data(std::string msg)
     ss << " is not implemented" << std::endl;
     return ss.str();
 };
-
-
 
 
 #endif
