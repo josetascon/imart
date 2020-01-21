@@ -10,12 +10,8 @@
 
 // std libs
 #include <iostream>     // std::cout
-#include <sstream>      // stringstream
 #include <memory>       // smart pointers
 #include <vector>       // std::vector
-#include <random>       // random
-#include <typeinfo>     // operator typeid
-#include <cassert>      // assert
 
 // local lib
 #include "image_base.h"
@@ -38,6 +34,8 @@ public:
 public:
     
     image_2d() : image_base<pixel_type> () { ; };
+    image_2d(const image_base<pixel_type> & input) : image_base<pixel_type> (input.get_width(), input.get_height()) { std::cout << "derived - base\n";
+        this->data = input.get_data(); };
     image_2d(int w, int h) : image_base<pixel_type> (w,h) { ; };
     image_2d(std::shared_ptr<std::vector<pixel_type>> buffer, int w, int h) : image_base<pixel_type> (buffer,w,h) { ; };
     image_2d(const image_2d<pixel_type> & input) : image_base<pixel_type> (input) { ; };
@@ -49,7 +47,7 @@ public:
 
     // image_2d<pixel_type> & operator = (image_2d<pixel_type> input);
     // image_2d<pixel_type> operator + (image_2d<pixel_type> & input);
-    using image_base<pixel_type>::operator =;
+    // using image_base<pixel_type>::operator =;
 
     // using image_base<pixel_type>::operator +;
     // using image_base<pixel_type>::operator -;

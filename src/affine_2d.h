@@ -124,7 +124,8 @@ std::vector<pixel_type> affine_2d<pixel_type>::transform(std::vector<pixel_type>
     // TODO: consider if the point uses 
     // the inverse or the direct transform. I think direct.
     std::vector<pixel_type> out(this->dim);
-    pixel_type * a = this->inverse_parameters.ptr();
+    // pixel_type * a = this->inverse_parameters.ptr();
+    pixel_type * a = this->parameters.ptr();
     out[0] = a[0]*point[0] + a[1]*point[1] + a[4];
     out[1] = a[2]*point[0] + a[3]*point[1] + a[5];
     return out;
@@ -136,7 +137,8 @@ grid<pixel_type> affine_2d<pixel_type>::transform(grid<pixel_type> & input)
 {
     // TODO: assert*****
     grid<pixel_type> output(input);
-    pixel_type * a = this->inverse_parameters.ptr();
+    // pixel_type * a = this->inverse_parameters.ptr();
+    pixel_type * a = this->parameters.ptr();
 
     image_base<pixel_type> * xin = input.ptr();
     image_base<pixel_type> * xout = output.ptr();

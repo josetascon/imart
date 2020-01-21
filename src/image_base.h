@@ -50,6 +50,7 @@ class image_base: public object<pixel_type>
 public:
     //Type definitions
     // template<typename pixel_t> using vector = std::vector<image_base<pixel_t>>;
+    using iterator = typename std::vector<pixel_type>::iterator;
     using ptr_vector = std::shared_ptr<std::vector<pixel_type>>;
     using ptr_pixels4 = std::unique_ptr<std::array<pixel_type,4>>;
     using ptr_pixels8 = std::unique_ptr<std::array<pixel_type,8>>;
@@ -126,18 +127,22 @@ public:
     int get_length() const;
     //! Get the number of elements allocated.
     int get_total_elements() const;
-
+    //! Get shared pointer count
+    int get_ptr_count() const;
+    //! Get shared pointer with image data
     ptr_vector get_data() const;
-
+    //! Get raw pointer to image data
     pixel_type * ptr() const;
 
-    int get_ptr_count() const;
+    iterator begin() const;
+
+    iterator end() const;
 
     // ===========================================
     // Print Functions
     // ===========================================
-    std::string info(std::string msg);
-    std::string info_data(std::string msg); //ONLY 2d***
+    virtual std::string info(std::string msg);
+    virtual std::string info_data(std::string msg); //ONLY 2d***
     void print_ptr_count();
 
     // ===========================================
@@ -152,8 +157,9 @@ public:
     // Overloading Operators
     // ===========================================
     // Access
-    pixel_type operator () (int e);
-    pixel_type operator () (int w, int h); //ONLY 2d***
+    pixel_type & operator () (int e);
+    pixel_type & operator () (int w, int h); //ONLY 2d***
+    pixel_type & operator () (int w, int h, int l); //ONLY 3d***
 
     // Equal
     image_base<pixel_type> & operator = (const image_base<pixel_type> & input);
@@ -266,6 +272,7 @@ template <typename pixel_type>
 image_base<pixel_type>::image_base(const image_base<pixel_type> & input)
 {
     update(input);
+    // std::cout << "update\n"; 
 };
 
 // Destructor
@@ -431,6 +438,12 @@ int image_base<pixel_type>::get_total_elements() const
 };
 
 template <typename pixel_type>
+int image_base<pixel_type>::get_ptr_count() const
+{
+    return data.use_count();
+};
+
+template <typename pixel_type>
 typename image_base<pixel_type>::ptr_vector image_base<pixel_type>::get_data() const
 {
     return data;
@@ -443,11 +456,16 @@ pixel_type * image_base<pixel_type>::ptr() const
     // return (*data).data();
 };
 
+template <typename pixel_type>
+typename image_base<pixel_type>::iterator image_base<pixel_type>::begin() const
+{
+    return data.get()->begin();
+};
 
 template <typename pixel_type>
-int image_base<pixel_type>::get_ptr_count() const
+typename image_base<pixel_type>::iterator image_base<pixel_type>::end() const
 {
-    return data.use_count();
+    return data.get()->end();
 };
 
 // template <typename pixel_type>
@@ -502,18 +520,49 @@ std::string image_base<pixel_type>::info_data(std::string msg)
 {
     std::stringstream ss;
     if (msg != "") { ss << msg << std::endl; };
-    // std::cout << "Image data:" << std::endl;
-    // std::cout << "["
-    for(int i = 0; i < height; i++)
+
+    if (this->dim == 2)
     {
-        for(int j=0; j < width; j++)
+        // std::cout << "Image data:" << std::endl;
+        // std::cout << "["
+        for(int i = 0; i < height; i++)
         {
-            ss << (*data)[j+i*width] << " "; // valgrind error solved
+            for(int j=0; j < width; j++)
+            {
+                ss << (*data)[j+i*width] << " "; // valgrind error solved
+            };
+            ss << std::endl;
         };
+        // std::cout << "]";
         ss << std::endl;
     };
-    // std::cout << "]";
-    ss << std::endl;
+
+    if (this->dim == 3)
+    {
+        int w = this->width;
+        int h = this->height;
+        int l = this->length;
+        pixel_type * p = this->ptr();
+
+        // std::cout << "Image data:" << std::endl;
+        // ss << "[";
+        for(int k = 0; k < l; k++)
+        {
+            ss << "[ ";
+            for(int i = 0; i < h; i++)
+            {
+                for(int j=0; j < w; j++)
+                {
+                    ss << p[j + i*w + k*w*h] << " "; // valgrind error solved
+                };
+                if(i < h-1){ss << std::endl << "  ";};
+            };
+            ss << "]" << std::endl;
+        };
+        // ss << "]";
+        ss << std::endl;
+    };
+
     return ss.str();
 };
 
@@ -523,20 +572,25 @@ std::string image_base<pixel_type>::info_data(std::string msg)
 template <typename pixel_type>
 void image_base<pixel_type>::zeros()
 {
-    #pragma omp parallel for
+    pixel_type * p = this->ptr();
+    std::cout << num_elements << std::endl;
+    
+    // #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
     {
-        (*data)[k] = (pixel_type)0.0; // casting to pixel_type
+        p[k] = (pixel_type)0; // casting to pixel_type
     };
 };
 
 template <typename pixel_type>
 void image_base<pixel_type>::ones()
 {
-    #pragma omp parallel for
+    pixel_type * p = this->ptr();
+
+    // #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
     {
-        (*data)[k] = (pixel_type)1.0; // casting to pixel_type
+        p[k] = (pixel_type)1.0; // casting to pixel_type
     };
 };
 
@@ -547,11 +601,12 @@ void image_base<pixel_type>::random(pixel_type min, pixel_type max)
     // std::default_random_engine gen(rd()); //Standard random generator()
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<> uniform(min, max);
+    pixel_type * p = this->ptr();
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
     {
-        (*data)[k] = (pixel_type)uniform(gen); // casting to pixel_type
+        p[k] = (pixel_type)uniform(gen); // casting to pixel_type
     };
         
 };
@@ -561,17 +616,24 @@ void image_base<pixel_type>::random(pixel_type min, pixel_type max)
 // ===========================================
 // Access
 template <typename pixel_type>
-pixel_type image_base<pixel_type>::operator () (int e)
+pixel_type & image_base<pixel_type>::operator () (int e)
 {
     // assert(e < num_elements);
     return (*data)[e];
 };
 
 template <typename pixel_type>
-pixel_type image_base<pixel_type>::operator () (int w, int h)
+pixel_type & image_base<pixel_type>::operator () (int w, int h)
 {
-    // assert(w < width && h < height);
+    // assert(w < width and h < height);
     return (*data)[w+h*width];
+};
+
+template <typename pixel_type>
+pixel_type & image_base<pixel_type>::operator () (int w, int h, int l)
+{
+    // assert(w < width and h < height and l < length);
+    return (*data)[w+h*width+l*height*width];
 };
 
 // Equal
@@ -878,7 +940,7 @@ template <typename pixel_type>
 typename image_base<pixel_type>::ptr_pixels4 image_base<pixel_type>::neighbors4(int e)
 {
     ptr_pixels4 arr = std::make_unique<std::array<pixel_type,4>>();
-    std::cout << "image_base";
+    // std::cout << "image_base";
     return arr;
 }
 
@@ -888,9 +950,6 @@ typename image_base<pixel_type>::ptr_pixels8 image_base<pixel_type>::neighbors8(
     ptr_pixels8 arr = std::make_unique<std::array<pixel_type,8>>();
     return arr;
 }
-
-
-
 
 
 // Template constructions
