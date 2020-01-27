@@ -78,9 +78,10 @@ protected:
     // std::shared_ptr<vector_image> grid;
 
     // consider these methods as protected
-    virtual void init(int w, int h); //ONLY 2d***
-    virtual void init(int w, int h, int l); //ONLY 3d***
-    virtual void update(const image_base<pixel_type> & input); // copy only properties
+    virtual void init(int w, int h);            //ONLY 2d***
+    virtual void init(int w, int h, int l);     //ONLY 3d***
+    virtual void copy_properties(const image_base<pixel_type> & input); // copy only properties
+    virtual void allocate(int elements);
 
 public:
 
@@ -88,29 +89,36 @@ public:
     // Create Functions
     // ===========================================
     // Constructors
-    //! Constructor empty.
+    //! Constructor empty. Default a 2d image
     image_base();
+    //! Constructor empty with dimension
+    image_base(int d);
     //! Constructor using width and height.
-    image_base(int w, int h); //ONLY 2d***
+    image_base(int w, int h);                           //ONLY 2d***
     //! Constructor using width, height and length.
-    image_base(int w, int h, int l); //ONLY 3d***
+    image_base(int w, int h, int l);                    //ONLY 3d***
     //! Constructor with existing data.
-    image_base(ptr_vector buffer, int w, int h); //ONLY 2d***
+    image_base(ptr_vector buffer, int w, int h);        //ONLY 2d***
     //! Constructor with existing data.
     image_base(ptr_vector buffer, int w, int h, int l); //ONLY 3d***
-
+    //! Constructor copy
     image_base(const image_base<pixel_type> & input);
     //! Constructor with file_name (call read()).
     image_base(std::string file_name);
     //! Destructor
     ~image_base();
 
+    //! Full copy image
+    void copy(const image_base & input);
+    //! Duplicate data array for images
+    void duplicate(const image_base & input);
+
     // ===========================================
     // Interface Functions
     // ===========================================
     // interface with ITK, eigen?
     void read(std::string file_name); //ONLY 2d***
-    void write();
+    void write(std::string file_name);
 
     // template <size_t type_itk>
     // void read_itk(itk::Image< type_itk, 2 > image_itk);
@@ -171,7 +179,6 @@ public:
     image_base<pixel_type> operator / (const image_base<pixel_type> & input);
     image_base<pixel_type> operator ^ (const image_base<pixel_type> & input);
 
-
     // Scalar
     image_base<pixel_type> operator + (pixel_type scalar);
     image_base<pixel_type> operator - (pixel_type scalar);
@@ -203,13 +210,13 @@ public:
 
 
     // TODO
-    // create operator << to print info of image as image_info function
+    // create operator << to print info of image as image_info function [DONE] (inherited object)
     // class operations: +,-,*,/  [DONE]
     // initialize data with zeros, ones, random [DONE]
     // filters: normalize (0 to 1), padding, gaussian, convolution, gradient, fft?
-    // scalar operations: scalar*Image
+    // scalar operations: scalar*Image [DONE]
     // functions in_place: transpose, add, substract, multiply, divide, pow
-    // extra functions: copy, cast
+    // extra functions: copy [DONE], cast
 
 };
 
@@ -231,11 +238,21 @@ image_base<pixel_type>::image_base()
 
 // Constructor
 template <typename pixel_type>
+image_base<pixel_type>::image_base(int d)
+{
+    assert(d>1);
+    assert(d<4);
+    if (d == 2){ init(0, 0); };
+    if (d == 3){ init(0, 0, 0); };
+    data.reset();
+};
+
+// Constructor
+template <typename pixel_type>
 image_base<pixel_type>::image_base(int w, int h)
 {
     init(w, h);
-    data.reset();
-    data = std::make_shared<std::vector<pixel_type>>(width*height);
+    allocate(width*height);
     // data = std::shared_ptr<pixel_type[]>(new pixel_type[width*height]);
     // data = std::make_shared<pixel_type[]>(width*height);
     // data = std::make_shared<float[]>(width*height); // dynamic allocation
@@ -246,8 +263,7 @@ template <typename pixel_type>
 image_base<pixel_type>::image_base(int w, int h, int l)
 {
     init(w, h, l);
-    data.reset();
-    data = std::make_shared<std::vector<pixel_type>>(width*height*length);
+    allocate(width*height*length);
 };
 
 // Constructor
@@ -271,8 +287,7 @@ image_base<pixel_type>::image_base(ptr_vector buffer, int w, int h, int l)
 template <typename pixel_type>
 image_base<pixel_type>::image_base(const image_base<pixel_type> & input)
 {
-    update(input);
-    // std::cout << "update\n"; 
+    copy(input);
 };
 
 // Destructor
@@ -290,18 +305,10 @@ void image_base<pixel_type>::init(int w, int h)
     channels = 1;
     width = w;
     height = h;
+    length = 1;
     num_elements = width*height;
 
     object<pixel_type>::init(2);
-    // this->dim = 2;
-    // this->size = std::vector<int>{width, height};
-    // this->spacing = std::vector<pixel_type>(this->dim, 1.0);
-    // this->origin = std::vector<pixel_type>(this->dim, 0.0);
-    // this->direction = std::vector<pixel_type>(this->dim*this->dim);
-
-    // // initialize direction, identity matrix
-    // int den = this->dim + 1;
-    // for(int i=0; i < this->dim*this->dim; i++){ if((i%den)==0) { this->direction[i] = 1.0; }; };
 
     this->size = std::vector<int>{width, height};
 };
@@ -323,16 +330,48 @@ void image_base<pixel_type>::init(int w, int h, int l)
 
 // Copy metadata
 template <typename pixel_type>
-void image_base<pixel_type>::update(const image_base<pixel_type> & input)
+void image_base<pixel_type>::copy_properties(const image_base<pixel_type> & input)
 {
     width = input.get_width();
     height = input.get_height();
     length = input.get_length();
     num_elements = input.get_total_elements();
 
+    object<pixel_type>::copy_properties(input);
+};
+
+// Copy metadata
+template <typename pixel_type>
+void image_base<pixel_type>::allocate(int total_elements)
+{
     data.reset();
-    data = std::make_shared<std::vector<pixel_type>>(num_elements);
-    object<pixel_type>::update(input);
+    data = std::make_shared<std::vector<pixel_type>>(total_elements);
+};
+
+// Full copy
+template <typename pixel_type>
+void image_base<pixel_type>::copy(const image_base<pixel_type> & input)
+{
+    copy_properties(input);
+    allocate(num_elements);
+
+    pixel_type * p1 = this->ptr();
+    pixel_type * p2 = input.ptr();
+
+    // #pragma omp parallel for
+    for(int k=0; k<num_elements; k++)
+    {
+        p1[k] = p2[k];
+    };
+};
+
+// Full copy
+template <typename pixel_type>
+void image_base<pixel_type>::duplicate(const image_base<pixel_type> & input)
+{
+    copy_properties(input);
+    data.reset();
+    data = input.get_data();
 };
 
 // ===========================================
@@ -573,7 +612,7 @@ template <typename pixel_type>
 void image_base<pixel_type>::zeros()
 {
     pixel_type * p = this->ptr();
-    std::cout << num_elements << std::endl;
+    // std::cout << num_elements << std::endl;
     
     // #pragma omp parallel for
     for(int k=0; k<num_elements; k++)
@@ -641,9 +680,7 @@ template <typename pixel_type>
 image_base<pixel_type> & image_base<pixel_type>::operator = (const image_base<pixel_type> & input)
 {
     // delete &data;
-    update(input);
-    data.reset();
-    data = input.get_data();
+    duplicate(input);
     return *this;
 };
 

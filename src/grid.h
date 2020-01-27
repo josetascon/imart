@@ -5,7 +5,6 @@
 * @Last Modified time: 2019-11-19 13:55:00
 */
 
-
 #ifndef __GRID_H__
 #define __GRID_H__
 
@@ -16,37 +15,34 @@
 #include <cassert>      // assert
 
 // images 
-#include "image_base.h"
-#include "image_2d.h"
-#include "image_3d.h"
+// #include "image_base.h"
+#include "image.h"
+// #include "image_2d.h"
+// #include "image_3d.h"
 
 template <typename pixel_type>
 class grid: public object<pixel_type>
 {
 public:
     //Type definitions
-    using vector_image = std::vector<image_base<pixel_type>>;
+    using vector_image = std::vector<image<pixel_type>>;
     using ptr_vector_image = std::shared_ptr<vector_image>;
     
 protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    // int dim;
-    // std::vector<int> size;
-    // std::vector<pixel_type> spacing;
-    // std::vector<pixel_type> origin;
-    // std::vector<pixel_type> direction;
-
     ptr_vector_image xyz;
 
     // ===========================================
     // Functions
     // ===========================================
     void init(int dim);
-    void update(const grid<pixel_type> & input);
-    void update(const image_2d<pixel_type> & input);
-    void update(const image_3d<pixel_type> & input);
+    void copy(const grid<pixel_type> & input);
+    void copy_properties(const grid<pixel_type> & input);
+    void copy_properties(const image<pixel_type> & input);
+    // void update(const image_2d<pixel_type> & input);
+    // void update(const image_3d<pixel_type> & input);
     void meshgrid_2d();
     void meshgrid_3d();
 
@@ -57,21 +53,17 @@ public:
     grid();
     grid(int dim);
     grid(const grid<pixel_type> & input);
-    grid(const image_2d<pixel_type> & input);
-    grid(const image_3d<pixel_type> & input);
+    grid(const image<pixel_type> & input);
+    // grid(const image_2d<pixel_type> & input);
+    // grid(const image_3d<pixel_type> & input);
 
     ~grid();
     
     // ===========================================
     // Get Functions
     // ===========================================
-    // int get_dimension();
-    // std::vector<int> get_size();
-    // std::vector<pixel_type> get_spacing();
-    // std::vector<pixel_type> get_origin();
-    // std::vector<pixel_type> get_direction();
+    image<pixel_type> * ptr() const;
     ptr_vector_image get_grid() const;
-    image_base<pixel_type> * ptr() const;
 
     // ===========================================
     // Print Functions
@@ -90,8 +82,9 @@ public:
     // ===========================================
     // Functions
     // ===========================================
-    void meshgrid(image_2d<pixel_type> & input);
-    void meshgrid(image_3d<pixel_type> & input);
+    void meshgrid(image<pixel_type> & input);
+    // void meshgrid(image_2d<pixel_type> & input);
+    // void meshgrid(image_3d<pixel_type> & input);
 };
 
 
@@ -121,22 +114,31 @@ grid<pixel_type>::grid(int d)
 template <typename pixel_type>
 grid<pixel_type>::grid(const grid<pixel_type> & input)
 {
-    update(input);
+    this->class_name = "grid";
+    copy(input);
 }
 
 template <typename pixel_type>
-grid<pixel_type>::grid(const image_2d<pixel_type> & input)
+grid<pixel_type>::grid(const image<pixel_type> & input)
 {
-    update(input);
-    meshgrid_2d();
+    copy_properties(input);
+    if (this->dim == 2) { meshgrid_2d(); };
+    if (this->dim == 3) { meshgrid_3d(); };
 };
 
-template <typename pixel_type>
-grid<pixel_type>::grid(const image_3d<pixel_type> & input)
-{
-    update(input);
-    meshgrid_3d();
-};
+// template <typename pixel_type>
+// grid<pixel_type>::grid(const image_2d<pixel_type> & input)
+// {
+//     copy_properties(input);
+//     meshgrid_2d();
+// };
+
+// template <typename pixel_type>
+// grid<pixel_type>::grid(const image_3d<pixel_type> & input)
+// {
+//     copy_properties(input);
+//     meshgrid_3d();
+// };
 
 template <typename pixel_type>
 grid<pixel_type>::~grid()
@@ -151,14 +153,10 @@ void grid<pixel_type>::init(int d)
     xyz.reset();
     xyz = std::make_shared<vector_image>(d);
     object<pixel_type>::init(d);
-    // size = std::vector<int>(dim, 0);
-    // spacing = std::vector<pixel_type>(dim, 1.0);
-    // origin = std::vector<pixel_type>(dim, 0.0);
-    // direction = std::vector<pixel_type>(dim);
 };
 
 template <typename pixel_type>
-void grid<pixel_type>::update(const grid<pixel_type> & input)
+void grid<pixel_type>::copy(const grid<pixel_type> & input)
 {
     // the update method copy the object parameters and
     // only initialize internal parameters
@@ -166,34 +164,55 @@ void grid<pixel_type>::update(const grid<pixel_type> & input)
 
     xyz.reset();
     xyz = std::make_shared<vector_image>(d);
-    object<pixel_type>::update(input);
-}
+    object<pixel_type>::copy_properties(input);
+    // **** MISSING COPY xyz
+};
 
 template <typename pixel_type>
-void grid<pixel_type>::update(const image_2d<pixel_type> & input)
+void grid<pixel_type>::copy_properties(const grid<pixel_type> & input)
 {
     int d = input.get_dimension();
 
     xyz.reset();
     xyz = std::make_shared<vector_image>(d);
-    object<pixel_type>::update(input);
+    object<pixel_type>::copy_properties(input);
+};
+
+template <typename pixel_type>
+void grid<pixel_type>::copy_properties(const image<pixel_type> & input)
+{
+    int d = input.get_dimension();
+
+    xyz.reset();
+    xyz = std::make_shared<vector_image>(d);
+    object<pixel_type>::copy_properties(input);
+};
+
+// template <typename pixel_type>
+// void grid<pixel_type>::update(const image_2d<pixel_type> & input)
+// {
+//     int d = input.get_dimension();
+
+//     xyz.reset();
+//     xyz = std::make_shared<vector_image>(d);
+//     object<pixel_type>::copy_properties(input);
     
-    // this->dim = input.get_dimension();
-    // this->size = input.get_size();
-    // this->spacing = input.get_spacing();
-    // this->origin = input.get_origin();
-    // this->direction = input.get_direction();
-}
+//     // this->dim = input.get_dimension();
+//     // this->size = input.get_size();
+//     // this->spacing = input.get_spacing();
+//     // this->origin = input.get_origin();
+//     // this->direction = input.get_direction();
+// }
 
-template <typename pixel_type>
-void grid<pixel_type>::update(const image_3d<pixel_type> & input)
-{
-    int d = input.get_dimension();
+// template <typename pixel_type>
+// void grid<pixel_type>::update(const image_3d<pixel_type> & input)
+// {
+//     int d = input.get_dimension();
 
-    xyz.reset();
-    xyz = std::make_shared<vector_image>(d);
-    object<pixel_type>::update(input);
-}
+//     xyz.reset();
+//     xyz = std::make_shared<vector_image>(d);
+//     object<pixel_type>::copy_properties(input);
+// }
 
 // ===========================================
 // Get Functions
@@ -205,7 +224,7 @@ typename grid<pixel_type>::ptr_vector_image grid<pixel_type>::get_grid() const
 };
 
 template <typename pixel_type>
-image_base<pixel_type> * grid<pixel_type>::ptr() const
+image<pixel_type> * grid<pixel_type>::ptr() const
 {
     return xyz.get()->data();
 };
@@ -218,12 +237,11 @@ template <typename pixel_type>
 grid<pixel_type> & grid<pixel_type>::operator = (const grid<pixel_type> & input)
 {
     // delete &data;
-    update(input);
+    copy_properties(input);
     xyz.reset();
     xyz = input.get_grid();
     return *this;
 };
-
 
 // ===========================================
 // Print Functions
@@ -288,8 +306,8 @@ void grid<pixel_type>::meshgrid_2d()
     std::vector<pixel_type> o = this->get_origin();
     std::vector<pixel_type> d = this->get_direction();
 
-    image_2d<pixel_type> x(w,h);
-    image_2d<pixel_type> y(w,h);
+    image<pixel_type> x(w,h);
+    image<pixel_type> y(w,h);
     
     pixel_type * px = x.ptr();
     pixel_type * py = y.ptr();
@@ -324,9 +342,9 @@ void grid<pixel_type>::meshgrid_3d()
     std::vector<pixel_type> o = this->get_origin();
     std::vector<pixel_type> d = this->get_direction();
 
-    image_3d<pixel_type> x(w,h,l);
-    image_3d<pixel_type> y(w,h,l);
-    image_3d<pixel_type> z(w,h,l);
+    image<pixel_type> x(w,h,l);
+    image<pixel_type> y(w,h,l);
+    image<pixel_type> z(w,h,l);
     
     pixel_type * px = x.ptr();
     pixel_type * py = y.ptr();
@@ -352,18 +370,26 @@ void grid<pixel_type>::meshgrid_3d()
 };
 
 template <typename pixel_type>
-void grid<pixel_type>::meshgrid(image_2d<pixel_type> & input)
+void grid<pixel_type>::meshgrid(image<pixel_type> & input)
 {   
-    update(input);
-    meshgrid_2d();
+    copy_properties(input);
+    if (this->dim == 2) { meshgrid_2d(); };
+    if (this->dim == 3) { meshgrid_3d(); };
 };
 
-template <typename pixel_type>
-void grid<pixel_type>::meshgrid(image_3d<pixel_type> & input)
-{   
-    update(input);
-    meshgrid_3d();
-};
+// template <typename pixel_type>
+// void grid<pixel_type>::meshgrid(image_2d<pixel_type> & input)
+// {   
+//     update(input);
+//     meshgrid_2d();
+// };
+
+// template <typename pixel_type>
+// void grid<pixel_type>::meshgrid(image_3d<pixel_type> & input)
+// {   
+//     update(input);
+//     meshgrid_3d();
+// };
 
 
 #endif

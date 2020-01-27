@@ -6,9 +6,9 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/images/cameraman20x16.tif
 
 # add_library(tests image2d_basic.cpp image2d_itk.cpp)
 
+# 2d test
 add_executable(image2d_basic image2d_basic.cpp)
 target_link_libraries(image2d_basic src ${link_targets})
-# target_link_libraries(image2d_basic src test ${link_targets})
 
 add_executable(image2d_itk image2d_itk.cpp)
 target_link_libraries(image2d_itk src ${link_targets})
@@ -28,6 +28,6 @@ target_link_libraries(transform2d_basic src ${link_targets})
 add_executable(image2d_interpolate image2d_interpolate.cpp)
 target_link_libraries(image2d_interpolate src ${link_targets})
 
-
+# # 3d test
 add_executable(image3d_basic image3d_basic.cpp)
 target_link_libraries(image3d_basic src ${link_targets})

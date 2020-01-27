@@ -5,7 +5,6 @@
 * @Last Modified time: 2019-11-15 13:55:00
 */
 
-
 #ifndef __TRANSFORM_BASE_H__
 #define __TRANSFORM_BASE_H__
 
@@ -15,56 +14,50 @@
 #include <vector>       // std::vector
 #include <cassert>      // assert
 
-// extra matrix eigen
-#include <eigen3/Eigen/Core>
-
 // local libs 
 #include "object.h"
-#include "image_base.h"
+#include "image.h"
 #include "grid.h"
 
-// parallel
-// openmp
-// opencl
-
-
-// Definitions
-// typedef float pixel_type;
-
-// Class to allow friend methods
-// template <typename pixel_type>
-// class transform_base;
-
-// template <typename pixel_type>
-// std::ostream & operator << (std::ostream & os, transform_base<pixel_type> & input);
-
-
-// Class image_base_2d
+// Class transform_base
 template <typename pixel_type>
 class transform_base: public object<pixel_type>
 {
 protected:
-    // int dim;
-    // std::string type;
-    image_base<pixel_type> parameters;
-    image_base<pixel_type> inverse_parameters;
+    // ===========================================
+    // Internal Variables
+    // ===========================================
+    image<pixel_type> parameters;
+    image<pixel_type> inverse_parameters;
 
+    // ===========================================
+    // Functions
+    // ===========================================
     virtual void init(int d);
+    virtual void copy(const transform_base<pixel_type> & input);
+
+    // Internal function (compute inverse)
+    virtual void inverse_(); // parameters that do nothing when transform is applied
 
 public:
     // ===========================================
     // Create Functions
     // ===========================================
     transform_base();
-    transform_base(image_base<pixel_type> & params);
+    transform_base(int d);
+    transform_base(int d, image<pixel_type> & params);
+    transform_base(const transform_base<pixel_type> & input);
 
     // ===========================================
     // Get Functions
     // ===========================================
-    int get_dimension();
-    std::string get_type();
-    image_base<pixel_type> get_parameters();
+    image<pixel_type> get_parameters() const;
+    image<pixel_type> get_inverse_parameters() const;
 
+    // ===========================================
+    // Set Functions
+    // ===========================================
+    void set_parameters(image<pixel_type> & params);
 
     // ===========================================
     // Print Functions
@@ -79,7 +72,7 @@ public:
     // Initialization Functions
     // ===========================================
     virtual void identity(); // parameters that do nothing when transform is applied
-    virtual void inverse(); // parameters that do nothing when transform is applied
+    virtual transform_base<pixel_type> inverse(); // parameters that do nothing when transform is applied
 
     // ===========================================
     // Functions
@@ -87,6 +80,7 @@ public:
     virtual std::vector<pixel_type> transform(std::vector<pixel_type> & point);
     virtual grid<pixel_type> transform(grid<pixel_type> & input);
 
+    std::vector<pixel_type> operator * (std::vector<pixel_type> & point);
     grid<pixel_type> operator * (grid<pixel_type> & input);
 };
 
@@ -101,26 +95,68 @@ public:
 template <typename pixel_type>
 transform_base<pixel_type>::transform_base()
 {
+    this->class_name = "transform_base";
+    parameters = image<pixel_type>(2);
     init(2);
-    this->class_name = "transform base";
-    this->parameters = image_base<pixel_type>();
 };
 
 template <typename pixel_type>
-transform_base<pixel_type>::transform_base(image_base<pixel_type> & params)
+transform_base<pixel_type>::transform_base(int d)
 {
-    init(2);
-    this->class_name = "transform base";
+    this->class_name = "transform_base";
+    parameters = image<pixel_type>(d);
+    init(d);
+};
+
+template <typename pixel_type>
+transform_base<pixel_type>::transform_base(int d, image<pixel_type> & params)
+{
+    this->class_name = "transform_base";
     parameters = params;
-    this->inverse();
+    init(d);
 };
 
 template <typename pixel_type>
 void transform_base<pixel_type>::init(int d)
 {
-    parameters = image_base<pixel_type>();
+    inverse_();
     object<pixel_type>::init(d);
 };
+
+template <typename pixel_type>
+void transform_base<pixel_type>::copy(const transform_base<pixel_type> & input)
+{
+    object<pixel_type>::copy_properties(input);
+    image<pixel_type> params = input.get_parameters();
+    this->parameters = params;
+};
+
+// ===========================================
+// Get Functions
+// ===========================================
+template <typename pixel_type>
+image<pixel_type> transform_base<pixel_type>::get_parameters() const
+{
+    return parameters;
+};
+
+template <typename pixel_type>
+image<pixel_type> transform_base<pixel_type>::get_inverse_parameters() const
+{
+    return inverse_parameters;
+};
+
+// ===========================================
+// Set Functions
+// ===========================================
+template <typename pixel_type>
+void transform_base<pixel_type>::set_parameters(image<pixel_type> & params)
+{
+    parameters = params;
+    inverse_();
+};
+
+
 
 // ===========================================
 // Print Functions
@@ -167,9 +203,17 @@ void transform_base<pixel_type>::identity()
 };
 
 template <typename pixel_type>
-void transform_base<pixel_type>::inverse()
+void transform_base<pixel_type>::inverse_()
 {
     ;
+};
+
+template <typename pixel_type>
+transform_base<pixel_type> transform_base<pixel_type>::inverse()
+{
+    image<pixel_type> params = get_inverse_parameters();
+    transform_base<pixel_type> tr(this->dim, params);
+    return tr;
 };
 
 // ===========================================
@@ -185,6 +229,12 @@ template <typename pixel_type>
 grid<pixel_type> transform_base<pixel_type>::transform(grid<pixel_type> & input)
 {
     return input;
+};
+
+template <typename pixel_type>
+std::vector<pixel_type> transform_base<pixel_type>::operator *(std::vector<pixel_type> & point)
+{
+    return transform(point);
 };
 
 template <typename pixel_type>
