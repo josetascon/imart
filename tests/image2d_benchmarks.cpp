@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-13 09:20:57
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-18 15:06:29
+* @Last Modified time: 2020-01-24 16:20:30
 */
 
 
@@ -13,7 +13,7 @@
 #include <benchmark/benchmark.h>
 
 // local libs
-#include "../src/image_2d.h"
+#include "../src/image.h"
 
 
 // Testing google benchmark library
@@ -24,7 +24,7 @@ static void BM_Image_Init(benchmark::State& state)
     
     for (auto _ : state) {
         // This code gets timed
-        image_2d<double> img1(100000000,1);
+        image<double> img1(100000000,1);
         // SomeFunction();
     };
 };
@@ -32,7 +32,7 @@ static void BM_Image_Init(benchmark::State& state)
 static void BM_Image_Zero(benchmark::State& state)
 {
     // Perform setup here
-    image_2d<double> img1(100000000,1);
+    image<double> img1(100000000,1);
 
     for (auto _ : state) {
         // This code gets timed
@@ -44,7 +44,7 @@ static void BM_Image_Zero(benchmark::State& state)
 static void BM_Image_Random(benchmark::State& state)
 {
     // Perform setup here
-    image_2d<double> img1(100000000,1);
+    image<double> img1(100000000,1);
 
     for (auto _ : state) {
         // This code gets timed
@@ -56,8 +56,8 @@ static void BM_Image_Random(benchmark::State& state)
 static void BM_Image_Equal(benchmark::State& state)
 {
     // Perform setup here
-    image_2d<double> img1(100000000,1);
-    image_2d<double> img2(100000000,1);
+    image<double> img1(100000000,1);
+    image<double> img2(100000000,1);
     img1.ones();
 
     for (auto _ : state) {
@@ -70,9 +70,9 @@ static void BM_Image_Equal(benchmark::State& state)
 static void BM_Image_Sum(benchmark::State& state)
 {
     // Perform setup here
-    image_2d<double> img1(100000000,2);
-    image_2d<double> img2(100000000,2);
-    image_2d<double> img3(100000000,2);
+    image<double> img1(100000000,2);
+    image<double> img2(100000000,2);
+    image<double> img3(100000000,2);
 
     for (auto _ : state) {
         // This code gets timed
@@ -85,9 +85,9 @@ static void BM_Image_Sum(benchmark::State& state)
 static void BM_Image_Matrix_Mult(benchmark::State& state)
 {
     // Perform setup here
-    image_2d<double> img1(2000,1000);
-    image_2d<double> img2(1000,2000);
-    image_2d<double> img3(1000,1000);
+    image<double> img1(2000,1000);
+    image<double> img2(1000,2000);
+    image<double> img3(1000,1000);
 
     for (auto _ : state) {
         // This code gets timed

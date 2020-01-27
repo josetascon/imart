@@ -15,7 +15,7 @@
 #include <cassert>      // assert
 
 // images 
-#include "image_base.h"
+#include "image.h"
 #include "grid.h"
 
 
@@ -38,7 +38,7 @@ protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    image_2d<pixel_type> image_reference;
+    image<pixel_type> image_reference;
     grid<pixel_type> x_reference;
     pixel_type fill;
     borders<pixel_type> region;
@@ -51,8 +51,8 @@ protected:
     int search_(pixel_type x, pixel_type y);
     int search_(pixel_type x, pixel_type y, pixel_type z);
 
-    image_2d<pixel_type> linear2(const grid<pixel_type> & xin);
-    image_3d<pixel_type> linear3(grid<pixel_type> & xin);
+    image<pixel_type> linear2(const grid<pixel_type> & xin);
+    image<pixel_type> linear3(const grid<pixel_type> & xin);
 
     pixel_type linear_(pixel_type r[2], pixel_type x); // unitary distance
     pixel_type bilinear_(pixel_type r[4], pixel_type x, pixel_type y);
@@ -63,14 +63,14 @@ public:
     // Create Functions
     // ===========================================
     // interpolate();
-    interpolate(image_2d<pixel_type> & input, grid<pixel_type> & xref);
+    interpolate(image<pixel_type> & input, grid<pixel_type> & xref);
 
     // ===========================================
     // Functions
     // ===========================================
-    image_2d<pixel_type> linear(const grid<pixel_type> & xin);
+    image<pixel_type> linear(const grid<pixel_type> & xin);
 
-    image_2d<pixel_type> operator * (const grid<pixel_type> & xin);    
+    image<pixel_type> operator * (const grid<pixel_type> & xin);    
 };
 
 
@@ -86,7 +86,7 @@ public:
 // Create Functions
 // ===========================================
 template <typename pixel_type>
-interpolate<pixel_type>::interpolate(image_2d<pixel_type> & input, grid<pixel_type> & xref)
+interpolate<pixel_type>::interpolate(image<pixel_type> & input, grid<pixel_type> & xref)
 {
     assert(input.get_dimension() == xref.get_dimension());
     image_reference = input;
@@ -99,13 +99,13 @@ interpolate<pixel_type>::interpolate(image_2d<pixel_type> & input, grid<pixel_ty
 // Functions
 // ===========================================
 template <typename pixel_type>
-image_2d<pixel_type> interpolate<pixel_type>::operator *(const grid<pixel_type> & xin)
+image<pixel_type> interpolate<pixel_type>::operator *(const grid<pixel_type> & xin)
 {
     return linear(xin);
 }
 
 template <typename pixel_type>
-image_2d<pixel_type> interpolate<pixel_type>::linear(const grid<pixel_type> & xin)
+image<pixel_type> interpolate<pixel_type>::linear(const grid<pixel_type> & xin)
 {
     // image_base<pixel_type> (*linear_function)(grid<pixel_type> &);
     // if(xin.get_dimension() == 2){ linear_function = &interpolate<pixel_type>::linear2;};
@@ -113,23 +113,23 @@ image_2d<pixel_type> interpolate<pixel_type>::linear(const grid<pixel_type> & xi
     // return (*linear_function)(xin);
 
     // TODO: Make this work. Consider a single image class, a single affine transform.
-    // image_2d<pixel_type> a(xin.get_size()[0], xin.get_size()[1]);
-    image_2d<pixel_type> a;
+    // image<pixel_type> a(xin.get_size()[0], xin.get_size()[1]);
+    image<pixel_type> a;
     if(xin.get_dimension() == 2){ a = linear2(xin); };
-    // if(xin.get_dimension() == 3){ return linear3(xin);};
+    if(xin.get_dimension() == 3){ a = linear3(xin); };
     return a;
 };
 
 
 template <typename pixel_type>
-image_2d<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & xin)
+image<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & xin)
 {
     assert(xin.get_dimension() == 2);
     assert(xin.get_dimension() == x_reference.get_dimension());
 
     using ptr_pixels4 = std::unique_ptr<std::array<pixel_type,4>>;
 
-    image_2d<pixel_type> image_out(xin.get_size()[0],xin.get_size()[1]);
+    image<pixel_type> image_out(xin.get_size()[0],xin.get_size()[1]);
      pixel_type * pout = image_out.ptr();
 
     pixel_type * xi = (xin.ptr()[0]).ptr();   // raw pointer to
@@ -186,14 +186,14 @@ image_2d<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & x
 };
 
 template <typename pixel_type>
-image_3d<pixel_type> interpolate<pixel_type>::linear3(grid<pixel_type> & xin)
+image<pixel_type> interpolate<pixel_type>::linear3(const grid<pixel_type> & xin)
 {
     assert(xin.get_dimension() == 3);
     assert(xin.get_dimension() == x_reference.get_dimension());
 
     using ptr_pixels8 = std::unique_ptr<std::array<pixel_type,8>>;
 
-    image_3d<pixel_type> image_out(xin.get_size()[0],xin.get_size()[1],xin.get_size()[2]);
+    image<pixel_type> image_out(xin.get_size()[0],xin.get_size()[1],xin.get_size()[2]);
     pixel_type * pout = image_out.ptr();
 
     pixel_type * xi = (xin.ptr()[0]).ptr();   // raw pointer to

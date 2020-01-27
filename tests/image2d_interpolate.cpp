@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-12-04 11:34:42
+* @Last Modified time: 2020-01-27 10:30:43
 */
 
 
@@ -11,16 +11,16 @@
 #include <memory>
 
 // local libs
-#include "../src/image_2d.h"
+#include "../src/image.h"
 #include "../src/grid.h"
-#include "../src/affine_2d.h"
+#include "../src/affine.h"
 #include "../src/interpolate.h"
 
 // using type = int;
 using type = float;
 // using type = double;
 
-image_2d<type> ssd(image_2d<type> & image0, image_2d<type> & image1, affine_2d<type> & transform)
+image<type> ssd(image<type> & image0, image<type> & image1, affine<type> & transform)
 {
     // image0.print_data();
     // image1.print_data();
@@ -28,10 +28,14 @@ image_2d<type> ssd(image_2d<type> & image0, image_2d<type> & image1, affine_2d<t
     grid<type> x0(image0);
     grid<type> x1(image1);
     interpolate<type> image1_p(image1, x1);
+    interpolate<type> image0_p(image0, x0);
 
-    // image_2d<type> ssd_(image0.get_width(),image0.get_height());
+    // image<type> ssd_(image0.get_width(),image0.get_height());
     // ssd_ = (image1_p*(transform * x0));
-    image_2d<type> ssd_ = image0 - image1_p*(transform * x0);
+    // image0 - image1_p*(transform * x0);
+    image<type> ssd_;
+    // ssd_ = image0 - image1_p*(transform * x0);
+    ssd_ = image1 - image0_p*(transform * x1);
 
     return ssd_;
 };
@@ -44,19 +48,19 @@ int main()
     // ============================================
 
     // Create small imame
-    // image_2d<type> image0(4,3);
-    image_2d<type> image0(10,7);
-    // image0.random();
-    image0.ones();
+    // image<type> image0(4,3);
+    image<type> image0(10,7);
+    image0.random();
+    // image0.ones();
     grid<type> x0(image0);
 
-    image_2d<type> params(6,1);
+    image<type> params(6,1);
     *params.get_data() = {1.0, 0.0, 0.0, 1.0, 3.5, -1.0};
     // std::shared_ptr<std::vector<type>> buffer = std::make_shared<std::vector<type>>(6);
     // *buffer = {1.0, 0.0, 0.0, 1.0, 1.5, 1.0};
     // *buffer = {1, 0, 0, 1, 4, 0};
-    // image_2d<type> params(buffer, 6,1);
-    affine_2d<type> translation(params);
+    // image<type> params(buffer, 6,1);
+    affine<type> translation(2,params);
 
     grid<type> t_x0 = translation.transform(x0);
     // x0.print_data();
@@ -66,7 +70,7 @@ int main()
     std::cout << "Create interpolation object\n";
     interpolate<type> image1_itp(image0, x0);
     std::cout << "Linear interpolation function\n";
-    image_2d<type> image0t = image1_itp.linear(t_x0); 
+    image<type> image0t = image1_itp.linear(t_x0); 
     // TODO: Error of free() when using double. The error is in this method
     // *** TEST neighbors4??? change array to vector
     
@@ -82,11 +86,12 @@ int main()
     // Testing the inverse transfor applied to ssd function
     std::cout << "Test compressed notation\n";
     std::shared_ptr<std::vector<type>> buffer_inv = std::make_shared<std::vector<type>>(6);
-    *buffer_inv = {1.0, 0.0, 0.0, 1.0, -1.5, -1.0};
-    image_2d<type> params_inv(buffer_inv, 6,1);
-    affine_2d<type> inv_translation(params_inv);
+    *buffer_inv = {1.0, 0.0, 0.0, 1.0, -3.5, 1.0};
+    image<type> params_inv(buffer_inv, 6,1);
+    affine<type> inv_translation(2,params_inv);
 
-    image_2d<type> result = ssd(image0, image0t, inv_translation);
+    // image<type> result = ssd(image0, image0t, inv_translation);
+    image<type> result = ssd(image0, image0t, translation);
     result.print_data("SSD now as image:");
     // image0.print_data();
     // image0t.print_data();
@@ -101,7 +106,7 @@ int main()
     //     grid<type> x1(image1);
     //     interpolate<type> image1_p(image1, x1)
 
-    //     image_2d<type> result = (image0 - image1_p*transform*x0)^2.0;
+    //     image<type> result = (image0 - image1_p*transform*x0)^2.0;
     //     return result.sum()
     // };
 

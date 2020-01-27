@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-26 14:15:18
+* @Last Modified time: 2020-01-24 16:12:52
 */
 
 // std libs
@@ -10,18 +10,18 @@
 #include <memory>
 
 // local libs
-#include "../src/image_2d.h"
+#include "../src/image.h"
 
 int main()
 {
     // ============================================
-    //      Testing image_2d basic features
+    //      Testing image basic features
     // ============================================
-    // Create empty imame
-    image_2d<int> image0;     
+    // Create empty image
+    image<int> image0;
 
     std::cout << "===================== ";
-    std::cout << "Test class image_2d, basic features";
+    std::cout << "Test class image, basic features";
     std::cout << " =====================";
     std::cout << std::endl;
 
@@ -54,11 +54,11 @@ int main()
 
 
     // Create medium size image 
-    image_2d<float> image1(4, 3);
+    image<float> image1(4, 3);
 
     std::cout << std::endl;
     std::cout << "===================== ";
-    std::cout << "Test class image_2d, small size image";
+    std::cout << "Test class image, small size image";
     std::cout << " =====================";
     std::cout << std::endl;
 
@@ -93,11 +93,11 @@ int main()
 
 
     // Create medium size image 
-    image_2d<double> image2(128, 64);
+    image<double> image2(128, 64);
 
     // std::cout << std::endl;
     std::cout << "===================== ";
-    std::cout << "Test class image_2d, medium size image";
+    std::cout << "Test class image, medium size image";
     std::cout << " =====================";
     std::cout << std::endl;
 
@@ -130,15 +130,15 @@ int main()
     // Create different image objects
     std::cout << std::endl;
     std::cout << "===================== ";
-    std::cout << "Test class image_2d, create and equal";
+    std::cout << "Test class image, create and equal";
     std::cout << " =====================";
     std::cout << std::endl;
     
     std::shared_ptr<std::vector<float>> buffer = std::make_shared<std::vector<float>>(6);
     *buffer = {1.1, 2.1, 3.1, 4.1, 5.1, 6.1};
 
-    image_2d<float> image3(5,3);
-    image_2d<float> image4(buffer, 3,2);
+    image<float> image3(5,3);
+    image<float> image4(buffer, 3,2);
     // image4 = image4 + image4;
 
     std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;
@@ -162,12 +162,12 @@ int main()
     // Create different image objects
     std::cout << std::endl;
     std::cout << "===================== ";
-    std::cout << "Test class image_2d, initilization";
+    std::cout << "Test class image, initilization";
     std::cout << " =====================";
     std::cout << std::endl;
 
-    image_2d<float> image5(6,6);
-    // image_2d<unsigned int> image6(4,7);
+    image<float> image5(6,6);
+    // image<unsigned int> image6(4,7);
     
     image5.print("image5");
     image5.zeros();
@@ -180,7 +180,7 @@ int main()
 
     std::cout << std::endl;
     std::cout << "===================== ";
-    std::cout << "Test class image_2d, access elements";
+    std::cout << "Test class image, access elements";
     std::cout << " =====================";
     std::cout << std::endl;
     std::cout << "image5(0) = " << image5(0) << std::endl;

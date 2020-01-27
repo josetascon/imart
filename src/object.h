@@ -34,8 +34,8 @@ protected:
     // ===========================================
     // Functions
     // ===========================================
-    virtual void init(int d);                   // init default properties
-    virtual void update(const object & input);  // copy only properties
+    virtual void init(int d);                           // init default properties
+    virtual void copy_properties(const object & input); // copy only properties
 
 public:
     // ===========================================
@@ -46,6 +46,9 @@ public:
     object(const object & input);       // constructor with same type
     
     ~object();                          // destructor empty
+
+    // virtual void copy(const object & input);            // copy everything
+    // virtual void duplicate(const object & input);       // share data
 
     // ===========================================
     // Get Functions
@@ -109,7 +112,7 @@ template <typename pixel_type>
 object<pixel_type>::object(const object<pixel_type> & input)
 {
     class_name = "object";
-    update(input);
+    copy_properties(input); // in object class everything is copied with this method)
 };
 
 // Destructor
@@ -123,7 +126,7 @@ template <typename pixel_type>
 void object<pixel_type>::init(int d)
 {
     dim = d;
-    size = std::vector<int>{0, 0};
+    size = std::vector<int>(dim, 0);
     spacing = std::vector<pixel_type>(dim, 1.0);
     origin = std::vector<pixel_type>(dim, 0.0);
     direction = std::vector<pixel_type>(dim*dim);
@@ -134,7 +137,7 @@ void object<pixel_type>::init(int d)
 };
 
 template <typename pixel_type>
-void object<pixel_type>::update(const object<pixel_type> & input)
+void object<pixel_type>::copy_properties(const object<pixel_type> & input)
 {
     dim = input.get_dimension();
     size = input.get_size();

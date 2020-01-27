@@ -34,7 +34,7 @@ public:
 public:
     
     image_2d() : image_base<pixel_type> () { ; };
-    image_2d(const image_base<pixel_type> & input) : image_base<pixel_type> (input.get_width(), input.get_height()) { std::cout << "derived - base\n";
+    image_2d(const image_base<pixel_type> & input) : image_base<pixel_type> (input.get_width(), input.get_height()) { //std::cout << "derived - base\n";
         this->data = input.get_data(); };
     image_2d(int w, int h) : image_base<pixel_type> (w,h) { ; };
     image_2d(std::shared_ptr<std::vector<pixel_type>> buffer, int w, int h) : image_base<pixel_type> (buffer,w,h) { ; };

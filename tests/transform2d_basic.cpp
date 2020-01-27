@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 17:17:46
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-21 14:49:20
+* @Last Modified time: 2020-01-27 09:26:35
 */
 
 // std libs
@@ -11,19 +11,19 @@
 #include <vector>
 
 // local libs
-#include "../src/image_2d.h"
-#include "../src/affine_2d.h"
+#include "../src/image.h"
+#include "../src/affine.h"
 
 int main()
 {
     // ============================================
-    //      Testing affine_2d with points
+    //      Testing affine with points
     // ============================================
     // Create identity transform
     std::shared_ptr<std::vector<float>> buffer1 = std::make_shared<std::vector<float>>(6);
     *buffer1 = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
-    image_2d<float> params1(buffer1, 6,1);
-    affine_2d<float> affine1(params1);
+    image<float> params1(buffer1, 6,1);
+    affine<float> affine1(2,params1);
 
     std::vector<float> point1({1.0,2.0});
     std::vector<float> point2;
@@ -40,8 +40,8 @@ int main()
     // Create other transform
     std::shared_ptr<std::vector<float>> buffer2 = std::make_shared<std::vector<float>>(6);
     *buffer2 = {1.1, 0.5, -0.5, 0.9, 2.1, -1.1};
-    image_2d<float> params2(buffer2, 6,1);
-    affine_2d<float> affine2(params2);
+    image<float> params2(buffer2, 6,1);
+    affine<float> affine2(2,params2);
 
     std::vector<float> point3({1.0,2.0});
     std::vector<float> point4;
@@ -56,9 +56,9 @@ int main()
     std::cout << std::endl;
     
     // ============================================
-    //      Testing affine_2d with grids
+    //      Testing affine with grids
     // ============================================
-    image_2d<float> image0(5,3);
+    image<float> image0(5,3);
     grid<float> x0(image0);
     grid<float> x1;
 
@@ -73,8 +73,8 @@ int main()
 
     std::shared_ptr<std::vector<float>> buffer3 = std::make_shared<std::vector<float>>(6);
     *buffer3 = {1.0, 0.0, 0.0, 1.0, 10.0, -10.0};
-    image_2d<float> params3(buffer3, 6,1);
-    affine_2d<float> translation(params3);
+    image<float> params3(buffer3, 6,1);
+    affine<float> translation(2,params3);
 
     x1 = translation.transform(x0);
     x1.print_data("grid x1, translation [10, -10]");    

@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-26 14:57:52
+* @Last Modified time: 2020-01-24 16:32:16
 */
 
 
@@ -21,7 +21,7 @@ int main()
     //      Testing image_2d meshgrid
     // ============================================
     // Create small imame
-    image_2d<double> image0(10,5);
+    image<double> image0(10,5);
 
     grid<double> x0;
     std::cout << "a\n" ;
@@ -36,7 +36,7 @@ int main()
     // ============================================
     //      Testing image_3d meshgrid
     // ============================================
-    image_3d<double> image1(3, 5, 2);
+    image<double> image1(3, 5, 2);
     grid<double> x1;
     std::cout << "a\n" ;
     x1.print();

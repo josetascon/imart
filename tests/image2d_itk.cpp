@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-07 10:12:34
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2019-11-21 10:53:34
+* @Last Modified time: 2020-01-24 16:14:29
 */
 
 // std libs
@@ -14,7 +14,7 @@
 #include <itkImageFileReader.h>
 
 // local libs
-#include "../src/image_2d.h"
+#include "../src/image.h"
 #include "../src/utils/timer.h"
 
 
@@ -72,10 +72,10 @@ int main(int argc, char *argv[])
     };
     std::cout << std::endl;
 
-    // Read the image with image_2d interface of itk
+    // Read the image with image interface of itk
     timer tt2("ms");
     tt2.start();
-    image_2d<unsigned short> image1;
+    image<unsigned short> image1;
     image1.read(argv[1]);
     // tt.lap();
     tt2.finish();
