@@ -27,15 +27,16 @@ protected:
 
     int dim;                            // dimension
     std::vector<int> size;              // object size
-    std::vector<pixel_type> spacing;    // spacing between elements
-    std::vector<pixel_type> origin;     // origin of coordinates
-    std::vector<pixel_type> direction;  // direction of elements
+    std::vector<double> spacing;    // spacing between elements
+    std::vector<double> origin;     // origin of coordinates
+    std::vector<double> direction;  // direction of elements
 
     // ===========================================
     // Functions
     // ===========================================
     virtual void init(int d);                           // init default properties
     virtual void copy_properties(const object & input); // copy only properties
+
 
 public:
     // ===========================================
@@ -47,8 +48,8 @@ public:
     
     ~object();                          // destructor empty
 
-    // virtual void copy(const object & input);            // copy everything
-    // virtual void duplicate(const object & input);       // share data
+    virtual void copy(const object & input);            // copy everything
+    virtual void duplicate(const object & input);       // share data
 
     // ===========================================
     // Get Functions
@@ -57,16 +58,16 @@ public:
     std::string get_type() const;
     int get_dimension() const;
     std::vector<int> get_size() const;
-    std::vector<pixel_type> get_spacing() const;
-    std::vector<pixel_type> get_origin() const;
-    std::vector<pixel_type> get_direction() const;
+    std::vector<double> get_spacing() const;
+    std::vector<double> get_origin() const;
+    std::vector<double> get_direction() const;
 
     // ===========================================
     // Set Functions
     // ===========================================
-    void set_spacing(std::vector<pixel_type> s) const;
-    void set_origin(std::vector<pixel_type> o) const;
-    void set_direction(std::vector<pixel_type> d) const;
+    void set_spacing(std::vector<double> s);
+    void set_origin(std::vector<double> o);
+    void set_direction(std::vector<double> d);
     
     // ===========================================
     // Print Functions
@@ -79,6 +80,11 @@ public:
 
     virtual std::string info(std::string msg);
     virtual std::string info_data(std::string msg);
+
+    // ===========================================
+    // Overloading Functions
+    // ===========================================
+    virtual object<pixel_type> & operator = (const object<pixel_type> & input);
 };
 
 
@@ -111,8 +117,8 @@ object<pixel_type>::object(int d)
 template <typename pixel_type>
 object<pixel_type>::object(const object<pixel_type> & input)
 {
-    class_name = "object";
-    copy_properties(input); // in object class everything is copied with this method)
+    copy(input);                // call the virtual
+    // copy_properties(input);     // in object class everything is copied with this method)
 };
 
 // Destructor
@@ -127,9 +133,9 @@ void object<pixel_type>::init(int d)
 {
     dim = d;
     size = std::vector<int>(dim, 0);
-    spacing = std::vector<pixel_type>(dim, 1.0);
-    origin = std::vector<pixel_type>(dim, 0.0);
-    direction = std::vector<pixel_type>(dim*dim);
+    spacing = std::vector<double>(dim, 1.0);
+    origin = std::vector<double>(dim, 0.0);
+    direction = std::vector<double>(dim*dim);
 
     // initialize direction, identity matrix
     int den = dim + 1;
@@ -139,11 +145,24 @@ void object<pixel_type>::init(int d)
 template <typename pixel_type>
 void object<pixel_type>::copy_properties(const object<pixel_type> & input)
 {
+    class_name = input.get_name();
     dim = input.get_dimension();
     size = input.get_size();
     spacing = input.get_spacing();
     origin = input.get_origin();
     direction = input.get_direction();
+};
+
+template <typename pixel_type>
+void object<pixel_type>::copy(const object & input)
+{
+    copy_properties(input);
+};
+
+template <typename pixel_type>
+void object<pixel_type>::duplicate(const object & input)
+{
+    copy_properties(input);
 };
 
 // ===========================================
@@ -174,19 +193,19 @@ std::vector<int> object<pixel_type>::get_size() const
 };
 
 template <typename pixel_type>
-std::vector<pixel_type> object<pixel_type>::get_spacing() const
+std::vector<double> object<pixel_type>::get_spacing() const
 {
     return spacing;
 };
 
 template <typename pixel_type>
-std::vector<pixel_type> object<pixel_type>::get_origin() const
+std::vector<double> object<pixel_type>::get_origin() const
 {
     return origin;
 };
 
 template <typename pixel_type>
-std::vector<pixel_type> object<pixel_type>::get_direction() const
+std::vector<double> object<pixel_type>::get_direction() const
 {
     return direction;
 };
@@ -195,23 +214,23 @@ std::vector<pixel_type> object<pixel_type>::get_direction() const
 // Set Functions
 // ===========================================
 template <typename pixel_type>
-void object<pixel_type>::set_spacing(std::vector<pixel_type> s) const
+void object<pixel_type>::set_spacing(std::vector<double> s)
 {
     assert(dim == s.size());
     spacing = s;
 };
 
 template <typename pixel_type>
-void object<pixel_type>::set_origin(std::vector<pixel_type> o) const
+void object<pixel_type>::set_origin(std::vector<double> o)
 {
     assert(dim == o.size());
     origin = o;
 };
 
 template <typename pixel_type>
-void object<pixel_type>::set_direction(std::vector<pixel_type> d) const
+void object<pixel_type>::set_direction(std::vector<double> d)
 {
-    assert(dim == d.size());
+    assert(dim*dim == d.size());
     direction = d;
 };
 
@@ -262,6 +281,16 @@ std::string object<pixel_type>::info_data(std::string msg)
     ss << "This method of " << get_name();
     ss << " is not implemented" << std::endl;
     return ss.str();
+};
+
+// ===========================================
+// Overloading Functions
+// ===========================================
+template <typename pixel_type>
+object<pixel_type> & object<pixel_type>::operator = (const object<pixel_type> & input)
+{
+    duplicate(input);
+    return *this;
 };
 
 

@@ -32,7 +32,7 @@ protected:
 public:
     affine();
     affine(int d);
-    affine(int d, image<pixel_type> & params);
+    affine(int d, typename image<pixel_type>::pointer params);
 
     // using transform_base<pixel_type>::print;
 
@@ -51,6 +51,8 @@ public:
 };
 
 
+
+
 // ===========================================
 //          Functions of Class affine
 // ===========================================
@@ -63,24 +65,24 @@ template <typename pixel_type>
 affine<pixel_type>::affine()
 {
     this->class_name = "affine";
-    this->parameters = image<pixel_type>();
-    init(2);  
+    init(2);
 };
 
 template <typename pixel_type>
 affine<pixel_type>::affine(int d)
 {
     this->class_name = "affine";
-    this->parameters = image<pixel_type>();
-    init(d);  
+    init(d);
 };
 
 template <typename pixel_type>
-affine<pixel_type>::affine(int d, image<pixel_type> & params)
+affine<pixel_type>::affine(int d, typename image<pixel_type>::pointer params)
 {
+    assert(params->get_total_elements()==(d*d+d));
     this->class_name = "affine";
-    this->parameters = params;
     init(d);
+    this->parameters = params;
+    inverse_();
 };
 
 template <typename pixel_type>
@@ -108,14 +110,12 @@ void affine<pixel_type>::inverse_()
 template <typename pixel_type>
 void affine<pixel_type>::inverse_2d()
 {
-    // image<pixel_type> inv(this->parameters.get_width(),this->parameters.get_height());
-    // int w = this->parameters.get_width();
-    // int h = this->parameters.get_height();
-    // this->inverse_parameters = image<pixel_type>(w,h);
-    image<pixel_type> inv(this->parameters);
-    pixel_type * a = this->parameters.ptr();
-    pixel_type * p = inv.ptr();
-    // pixel_type * p = this->inverse_parameters.ptr();
+    typename image<pixel_type>::pointer inv(new image<pixel_type>(6,1));
+    // inv->imitate(*(this->parameters));
+
+    pixel_type * a = this->parameters->ptr();
+    pixel_type * p = inv->ptr();
+
     p[0] = a[3]/(a[0]*a[3] - a[1]*a[2]);
     p[1] = -a[1]/(a[0]*a[3] - a[1]*a[2]);
     p[2] = -a[2]/(a[0]*a[3] - a[1]*a[2]);
@@ -123,18 +123,17 @@ void affine<pixel_type>::inverse_2d()
     p[4] = (a[1]*(a[0]*a[5] - a[2]*a[4]) - a[4]*(a[0]*a[3] - a[1]*a[2]))/(a[0]*(a[0]*a[3] - a[1]*a[2]));
     p[5] = (-a[0]*a[5] + a[2]*a[4])/(a[0]*a[3] - a[1]*a[2]);
 
-    // inv.print_data();
     this->inverse_parameters = inv;
-    // this->inverse_parameters.print_data();
 };
 
 template <typename pixel_type>
 void affine<pixel_type>::inverse_3d()
 {
     
-    image<pixel_type> inv(this->parameters);
-    pixel_type * a = this->parameters.ptr();
-    pixel_type * p = inv.ptr();
+    typename image<pixel_type>::pointer inv;
+    inv->imitate(*this->parameters);
+    pixel_type * a = this->parameters->ptr();
+    pixel_type * p = inv->ptr();
 
     p[0]  = (a[0]*a[4]*((a[0]*a[4] - a[1]*a[3])*(a[0]*a[8] - a[2]*a[6]) - (a[0]*a[5] - a[2]*a[3])*(a[0]*a[7] - a[1]*a[6])) - (-a[1]*(a[0]*a[5] - a[2]*a[3]) + a[2]*(a[0]*a[4] - a[1]*a[3]))*(a[3]*(a[0]*a[7] - a[1]*a[6]) - a[6]*(a[0]*a[4] - a[1]*a[3])))/(a[0]*(a[0]*a[4] - a[1]*a[3])*((a[0]*a[4] - a[1]*a[3])*(a[0]*a[8] - a[2]*a[6]) - (a[0]*a[5] - a[2]*a[3])*(a[0]*a[7] - a[1]*a[6])));
     p[1]  = (-a[0]*a[1]*((a[0]*a[4] - a[1]*a[3])*(a[0]*a[8] - a[2]*a[6]) - (a[0]*a[5] - a[2]*a[3])*(a[0]*a[7] - a[1]*a[6])) + a[0]*(a[0]*a[7] - a[1]*a[6])*(-a[1]*(a[0]*a[5] - a[2]*a[3]) + a[2]*(a[0]*a[4] - a[1]*a[3])))/(a[0]*(a[0]*a[4] - a[1]*a[3])*((a[0]*a[4] - a[1]*a[3])*(a[0]*a[8] - a[2]*a[6]) - (a[0]*a[5] - a[2]*a[3])*(a[0]*a[7] - a[1]*a[6])));
@@ -184,8 +183,8 @@ std::vector<pixel_type> affine<pixel_type>::transform_2d(std::vector<pixel_type>
     // TODO: consider if the point uses 
     // the inverse or the direct transform. I think direct.
     std::vector<pixel_type> out(this->dim);
-    // pixel_type * a = this->inverse_parameters.ptr();
-    pixel_type * a = this->parameters.ptr();
+    pixel_type * a = this->parameters->ptr();
+
     out[0] = a[0]*point[0] + a[1]*point[1] + a[4];
     out[1] = a[2]*point[0] + a[3]*point[1] + a[5];
     return out;
@@ -197,14 +196,13 @@ grid<pixel_type> affine<pixel_type>::transform_2d(grid<pixel_type> & input)
 {
     // TODO: assert*****
     grid<pixel_type> output(input);
-    // pixel_type * a = this->inverse_parameters.ptr();
-    pixel_type * a = this->parameters.ptr();
+    pixel_type * a = this->parameters->ptr();
 
     image<pixel_type> * xin = input.ptr();
     image<pixel_type> * xout = output.ptr();
     
-    xout[0] = a[0]*xin[0] + a[1]*xin[1] + a[4];
-    xout[1] = a[2]*xin[0] + a[3]*xin[1] + a[5];
+    xout[0] = xin[0]*a[0] + a[1]*xin[1] + a[4];
+    xout[1] = xin[0]*a[2] + a[3]*xin[1] + a[5];
     return output;
 };
 
@@ -219,7 +217,7 @@ std::vector<pixel_type> affine<pixel_type>::transform_3d(std::vector<pixel_type>
     // TODO: consider if the point uses 
     // the inverse or the direct transform. I think direct.
     std::vector<pixel_type> out(this->dim);
-    pixel_type * a = this->parameters.ptr();
+    pixel_type * a = this->parameters->ptr();
     
     out[0] = a[0]*point[0] + a[1]*point[1] + a[2]*point[2] + a[9];
     out[1] = a[3]*point[0] + a[4]*point[1] + a[5]*point[2] + a[10];
@@ -233,7 +231,7 @@ grid<pixel_type> affine<pixel_type>::transform_3d(grid<pixel_type> & input)
 {
     // TODO: assert*****
     grid<pixel_type> output(input);
-    pixel_type * a = this->parameters.ptr();
+    pixel_type * a = this->parameters->ptr();
 
     image_base<pixel_type> * xin = input.ptr();
     image_base<pixel_type> * xout = output.ptr();

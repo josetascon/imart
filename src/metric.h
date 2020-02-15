@@ -1,52 +1,49 @@
 /*
 * @Author: jose
-* @Date:   2020-01-27 00:00:00
+* @Date:   2019-12-09 00:00:00
 * @Last Modified by:   jose
-* @Last Modified time: 2020-01-27 00:00:00
+* @Last Modified time: 2019-12-09 00:00:00
 */
 
-#ifndef __OPTIMIZER_H__
-#define __OPTIMIZER_H__
+#ifndef __METRIC_H__
+#define __METRIC_H__
 
 #include "image.h"
+#include "transform_base.h"
 
 template <typename pixel_type>
-class optimizer: public object<pixel_type>
+class metric: public object<pixel_type>
 {
 public:
     //Type definitions
-    ;
+    using pointer = std::shared_ptr<metric<pixel_type>>;
+    using vector = std::vector<metric::pointer>;
+    
 protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    int iteration;
-    int num_iterations;
-    
-    int unchanged_times;
-    int unchanged_max_times;
-    
-    double tolerance;
-    double previous_cost;
-    double current_cost;
+    pixel_type cost_value;
+    image<pixel_type> fixed;
+    image<pixel_type> moving;
+    transform_base<pixel_type> transform;
 
     // ===========================================
     // Functions
     // ===========================================
-    void init();
+    void init(image<pixel_type> fixed_image, image<pixel_type> moving_image, transform_base<pixel_type> transform_reg);
 
 public:
     // ===========================================
     // Create Functions
     // ===========================================
     // Constructors
-    optimizer();
-    
+    metric(image<pixel_type> fixed_image, image<pixel_type> moving_image, transform_base<pixel_type> transform_reg);
 
     // ===========================================
     // Get Functions
     // ===========================================
-    int get_iterations();
+    pixel_type get_cost();
 
     // ===========================================
     // Print Functions
@@ -54,11 +51,14 @@ public:
     virtual std::string info(std::string msg);
     virtual std::string info_data(std::string msg);
 
+
     // ===========================================
     // Functions
     // ===========================================
     // compute the cost
-    void optimize();
+    void cost();
+    // calculate derivative
+    transform_base<pixel_type> derivative();
 
 };
 
@@ -77,27 +77,30 @@ public:
 // ===========================================
 // Constructor
 template <typename pixel_type>
-optimizer<pixel_type>::optimizer()
+metric<pixel_type>::metric(image_base<pixel_type> fixed_image, image_base<pixel_type> moving_image, transform_base<pixel_type> transform_reg)
 {
-    init();
-};
-
-template <typename pixel_type>
-void optimizer<pixel_type>::init()
-{
-    ;
+    init(fixed_image, moving_image, transform_reg);
 };
 
 
+
+void metric<pixel_type>::init(image<pixel_type> fixed_image, image<pixel_type> moving_image, transform_base<pixel_type> transform_reg)
+{
+    fixed = fixed_image;
+    moving = moving_image;
+    transform = transform_reg;
+};
+
+
+
 template <typename pixel_type>
-std::string optimizer::<pixel_type>::info(std::string msg)
+std::string metric<pixel_type>::info(std::string msg)
 {
     std::stringstream ss;
-    std::string title = "Optimizer Information";
+    std::string title = "Metric Information";
     if (msg != "") { title = msg; };
-    // Summary of the optimizer information
+    // Summary of the metric information
     ss << object<pixel_type>::info(title);
 };
-
 
 #endif

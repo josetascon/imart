@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-01-27 10:30:43
+* @Last Modified time: 2020-01-28 14:26:06
 */
 
 
@@ -56,10 +56,6 @@ int main()
 
     image<type> params(6,1);
     *params.get_data() = {1.0, 0.0, 0.0, 1.0, 3.5, -1.0};
-    // std::shared_ptr<std::vector<type>> buffer = std::make_shared<std::vector<type>>(6);
-    // *buffer = {1.0, 0.0, 0.0, 1.0, 1.5, 1.0};
-    // *buffer = {1, 0, 0, 1, 4, 0};
-    // image<type> params(buffer, 6,1);
     affine<type> translation(2,params);
 
     grid<type> t_x0 = translation.transform(x0);
@@ -85,9 +81,7 @@ int main()
 
     // Testing the inverse transfor applied to ssd function
     std::cout << "Test compressed notation\n";
-    std::shared_ptr<std::vector<type>> buffer_inv = std::make_shared<std::vector<type>>(6);
-    *buffer_inv = {1.0, 0.0, 0.0, 1.0, -3.5, 1.0};
-    image<type> params_inv(buffer_inv, 6,1);
+    image<type> params_inv{1.0, 0.0, 0.0, 1.0, -3.5, 1.0};
     affine<type> inv_translation(2,params_inv);
 
     // image<type> result = ssd(image0, image0t, inv_translation);
@@ -109,9 +103,6 @@ int main()
     //     image<type> result = (image0 - image1_p*transform*x0)^2.0;
     //     return result.sum()
     // };
-
-    
-
 
     return 0;
 

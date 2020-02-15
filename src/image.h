@@ -23,6 +23,11 @@ template <typename pixel_type>
 class image : public image_base<pixel_type>
 {
 public:
+    //Type definitions
+    using pointer = std::shared_ptr<image<pixel_type>>;
+    using vector = std::vector<image::pointer>;
+
+protected:
     // Type definitions
     using ptr_pixels4 = std::unique_ptr<std::array<pixel_type,4>>;
     using ptr_pixels8 = std::unique_ptr<std::array<pixel_type,8>>;
@@ -35,7 +40,9 @@ public:
     image(int w, int h, int l) : image_base<pixel_type> (w,h,l) { this->class_name = "image"; };
     image(std::shared_ptr<std::vector<pixel_type>> buffer, int w, int h) : image_base<pixel_type> (buffer,w,h) { this->class_name = "image"; };
     image(std::shared_ptr<std::vector<pixel_type>> buffer, int w, int h, int l) : image_base<pixel_type> (buffer,w,h,l) { this->class_name = "image"; };
+    image(std::initializer_list<pixel_type> list) : image_base<pixel_type> (list) { this->class_name = "image"; };
     image(const image<pixel_type> & input) : image_base<pixel_type> (input) { this->class_name = "image"; };
+    image(const image_base<pixel_type> & input) : image_base<pixel_type> (input) { this->class_name = "image"; };
 
     using image_base<pixel_type>::operator =;
     // using image_base<pixel_type>::operator +;

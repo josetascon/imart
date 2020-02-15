@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-01-24 16:12:52
+* @Last Modified time: 2020-02-15 16:06:30
 */
 
 // std libs
@@ -159,12 +159,36 @@ int main()
     std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;
     std::cout << "image4 ptr count: " << image4.get_ptr_count() << std::endl;
 
+    std::cout << std::endl << "\nMaking new image-pointer (2,2)\n";  
+    image<float>::pointer image_ptr( new image<float>(2,2) );
+    
+    image_ptr->print("image-pointer");
+    image_ptr->print_data();
+
+    std::cout << "image+pointer ptr count: " << image_ptr->get_ptr_count() << std::endl;
+    
+    *image_ptr = image3;
+    std::cout << std::endl << "Making image-pointer = image3. " << std::endl;
+
+    image_ptr->print("image-pointer");
+    std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;
+    std::cout << "image-pointer ptr count: " << image_ptr->get_ptr_count() << std::endl;
+
+    std::cout << std::endl << "Testing constructor with image(input.get_size()). " << std::endl;
+    image<double> image_size(image3.get_size());
+    image_size.print("image construted with image3.get_size()");
+
     // Create different image objects
     std::cout << std::endl;
     std::cout << "===================== ";
     std::cout << "Test class image, initilization";
     std::cout << " =====================";
     std::cout << std::endl;
+
+    image<float> image_list{1.2, 2.1, 1.3, 0.0, 3.1, 1.5, 5.1};
+    std::cout << "image initialized with list {1.2, 2.1, 1.3, 0.0, 3.1, 1.5, 5.1}" << std::endl;
+    image_list.print("image list");
+    image_list.print_data();
 
     image<float> image5(6,6);
     // image<unsigned int> image6(4,7);
