@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-07 10:12:34
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-01-24 16:14:29
+* @Last Modified time: 2020-02-14 21:38:36
 */
 
 // std libs
@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    
     // Definitions
     typedef itk::Image< unsigned short, 2 >     ImageType;
     typedef itk::ImageFileReader<ImageType>     ReaderType;
@@ -87,6 +88,22 @@ int main(int argc, char *argv[])
     tt1.print("Reading image time itk: ");
     tt2.print("Reading image time ours: ");
     // std::cout << tt2;
+    
+    // image<unsigned short> image3(2);
+
+    // 3D image
+    // image<short> image3(3);
+    // image3.read(argv[1]);
+
+    // std::vector<double> direction;
+    // direction = image3.get_direction();
+
+    // for (int i; i < direction.size(); i++){ std::cout << direction[i]; };
+
+    // image3.print("Our Image");
+    // image3.write("output.mha");
+
+    //// image3.print_data("Pixel values:");
 
     return 0;
 };

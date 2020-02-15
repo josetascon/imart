@@ -25,10 +25,14 @@ class grid: public object<pixel_type>
 {
 public:
     //Type definitions
-    using vector_image = std::vector<image<pixel_type>>;
-    using ptr_vector_image = std::shared_ptr<vector_image>;
+    using pointer = std::shared_ptr<grid<pixel_type>>;
+    using vector = std::vector<grid::pointer>;
     
 protected:
+    //Type definitions
+    using vector_image = std::vector<image<pixel_type>>;
+    using ptr_vector_image = std::shared_ptr<vector_image>;
+
     // ===========================================
     // Internal Variables
     // ===========================================
@@ -302,9 +306,9 @@ void grid<pixel_type>::meshgrid_2d()
     int h = this->get_size()[1];
     int elements = w*h;
 
-    std::vector<pixel_type> s = this->get_spacing();
-    std::vector<pixel_type> o = this->get_origin();
-    std::vector<pixel_type> d = this->get_direction();
+    std::vector<double> s = this->get_spacing();
+    std::vector<double> o = this->get_origin();
+    std::vector<double> d = this->get_direction();
 
     image<pixel_type> x(w,h);
     image<pixel_type> y(w,h);
@@ -312,7 +316,7 @@ void grid<pixel_type>::meshgrid_2d()
     pixel_type * px = x.ptr();
     pixel_type * py = y.ptr();
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for(int j = 0; j < h; j++)
     {
         for(int i = 0; i < w; i++)
@@ -338,9 +342,9 @@ void grid<pixel_type>::meshgrid_3d()
     int l = this->get_size()[2];
     int elements = w*h*l;
 
-    std::vector<pixel_type> s = this->get_spacing();
-    std::vector<pixel_type> o = this->get_origin();
-    std::vector<pixel_type> d = this->get_direction();
+    std::vector<double> s = this->get_spacing();
+    std::vector<double> o = this->get_origin();
+    std::vector<double> d = this->get_direction();
 
     image<pixel_type> x(w,h,l);
     image<pixel_type> y(w,h,l);
@@ -350,7 +354,7 @@ void grid<pixel_type>::meshgrid_3d()
     pixel_type * py = y.ptr();
     pixel_type * pz = z.ptr();
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for(int k = 0; k < l; k++)
     {
         for(int j = 0; j < h; j++)

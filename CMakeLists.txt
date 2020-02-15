@@ -3,10 +3,13 @@
 cmake_minimum_required(VERSION 3.8)
 project(ParallelRegistration C CXX)
 
-set(VERSION_MAJOR 1)
-set(VERSION_MINOR 7)
-set(VERSION_PATCH 1)
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 1)
+set(VERSION_PATCH 2)
 set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+
+# Path where all your libraries are
+set(CMAKE_LIBRARY_PATH "/usr/lib")
 
 # ===========================================
 #               Find Libraries
@@ -20,7 +23,7 @@ find_package( OpenMP REQUIRED )
 find_package( OpenCL REQUIRED )
 
 
-set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL OpenMP::OpenMP_CXX)
+set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL "fftw3" OpenMP::OpenMP_CXX)
 # set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL )
 
 # ===========================================

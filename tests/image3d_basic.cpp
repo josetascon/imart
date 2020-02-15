@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-01-24 16:08:42
+* @Last Modified time: 2020-02-15 16:08:48
 */
 
 // std libs
@@ -171,6 +171,10 @@ int main()
 
     std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;
     std::cout << "image4 ptr count: " << image4.get_ptr_count() << std::endl;
+
+    std::cout << std::endl << "Testing constructor with image(input.get_size()). " << std::endl;
+    image<double> image_size(image3.get_size());
+    image_size.print("image construted with image3.get_size()");
 
     // Create different image objects
     std::cout << std::endl;

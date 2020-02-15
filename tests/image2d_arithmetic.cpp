@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-07 10:13:08
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-01-24 16:16:11
+* @Last Modified time: 2020-02-06 11:45:58
 */
 
 
@@ -17,8 +17,8 @@
 int main()
 {
     
-    using ptr_vector_f = image<float>::ptr_vector;
-    using ptr_vector_d = image<double>::ptr_vector;
+    using ptr_vector_f = std::shared_ptr<std::vector<float>>;
+    using ptr_vector_d = std::shared_ptr<std::vector<double>>;
 
 
     // ============================================
