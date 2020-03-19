@@ -24,8 +24,9 @@ class image : public image_base<pixel_type>
 {
 public:
     //Type definitions
-    using pointer = std::shared_ptr<image<pixel_type>>;
-    using vector = std::vector<image::pointer>;
+    using self    = image;
+    using pointer = std::shared_ptr<self>;
+    using vector  = std::vector<image::pointer>;
 
 protected:
     // Type definitions

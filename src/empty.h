@@ -5,13 +5,13 @@
 * @Last Modified time: 2020-01-27 00:00:00
 */
 
-#ifndef __OPTIMIZER_H__
-#define __OPTIMIZER_H__
+#ifndef __CLASS_H__
+#define __CLASS_H__
 
 #include "image.h"
 
 template <typename pixel_type>
-class optimizer: public object<pixel_type>
+class myclass: public object<pixel_type>
 {
 public:
     //Type definitions
@@ -20,15 +20,6 @@ protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    int iteration;
-    int num_iterations;
-    
-    int unchanged_times;
-    int unchanged_max_times;
-    
-    double tolerance;
-    double previous_cost;
-    double current_cost;
 
     // ===========================================
     // Functions
@@ -40,13 +31,12 @@ public:
     // Create Functions
     // ===========================================
     // Constructors
-    optimizer();
     
 
     // ===========================================
     // Get Functions
     // ===========================================
-    int get_iterations() const;
+    int get_abc() const;
 
     // ===========================================
     // Print Functions
@@ -57,9 +47,8 @@ public:
     // ===========================================
     // Functions
     // ===========================================
-    // compute the cost
-    void optimize();
-
+    // compute
+    void execute();
 };
 
 
@@ -77,20 +66,20 @@ public:
 // ===========================================
 // Constructor
 template <typename pixel_type>
-optimizer<pixel_type>::optimizer()
+myclass<pixel_type>::myclass()
 {
     init();
 };
 
 template <typename pixel_type>
-void optimizer<pixel_type>::init()
+void myclass<pixel_type>::init()
 {
     ;
 };
 
 
 template <typename pixel_type>
-std::string optimizer::<pixel_type>::info(std::string msg)
+std::string myclass::<pixel_type>::info(std::string msg)
 {
     std::stringstream ss;
     std::string title = "Optimizer Information";

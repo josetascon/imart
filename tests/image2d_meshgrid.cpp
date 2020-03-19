@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-01-24 16:32:16
+* @Last Modified time: 2020-03-19 14:20:48
 */
 
 
@@ -63,6 +63,11 @@ int main()
     // image_2d<float> image2(1000,200);
 
     // image2.meshgrid();
+
+    auto xp1 = grid<double>::new_pointer(x0);
+    xp1->print();
+    xp1->print_data();
+
 
     return 0;
 

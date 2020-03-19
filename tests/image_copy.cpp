@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-01-27 15:51:36
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-02-06 15:35:31
+* @Last Modified time: 2020-03-05 12:23:51
 */
 
 // std libs
@@ -143,6 +143,63 @@ int main()
     std::cout << "transform12 ptr value: " << (transform12.get_parameters())->ptr() << "\n";
     if (image11.ptr() != image12.ptr()) { std::cout << "Different pointers!\n"; };
 
+
+    std::cout << "===================== ";
+    std::cout << "Test grid, equal and duplicate functions";
+    std::cout << " =====================";
+    std::cout << std::endl;
+
+    
+    image<type> imageg(9,7);
+    imageg.set_spacing(std::vector<double>{0.5, 1.2});
+    imageg.set_origin(std::vector<double>{-12.0, 2.1});
+
+    
+    grid<type> grid1(imageg);
+    grid<type> grid2;
+    grid<type> grid3;
+
+    grid2 = grid1;
+    grid3.duplicate(grid1);
+
+    std::cout << "Summary commands:\n";
+    std::cout << "grid1 with size(9,7), spacing(0.5,1.2), origin(-12.0,5.0)\n";
+    std::cout << "grid2 = grid1\n";
+    std::cout << "grid3.duplicate(grid1)\n";
+    std::cout << std::endl;
+
+    grid1.print_data("grid1:");
+    grid2.print_data("grid2:");
+    grid3.print_data("grid3:");
+
+    std::cout << "grid1 ptr count: " << grid1.get_grid().use_count() << "\n";
+    std::cout << "grid1 ptr value: " << grid1.ptr() << "\n";
+    std::cout << "grid2 ptr value: " << grid2.ptr() << "\n";
+    std::cout << "grid3 ptr value: " << grid3.ptr() << "\n";
+    if (grid1.ptr() == grid2.ptr() and grid1.ptr() == grid3.ptr() ) { std::cout << "Same pointers!\n"; };
+
+    std::cout << "===================== ";
+    std::cout << "Test grid, copy functions";
+    std::cout << " =====================";
+    std::cout << std::endl;
+
+    grid<type> grid11(imageg);
+    grid<type> grid12(2);
+    grid12.copy(grid11);
+
+    std::cout << "Summary commands:\n";
+    std::cout << "grid11 with size(9,7), spacing(0.5,1.2), origin(-12.0,5.0)\n";
+    std::cout << "grid12.copy(grid11)\n";
+    std::cout << std::endl;
+
+    grid12.print_data("grid12:");
+
+    std::cout << "grid11 ptr value: " << grid11.ptr() << "\n";
+    std::cout << "grid12 ptr value: " << grid12.ptr() << "\n";
+    if (grid11.ptr() != grid12.ptr() ) { std::cout << "Different pointers!\n"; };
+    
+    // Constructor calling copy
+    grid<type> grid21(grid12);
 
     return 0;
 

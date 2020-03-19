@@ -25,12 +25,13 @@ class grid: public object<pixel_type>
 {
 public:
     //Type definitions
-    using pointer = std::shared_ptr<grid<pixel_type>>;
-    using vector = std::vector<grid::pointer>;
+    using self    = grid;
+    using pointer = std::shared_ptr<self>;
+    using vector  = std::vector<self::pointer>;
     
 protected:
     //Type definitions
-    using vector_image = std::vector<image<pixel_type>>;
+    using vector_image     = std::vector<image<pixel_type>>;
     using ptr_vector_image = std::shared_ptr<vector_image>;
 
     // ===========================================
@@ -42,13 +43,14 @@ protected:
     // Functions
     // ===========================================
     void init(int dim);
-    void copy(const grid<pixel_type> & input);
     void copy_properties(const grid<pixel_type> & input);
-    void copy_properties(const image<pixel_type> & input);
+    void copy_properties(const image_base<pixel_type> & input);
     // void update(const image_2d<pixel_type> & input);
     // void update(const image_3d<pixel_type> & input);
     void meshgrid_2d();
     void meshgrid_3d();
+
+    void allocate(int dimension);
 
 public:
     // ===========================================
@@ -57,11 +59,22 @@ public:
     grid();
     grid(int dim);
     grid(const grid<pixel_type> & input);
-    grid(const image<pixel_type> & input);
+    grid(const image_base<pixel_type> & input);
     // grid(const image_2d<pixel_type> & input);
     // grid(const image_3d<pixel_type> & input);
 
     ~grid();
+
+    // static pointer new_pointer();
+    template<typename... ARGS>
+    static pointer new_pointer(const ARGS&... args);
+    // {
+    //     return std::make_shared<grid>(args...);
+    // };
+
+    void copy(const grid<pixel_type> & input);
+    void duplicate(const grid<pixel_type> & input);
+    void imitate(const grid<pixel_type> & input);
     
     // ===========================================
     // Get Functions
@@ -86,14 +99,11 @@ public:
     // ===========================================
     // Functions
     // ===========================================
-    void meshgrid(image<pixel_type> & input);
+    void meshgrid();
+    void meshgrid(image_base<pixel_type> & input);
     // void meshgrid(image_2d<pixel_type> & input);
     // void meshgrid(image_3d<pixel_type> & input);
 };
-
-
-
-
 
 
 // ===========================================
@@ -118,31 +128,17 @@ grid<pixel_type>::grid(int d)
 template <typename pixel_type>
 grid<pixel_type>::grid(const grid<pixel_type> & input)
 {
+    init(input.get_dimension());
     this->class_name = "grid";
     copy(input);
 }
 
 template <typename pixel_type>
-grid<pixel_type>::grid(const image<pixel_type> & input)
+grid<pixel_type>::grid(const image_base<pixel_type> & input)
 {
     copy_properties(input);
-    if (this->dim == 2) { meshgrid_2d(); };
-    if (this->dim == 3) { meshgrid_3d(); };
+    meshgrid();
 };
-
-// template <typename pixel_type>
-// grid<pixel_type>::grid(const image_2d<pixel_type> & input)
-// {
-//     copy_properties(input);
-//     meshgrid_2d();
-// };
-
-// template <typename pixel_type>
-// grid<pixel_type>::grid(const image_3d<pixel_type> & input)
-// {
-//     copy_properties(input);
-//     meshgrid_3d();
-// };
 
 template <typename pixel_type>
 grid<pixel_type>::~grid()
@@ -154,22 +150,57 @@ template <typename pixel_type>
 void grid<pixel_type>::init(int d)
 {
     this->class_name = "grid";
-    xyz.reset();
-    xyz = std::make_shared<vector_image>(d);
+    // xyz.reset();
+    // xyz = std::make_shared<vector_image>(d);
+    allocate(d);
     object<pixel_type>::init(d);
+};
+
+template <typename pixel_type>
+template <typename ... ARGS>
+typename grid<pixel_type>::pointer grid<pixel_type>::new_pointer(const ARGS&... args)
+{
+    return std::make_shared< grid<pixel_type> >(args...); // not working for inherited classes
+};
+
+
+template <typename pixel_type>
+void grid<pixel_type>::allocate(int dimension)
+{
+    xyz.reset();
+    xyz = std::make_shared< std::vector< image<pixel_type >>>(dimension);
+    for (int i = 0; i < dimension; i++)
+    {
+        (*xyz)[i] = image_base<pixel_type>();
+    };
+
 };
 
 template <typename pixel_type>
 void grid<pixel_type>::copy(const grid<pixel_type> & input)
 {
-    // the update method copy the object parameters and
-    // only initialize internal parameters
     int d = input.get_dimension();
+    image<pixel_type> * p1 = input.ptr();
+    image<pixel_type> * p2 = ptr();
+    
+    copy_properties(input);
+    for (int i = 0; i < d; i++){ p2[i].copy(p1[i]); }; // Copy xyz
+};
 
+template <typename pixel_type>
+void grid<pixel_type>::duplicate(const grid<pixel_type> & input)
+{
+    copy_properties(input);
     xyz.reset();
-    xyz = std::make_shared<vector_image>(d);
-    object<pixel_type>::copy_properties(input);
-    // **** MISSING COPY xyz
+    xyz = input.get_grid();
+};
+
+template <typename pixel_type>
+void grid<pixel_type>::imitate(const grid<pixel_type> & input)
+{
+    copy_properties(input);
+    xyz.reset();
+    xyz = std::make_shared<vector_image>(input.get_dimension());
 };
 
 template <typename pixel_type>
@@ -183,7 +214,7 @@ void grid<pixel_type>::copy_properties(const grid<pixel_type> & input)
 };
 
 template <typename pixel_type>
-void grid<pixel_type>::copy_properties(const image<pixel_type> & input)
+void grid<pixel_type>::copy_properties(const image_base<pixel_type> & input)
 {
     int d = input.get_dimension();
 
@@ -240,10 +271,7 @@ image<pixel_type> * grid<pixel_type>::ptr() const
 template <typename pixel_type>
 grid<pixel_type> & grid<pixel_type>::operator = (const grid<pixel_type> & input)
 {
-    // delete &data;
-    copy_properties(input);
-    xyz.reset();
-    xyz = input.get_grid();
+    duplicate(input);
     return *this;
 };
 
@@ -286,7 +314,7 @@ std::string grid<pixel_type>::info_data(std::string msg)
     
     for(int i = 0; i < this->dim; i++)
     {
-        ss << (*(this->xyz))[i].info_data(abc[i]);
+        ss << (*xyz)[i].info_data(abc[i]);
     }
     
     return ss.str();
@@ -297,6 +325,20 @@ std::string grid<pixel_type>::info_data(std::string msg)
 // ===========================================
 // Functions
 // ===========================================
+template <typename pixel_type>
+void grid<pixel_type>::meshgrid()
+{   
+    if (this->dim == 2) { meshgrid_2d(); };
+    if (this->dim == 3) { meshgrid_3d(); };
+};
+
+template <typename pixel_type>
+void grid<pixel_type>::meshgrid(image_base<pixel_type> & input)
+{   
+    copy_properties(input);
+    meshgrid();
+};
+
 template <typename pixel_type>
 void grid<pixel_type>::meshgrid_2d()
 {
@@ -371,14 +413,6 @@ void grid<pixel_type>::meshgrid_3d()
     (*xyz)[0] = x;
     (*xyz)[1] = y;
     (*xyz)[2] = z;
-};
-
-template <typename pixel_type>
-void grid<pixel_type>::meshgrid(image<pixel_type> & input)
-{   
-    copy_properties(input);
-    if (this->dim == 2) { meshgrid_2d(); };
-    if (this->dim == 3) { meshgrid_3d(); };
 };
 
 // template <typename pixel_type>

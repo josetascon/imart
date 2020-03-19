@@ -34,14 +34,20 @@ struct borders
 template <typename pixel_type>
 class interpolate: public object<pixel_type>
 {
+public:
+    //Type definitions
+    using self    = interpolate;
+    using pointer = std::shared_ptr<self>;
+    using vector  = std::vector<self::pointer>;
+
 protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    image<pixel_type> image_reference;
-    grid<pixel_type> x_reference;
     pixel_type fill;
     borders<pixel_type> region;
+    image<pixel_type> image_reference;
+    grid<pixel_type> x_reference;
 
     // ===========================================
     // Functions
@@ -63,7 +69,11 @@ public:
     // Create Functions
     // ===========================================
     // interpolate();
-    interpolate(image<pixel_type> & input, grid<pixel_type> & xref);
+    // interpolate(image<pixel_type> & input, grid<pixel_type> & xref);
+    interpolate(image<pixel_type> input, grid<pixel_type> xref);
+
+    template<typename... ARGS>
+    static pointer new_pointer(const ARGS&... args);
 
     // ===========================================
     // Functions
@@ -85,8 +95,10 @@ public:
 // ===========================================
 // Create Functions
 // ===========================================
+// template <typename pixel_type>
+// interpolate<pixel_type>::interpolate(image<pixel_type> & input, grid<pixel_type> & xref)
 template <typename pixel_type>
-interpolate<pixel_type>::interpolate(image<pixel_type> & input, grid<pixel_type> & xref)
+interpolate<pixel_type>::interpolate(image<pixel_type> input, grid<pixel_type> xref)
 {
     assert(input.get_dimension() == xref.get_dimension());
     image_reference = input;
@@ -94,6 +106,12 @@ interpolate<pixel_type>::interpolate(image<pixel_type> & input, grid<pixel_type>
     fill = 0;               // fill values that are not interpolated
 };
 
+template <typename pixel_type>
+template <typename ... ARGS>
+typename interpolate<pixel_type>::pointer interpolate<pixel_type>::new_pointer(const ARGS&... args)
+{
+    return std::make_shared< interpolate<pixel_type> >(args...); // not working for inherited classes
+};
 
 // ===========================================
 // Functions
@@ -107,14 +125,14 @@ image<pixel_type> interpolate<pixel_type>::operator *(const grid<pixel_type> & x
 template <typename pixel_type>
 image<pixel_type> interpolate<pixel_type>::linear(const grid<pixel_type> & xin)
 {
-    // image_base<pixel_type> (*linear_function)(grid<pixel_type> &);
+    // image<pixel_type> (*linear_function)(grid<pixel_type> &);
     // if(xin.get_dimension() == 2){ linear_function = &interpolate<pixel_type>::linear2;};
     // if(xin.get_dimension() == 3){ linear_function = &interpolate<pixel_type>::linear3;};
     // return (*linear_function)(xin);
 
     // TODO: Make this work. Consider a single image class, a single affine transform.
     // image<pixel_type> a(xin.get_size()[0], xin.get_size()[1]);
-    image<pixel_type> a;
+    image<pixel_type> a(xin.get_dimension());
     if(xin.get_dimension() == 2){ a = linear2(xin); };
     if(xin.get_dimension() == 3){ a = linear3(xin); };
     return a;
@@ -129,8 +147,9 @@ image<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & xin)
 
     using ptr_pixels4 = std::unique_ptr<std::array<pixel_type,4>>;
 
-    image<pixel_type> image_out(xin.get_size()[0],xin.get_size()[1]);
-     pixel_type * pout = image_out.ptr();
+    image<pixel_type> image_out(xin.get_size()[0], xin.get_size()[1]);
+    // image_out.print();
+    pixel_type * pout = image_out.ptr();
 
     pixel_type * xi = (xin.ptr()[0]).ptr();   // raw pointer to
     pixel_type * yi = (xin.ptr()[1]).ptr();   // input grid coordinates
@@ -138,14 +157,15 @@ image<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & xin)
     pixel_type * xr = (x_reference.ptr()[0]).ptr();  // raw pointer to
     pixel_type * yr = (x_reference.ptr()[1]).ptr();  // ref grid coordinates
 
-    pixel_type sx = image_reference.get_spacing()[0];   // scales
-    pixel_type sy = image_reference.get_spacing()[1];
+    double sx = image_reference.get_spacing()[0];   // scales
+    double sy = image_reference.get_spacing()[1];
     // image_reference.print_data();    // debug
 
     // ptr_pixels4 i4;
     // pixel_type iout;
     boundaries2(); // call to compute region used in search_
     int num = xin.ptr()[0].get_total_elements();
+    // std::cout << "num " << num << std::endl;
     for(int k = 0; k < num; k++)
     {
         pixel_type xk = xi[k];
@@ -175,9 +195,9 @@ image<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & xin)
         // else{ iout =  this->fill; };
         // std::cout << "idx: " << idx << "\n";
         // std::cout << "iout: " << iout << "\n";
-
         pout[k] = iout; // TODO: THIS line produce double error
                             // check everything in the for loop
+        
     }
 
     // image_out.print_data(); // debug
@@ -204,9 +224,9 @@ image<pixel_type> interpolate<pixel_type>::linear3(const grid<pixel_type> & xin)
     pixel_type * yr = (x_reference.ptr()[1]).ptr();  // ref grid coordinates
     pixel_type * zr = (x_reference.ptr()[2]).ptr();
 
-    pixel_type sx = image_reference.get_spacing()[0];   // scales
-    pixel_type sy = image_reference.get_spacing()[1];
-    pixel_type sz = image_reference.get_spacing()[2];
+    double sx = image_reference.get_spacing()[0];   // scales
+    double sy = image_reference.get_spacing()[1];
+    double sz = image_reference.get_spacing()[2];
     
     boundaries3(); // call to compute region used in search_
     int num = xin.ptr()[0].get_total_elements();
@@ -279,9 +299,9 @@ int interpolate<pixel_type>::search_(pixel_type x, pixel_type y)
     // pixel_type * xr = (x_reference.ptr()[0]).ptr();  // raw pointer to
     // pixel_type * yr = (x_reference.ptr()[1]).ptr();  // ref grid coordinates
 
-    std::vector<pixel_type> ss = (x_reference.ptr()[0]).get_spacing();
-    pixel_type sx = ss[0];
-    pixel_type sy = ss[1];
+    std::vector<double> ss = (x_reference.ptr()[0]).get_spacing();
+    double sx = ss[0];
+    double sy = ss[1];
     
     // pixel_type xmin = xr[0];
     // pixel_type xmax = xr[w-1];
@@ -313,7 +333,7 @@ int interpolate<pixel_type>::search_(pixel_type x, pixel_type y, pixel_type z)
     int w = x_reference.get_size()[0];
     int h = x_reference.get_size()[1];
 
-    std::vector<pixel_type> ss = (x_reference.ptr()[0]).get_spacing();
+    std::vector<double> ss = (x_reference.ptr()[0]).get_spacing();
     pixel_type sx = ss[0];
     pixel_type sy = ss[1];
     pixel_type sz = ss[2];
