@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-02-15 16:06:30
+* @Last Modified time: 2020-03-06 11:08:38
 */
 
 // std libs
@@ -161,6 +161,7 @@ int main()
 
     std::cout << std::endl << "\nMaking new image-pointer (2,2)\n";  
     image<float>::pointer image_ptr( new image<float>(2,2) );
+    // image<float>::pointer image_ptr2 = image<float>::new_pointer(); // ** to implement in future
     
     image_ptr->print("image-pointer");
     image_ptr->print_data();

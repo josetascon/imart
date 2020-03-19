@@ -56,13 +56,14 @@ class image_base: public object<pixel_type>
 {
 public:
     //Type definitions
-    using pointer = std::shared_ptr<image_base<pixel_type>>;
-    using vector = std::vector<image_base::pointer>;
+    using self    = image_base;
+    using pointer = std::shared_ptr<self>;
+    using vector  = std::vector<self::pointer>;
 
 protected:
     //Type definitions
-    using iterator = typename std::vector<pixel_type>::iterator;
-    using ptr_vector = std::shared_ptr<std::vector<pixel_type>>;
+    using iterator    = typename std::vector<pixel_type>::iterator;
+    using ptr_vector  = std::shared_ptr<std::vector<pixel_type>>;
     using ptr_pixels4 = std::unique_ptr<std::array<pixel_type,4>>;
     using ptr_pixels8 = std::unique_ptr<std::array<pixel_type,8>>;
 
@@ -83,15 +84,16 @@ protected:
     // Image data
     ptr_vector data;
 
-    // consider these methods as protected
+    // Initialization methods as protected
     virtual void init(int w, int h);            // Only 2d
     virtual void init(int w, int h, int l);     // Only 3d
     virtual void copy_properties(const image_base<pixel_type> & input); // copy only properties
     virtual void allocate(int elements);
 
+    // Read methods protected
     void read_2d(std::string file_name);
     void read_3d(std::string file_name);
-
+    // Write methods protected
     void write_2d(std::string file_name);
     void write_3d(std::string file_name);
 
@@ -125,6 +127,12 @@ public:
     //! Destructor
     // ~image_base();
 
+    //! New pointer
+    // static image_base<pixel_type>::pointer new_pointer();
+    template<typename... ARGS>
+    static pointer new_pointer(const ARGS&... args);
+    // { return std::make_shared<image_base>(args...);};
+
     //! Full copy image
     void copy(const image_base & input);
     //! Duplicate data array for images
@@ -137,10 +145,11 @@ public:
     // ===========================================
     // Interface Functions
     // ===========================================
-    // interface with ITK, eigen?
+    // interface with files using ITK
     void read(std::string file_name);
     void write(std::string file_name);
 
+    //ITK interface, VTK? eigen?
     // template <type_itk>
     // void read_itk(itk::Image< type_itk, 2 > image_itk);
     // void write_itk();
@@ -188,7 +197,7 @@ public:
     // ===========================================
     // Overloading Operators
     // ===========================================
-    // Access
+    // Access, does not support writing pixels
     pixel_type & operator () (int e);
     pixel_type & operator () (int w, int h); //ONLY 2d***
     pixel_type & operator () (int w, int h, int l); //ONLY 3d***
@@ -277,10 +286,10 @@ public:
     // extra functions: copy, cast [DONE]
 };
 
+
 // ===========================================
 //      Functions of Class image_base
 // ===========================================
-
 
 // ===========================================
 // Create Functions
@@ -361,6 +370,7 @@ image_base<pixel_type>::image_base(ptr_vector buffer, int w, int h, int l)
     data = buffer;
 };
 
+// Constructor
 template <typename pixel_type>
 image_base<pixel_type>::image_base(std::initializer_list<pixel_type> list)
 {
@@ -376,6 +386,7 @@ image_base<pixel_type>::image_base(std::initializer_list<pixel_type> list)
     };
 }
 
+// Constructor
 template <typename pixel_type>
 image_base<pixel_type>::image_base(const image_base<pixel_type> & input)
 {
@@ -388,6 +399,13 @@ image_base<pixel_type>::image_base(const image_base<pixel_type> & input)
 // {
 //     data.reset();
 // };
+
+template <typename pixel_type>
+template <typename ... ARGS>
+typename image_base<pixel_type>::pointer image_base<pixel_type>::new_pointer(const ARGS&... args)
+{
+    return std::make_shared<image_base<pixel_type>>(args...); // not working for inherited classes
+};
 
 // Empty init
 template <typename pixel_type>
@@ -420,8 +438,6 @@ void image_base<pixel_type>::init(int w, int h, int l)
     this->size = std::vector<int>{width, height, length};
 };
 
-
-
 // Copy metadata
 template <typename pixel_type>
 void image_base<pixel_type>::copy_properties(const image_base<pixel_type> & input)
@@ -442,6 +458,12 @@ void image_base<pixel_type>::allocate(int total_elements)
     data.reset();
     data = std::make_shared<std::vector<pixel_type>>(total_elements);
 };
+
+// template <typename pixel_type>
+// typename image_base<pixel_type>::pointer image_base<pixel_type>::anew()
+// {
+//     return std::make_shared<image_base<pixel_type>>();
+// };
 
 // Full copy
 template <typename pixel_type>
@@ -641,7 +663,6 @@ void image_base<pixel_type>::read_3d(std::string file_name)
 //     };
 // };
 
-
 template <typename pixel_type>
 void image_base<pixel_type>::write(std::string file_name)
 {
@@ -723,7 +744,6 @@ void image_base<pixel_type>::write_2d(std::string file_name)
     }
 };
 
-
 template <typename pixel_type>
 void image_base<pixel_type>::write_3d(std::string file_name)
 {
@@ -802,9 +822,6 @@ void image_base<pixel_type>::write_3d(std::string file_name)
     }
 };
 
-
-
-
 // ===========================================
 // Get Functions
 // ===========================================
@@ -853,7 +870,8 @@ typename image_base<pixel_type>::ptr_vector image_base<pixel_type>::get_data() c
 template <typename pixel_type>
 pixel_type * image_base<pixel_type>::ptr() const
 {
-    return data.get()->data();
+    if (num_elements > 0)  { return data.get()->data(); }
+    else                   { return nullptr; };
     // return (*data).data();
 };
 
@@ -1692,7 +1710,6 @@ typename image_base<pixel_type>::vector gradient(const image_base<pixel_type> & 
     return grad;
 };
 
-
 template <typename pixel_type>
 typename image_base<pixel_type>::ptr_pixels4 image_base<pixel_type>::neighbors4(int e)
 {
@@ -1707,7 +1724,6 @@ typename image_base<pixel_type>::ptr_pixels8 image_base<pixel_type>::neighbors8(
     ptr_pixels8 arr = std::make_unique<std::array<pixel_type,8>>();
     return arr;
 }
-
 
 // Template constructions
 // template class image_base<unsigned char>;  // 1 byte

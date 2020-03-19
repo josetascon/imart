@@ -45,7 +45,7 @@ protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    int width;
+    int width;          // consider change image_base as virtual only, image_base cpu methods move to cpu
     int height;
     int length;
     int num_elements;

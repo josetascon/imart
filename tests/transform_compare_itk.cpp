@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-02-06 10:53:44
+* @Last Modified time: 2020-03-05 18:19:50
 */
 
 
@@ -98,16 +98,17 @@ int main()
     timer t1;
     t1.start();
     // grid<type> x1 = affine1*x0;
+    // image0_itp*x1;
     // image<type> image1 = image0_itp*x1;
     image<type> image1 = image0_itp*(affine1*x0);
     t1.finish();
 
+    // x1.print_data();
     image0.print("input image");
     image1.print("transformed image");
     std::cout << std::endl;
 
     std::cout << "Time project: " << t1.get_time() << t1.get_units() << std::endl;
-
 
     // Image
     using ImageType = itk::Image<type, dim>;
@@ -158,7 +159,6 @@ int main()
     std::cout << "Time itk: " << t1.get_time() << t1.get_units() << std::endl;
 
     // ## CHECK IMAGE OUTPUT in FILES Enero 29 2020
-
 
     return 0;
 

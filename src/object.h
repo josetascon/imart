@@ -18,6 +18,12 @@
 template <typename pixel_type>
 class object
 {
+public:
+    //Type definitions
+    using self    = object;
+    using pointer = std::shared_ptr<self>;
+    using vector  = std::vector<self::pointer>;
+
 protected:
     // ===========================================
     // Internal Variables
@@ -37,7 +43,6 @@ protected:
     virtual void init(int d);                           // init default properties
     virtual void copy_properties(const object & input); // copy only properties
 
-
 public:
     // ===========================================
     // Create Functions
@@ -48,8 +53,15 @@ public:
     
     ~object();                          // destructor empty
 
+    template<typename... ARGS>
+    static pointer new_pointer(const ARGS&... args);
+    // {
+    //     return std::make_shared<object>(args...);
+    // };
+
     virtual void copy(const object & input);            // copy everything
     virtual void duplicate(const object & input);       // share data
+    virtual void imitate(const object & input);         // copy meta data
 
     // ===========================================
     // Get Functions
@@ -88,11 +100,6 @@ public:
 };
 
 
-
-
-
-
-
 // ===========================================
 //          Functions of Class object
 // ===========================================
@@ -129,6 +136,13 @@ object<pixel_type>::~object()
 };
 
 template <typename pixel_type>
+template <typename ... ARGS>
+typename object<pixel_type>::pointer object<pixel_type>::new_pointer(const ARGS&... args)
+{
+    return std::make_shared<object<pixel_type>>(args...); // not working for inherited classes
+};
+
+template <typename pixel_type>
 void object<pixel_type>::init(int d)
 {
     dim = d;
@@ -161,6 +175,12 @@ void object<pixel_type>::copy(const object & input)
 
 template <typename pixel_type>
 void object<pixel_type>::duplicate(const object & input)
+{
+    copy_properties(input);
+};
+
+template <typename pixel_type>
+void object<pixel_type>::imitate(const object & input)
 {
     copy_properties(input);
 };

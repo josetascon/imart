@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 17:17:46
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-02-06 11:25:40
+* @Last Modified time: 2020-03-05 13:42:25
 */
 
 // std libs
@@ -82,7 +82,7 @@ int main()
     // translation.print("translation");
 
     x1 = translation.transform(x0);
-    x1.print_data("grid x1, translation [10, -10]");    
+    x1.print_data("grid x1, translation [10, -10]");
 
     return 0;
 };

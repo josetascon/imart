@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-01-28 14:26:06
+* @Last Modified time: 2020-03-18 16:48:01
 */
 
 
@@ -27,8 +27,19 @@ image<type> ssd(image<type> & image0, image<type> & image1, affine<type> & trans
 
     grid<type> x0(image0);
     grid<type> x1(image1);
-    interpolate<type> image1_p(image1, x1);
+    // x0.print_data();
+    // x1.print_data();
+
+    // image<type>::pointer im0_ptr(&image0);
+    // image<type>::pointer im1_ptr(&image1); 
+    // grid<type>::pointer x0_ptr(&x0);
+    // grid<type>::pointer x1_ptr(&x1);
+
+    // interpolate<type> image1_p(im1_ptr, x1_ptr); //*** CHANGE back interpolate to regular objects Mar 06 2020
+    // interpolate<type> image0_p(im0_ptr, x0_ptr);
+
     interpolate<type> image0_p(image0, x0);
+    interpolate<type> image1_p(image1, x1);
 
     // image<type> ssd_(image0.get_width(),image0.get_height());
     // ssd_ = (image1_p*(transform * x0));
@@ -54,12 +65,15 @@ int main()
     // image0.ones();
     grid<type> x0(image0);
 
-    image<type> params(6,1);
-    *params.get_data() = {1.0, 0.0, 0.0, 1.0, 3.5, -1.0};
-    affine<type> translation(2,params);
+    // image<type> params(6,1);
+    // *params.get_data() = {1.0, 0.0, 0.0, 1.0, 3.5, -1.0};
+    image<type>::pointer params( new image<type>{1.1, 0.5, -0.5, 0.9, 2.1, -1.1} );
+    affine<type> translation( 2, params);
 
     grid<type> t_x0 = translation.transform(x0);
-    // x0.print_data();
+    x0.print();
+    t_x0.print();
+
     t_x0.print_data();
     translation.print();
 
@@ -81,7 +95,7 @@ int main()
 
     // Testing the inverse transfor applied to ssd function
     std::cout << "Test compressed notation\n";
-    image<type> params_inv{1.0, 0.0, 0.0, 1.0, -3.5, 1.0};
+    image<type>::pointer params_inv( new image<type>{1.0, 0.0, 0.0, 1.0, -3.5, 1.0});
     affine<type> inv_translation(2,params_inv);
 
     // image<type> result = ssd(image0, image0t, inv_translation);

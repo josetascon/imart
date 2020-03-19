@@ -5,8 +5,8 @@
 * @Last Modified time: 2019-11-05 13:55:00
 */
 
-#ifndef __affine_H__
-#define __affine_H__
+#ifndef __AFFINE_H__
+#define __AFFINE_H__
 
 // local libs
 #include "image.h"
@@ -16,6 +16,12 @@
 template <typename pixel_type>
 class affine: public transform_base<pixel_type>
 {
+public:
+    //Type definitions
+    using self    = affine;
+    using pointer = std::shared_ptr<self>;
+    using vector  = std::vector<self::pointer>;
+
 protected:
     // image<pixel_type> parameters;
     void init(int d);
@@ -33,6 +39,9 @@ public:
     affine();
     affine(int d);
     affine(int d, typename image<pixel_type>::pointer params);
+
+    template<typename... ARGS>
+    static pointer new_pointer(const ARGS&... args);
 
     // using transform_base<pixel_type>::print;
 
@@ -91,6 +100,13 @@ void affine<pixel_type>::init(int d)
     transform_base<pixel_type>::init(d);
 };
 
+template <typename pixel_type>
+template <typename ... ARGS>
+typename affine<pixel_type>::pointer affine<pixel_type>::new_pointer(const ARGS&... args)
+{
+    return std::make_shared< affine<pixel_type> >(args...); // not working for inherited classes
+};
+
 
 // template <typename pixel_type>
 // std::ostream & operator << (std::ostream & os, transform_base<pixel_type> & input)
@@ -129,7 +145,6 @@ void affine<pixel_type>::inverse_2d()
 template <typename pixel_type>
 void affine<pixel_type>::inverse_3d()
 {
-    
     typename image<pixel_type>::pointer inv;
     inv->imitate(*this->parameters);
     pixel_type * a = this->parameters->ptr();
@@ -155,7 +170,7 @@ void affine<pixel_type>::inverse_3d()
 template <typename pixel_type>
 std::vector<pixel_type> affine<pixel_type>::transform(std::vector<pixel_type> & point)
 {
-    std::vector<pixel_type> out(this->dim);
+    std::vector<pixel_type> out(point.size());
     if (this->dim == 2){ out = transform_2d(point); };
     if (this->dim == 3){ out = transform_3d(point); };
     return out;
@@ -165,8 +180,7 @@ std::vector<pixel_type> affine<pixel_type>::transform(std::vector<pixel_type> & 
 template <typename pixel_type>
 grid<pixel_type> affine<pixel_type>::transform(grid<pixel_type> & input)
 {
-    
-    grid<pixel_type> output(input);
+    grid<pixel_type> output(input.get_dimension());
     if (this->dim == 2){ output = transform_2d(input); };
     if (this->dim == 3){ output = transform_3d(input); };
     return output;
@@ -182,11 +196,12 @@ std::vector<pixel_type> affine<pixel_type>::transform_2d(std::vector<pixel_type>
     // TODO: assert*****
     // TODO: consider if the point uses 
     // the inverse or the direct transform. I think direct.
-    std::vector<pixel_type> out(this->dim);
+    std::vector<pixel_type> out(point.size());
     pixel_type * a = this->parameters->ptr();
 
     out[0] = a[0]*point[0] + a[1]*point[1] + a[4];
     out[1] = a[2]*point[0] + a[3]*point[1] + a[5];
+
     return out;
 };
 
@@ -195,14 +210,16 @@ template <typename pixel_type>
 grid<pixel_type> affine<pixel_type>::transform_2d(grid<pixel_type> & input)
 {
     // TODO: assert*****
-    grid<pixel_type> output(input);
+    grid<pixel_type> output;
+    output.imitate(input);
     pixel_type * a = this->parameters->ptr();
 
     image<pixel_type> * xin = input.ptr();
     image<pixel_type> * xout = output.ptr();
     
     xout[0] = xin[0]*a[0] + a[1]*xin[1] + a[4];
-    xout[1] = xin[0]*a[2] + a[3]*xin[1] + a[5];
+    xout[1] = xin[0]*a[2] + a[3]*xin[1] + a[5];   
+
     return output;
 };
 
@@ -216,7 +233,7 @@ std::vector<pixel_type> affine<pixel_type>::transform_3d(std::vector<pixel_type>
     // TODO: assert*****
     // TODO: consider if the point uses 
     // the inverse or the direct transform. I think direct.
-    std::vector<pixel_type> out(this->dim);
+    std::vector<pixel_type> out(point.size());
     pixel_type * a = this->parameters->ptr();
     
     out[0] = a[0]*point[0] + a[1]*point[1] + a[2]*point[2] + a[9];
@@ -230,7 +247,8 @@ template <typename pixel_type>
 grid<pixel_type> affine<pixel_type>::transform_3d(grid<pixel_type> & input)
 {
     // TODO: assert*****
-    grid<pixel_type> output(input);
+    grid<pixel_type> output;
+    output.imitate(input);
     pixel_type * a = this->parameters->ptr();
 
     image_base<pixel_type> * xin = input.ptr();

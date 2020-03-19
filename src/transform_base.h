@@ -16,7 +16,7 @@
 
 // local libs 
 #include "object.h"
-#include "image.h"
+#include "image_base.h"
 #include "grid.h"
 
 // Class transform_base
@@ -25,15 +25,16 @@ class transform_base: public object<pixel_type>
 {
 public:
     //Type definitions
-    using pointer = std::shared_ptr<transform_base<pixel_type>>;
-    using vector = std::vector<transform_base::pointer>;
+    using self    = transform_base;
+    using pointer = std::shared_ptr<self>;
+    using vector  = std::vector<self::pointer>;
 
 protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    typename image<pixel_type>::pointer parameters;
-    typename image<pixel_type>::pointer inverse_parameters;
+    typename image_base<pixel_type>::pointer parameters;
+    typename image_base<pixel_type>::pointer inverse_parameters;
 
     // ===========================================
     // Functions
@@ -49,8 +50,11 @@ public:
     // ===========================================
     transform_base();
     transform_base(int d);
-    transform_base(int d, typename image<pixel_type>::pointer params);
+    transform_base(int d, typename image_base<pixel_type>::pointer params);
     transform_base(const transform_base<pixel_type> & input);
+
+    template<typename... ARGS>
+    static pointer new_pointer(const ARGS&... args);
 
     virtual void copy(const transform_base<pixel_type> & input);
     virtual void duplicate(const transform_base & input);
@@ -58,13 +62,13 @@ public:
     // ===========================================
     // Get Functions
     // ===========================================
-    typename image<pixel_type>::pointer get_parameters() const;
-    typename image<pixel_type>::pointer get_inverse_parameters() const;
+    typename image_base<pixel_type>::pointer get_parameters() const;
+    typename image_base<pixel_type>::pointer get_inverse_parameters() const;
 
     // ===========================================
     // Set Functions
     // ===========================================
-    void set_parameters(typename image<pixel_type>::pointer params);
+    void set_parameters(typename image_base<pixel_type>::pointer params);
 
     // ===========================================
     // Print Functions
@@ -121,7 +125,7 @@ transform_base<pixel_type>::transform_base(int d)
 };
 
 template <typename pixel_type>
-transform_base<pixel_type>::transform_base(int d, typename image<pixel_type>::pointer params)
+transform_base<pixel_type>::transform_base(int d, typename image_base<pixel_type>::pointer params)
 {
     this->class_name = "transform_base";
     init(d);
@@ -130,22 +134,42 @@ transform_base<pixel_type>::transform_base(int d, typename image<pixel_type>::po
 };
 
 template <typename pixel_type>
+transform_base<pixel_type>::transform_base(const transform_base<pixel_type> & input)
+{
+    this->class_name = "transform_base";
+    copy(input);
+};
+
+template <typename pixel_type>
 void transform_base<pixel_type>::init(int d)
 {
-    typename image<pixel_type>::pointer param( std::make_shared<image<float>>(d) );
-    typename image<pixel_type>::pointer inv( std::make_shared<image<float>>(d) );
-    parameters = param;
-    inverse_parameters = inv;
+    // typename image_base<pixel_type>::pointer param( std::make_shared<image_base<pixel_type>>(d) );
+    // typename image_base<pixel_type>::pointer inv( std::make_shared<image_base<pixel_type>>(d) );
+    // parameters = param;
+    // inverse_parameters = inv;
+    parameters = image_base<pixel_type>::new_pointer(d);
+    inverse_parameters = image_base<pixel_type>::new_pointer(d);
     
     object<pixel_type>::init(d);
+};
+
+template <typename pixel_type>
+template <typename ... ARGS>
+typename transform_base<pixel_type>::pointer transform_base<pixel_type>::new_pointer(const ARGS&... args)
+{
+    return std::make_shared< transform_base<pixel_type> >(args...); // not working for inherited classes
 };
 
 template <typename pixel_type>
 void transform_base<pixel_type>::copy(const transform_base<pixel_type> & input)
 {
     object<pixel_type>::copy_properties(input);
-    (*(this->parameters)).copy(*input.get_parameters());
-    // (*(this->inverse_parameters)).copy(*input.get_inverse_parameters());
+    // (*(parameters)).copy(*input.get_parameters());
+    // (*(inverse_parameters)).copy(*input.get_inverse_parameters());
+
+    parameters->copy(*input.get_parameters());
+    inverse_parameters->copy(*input.get_inverse_parameters());
+    
 };
 
 
@@ -155,8 +179,8 @@ void transform_base<pixel_type>::duplicate(const transform_base<pixel_type> & in
 {
     object<pixel_type>::copy_properties(input);
 
-    this->parameters = input.get_parameters();
-    this->inverse_parameters = input.get_inverse_parameters();
+    parameters = input.get_parameters();
+    inverse_parameters = input.get_inverse_parameters();
 };
 
 // Equal
@@ -172,19 +196,13 @@ transform_base<pixel_type> & transform_base<pixel_type>::operator = (const trans
 // Get Functions
 // ===========================================
 template <typename pixel_type>
-typename image<pixel_type>::pointer transform_base<pixel_type>::get_parameters() const
+typename image_base<pixel_type>::pointer transform_base<pixel_type>::get_parameters() const
 {
-    // image<pixel_type> im;
-    // std::cout << "a\n";
-    // // parameters.print_data();
-    // // im.copy(this->parameters);
-    // std::cout << "a\n";
-    // return im;
     return parameters;
 };
 
 template <typename pixel_type>
-typename image<pixel_type>::pointer transform_base<pixel_type>::get_inverse_parameters() const
+typename image_base<pixel_type>::pointer transform_base<pixel_type>::get_inverse_parameters() const
 {
     return inverse_parameters;
 };
@@ -193,7 +211,7 @@ typename image<pixel_type>::pointer transform_base<pixel_type>::get_inverse_para
 // Set Functions
 // ===========================================
 template <typename pixel_type>
-void transform_base<pixel_type>::set_parameters(typename image<pixel_type>::pointer params)
+void transform_base<pixel_type>::set_parameters(typename image_base<pixel_type>::pointer params)
 {
     parameters = params;
     inverse_();
@@ -265,7 +283,7 @@ void transform_base<pixel_type>::inverse_()
 template <typename pixel_type>
 transform_base<pixel_type> transform_base<pixel_type>::inverse()
 {
-    typename image<pixel_type>::pointer params = get_inverse_parameters();
+    typename image_base<pixel_type>::pointer params = get_inverse_parameters();
     transform_base<pixel_type> tr(this->dim, params);
     return tr;
 };
@@ -288,13 +306,13 @@ grid<pixel_type> transform_base<pixel_type>::transform(grid<pixel_type> & input)
 template <typename pixel_type>
 std::vector<pixel_type> transform_base<pixel_type>::operator *(std::vector<pixel_type> & point)
 {
-    return transform(point);
+    return this->transform(point);
 };
 
 template <typename pixel_type>
 grid<pixel_type> transform_base<pixel_type>::operator *(grid<pixel_type> & input)
 {
-    return transform(input);
+    return this->transform(input);
 };
 
 #endif

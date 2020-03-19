@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-07 10:13:08
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-02-15 19:06:34
+* @Last Modified time: 2020-02-18 15:21:11
 */
 
 
@@ -14,6 +14,7 @@
 
 // local libs
 #include "../src/image.h"
+#include "../src/utils/timer.h"
 
 using type = double;
 
@@ -42,7 +43,13 @@ int main()
         p[i] = i;
     };
     typename image_base<type>::vector grad(2);
+    
+    timer t1;
+    t1.start();
     grad = gradient(img10);
+    t1.finish();
+    std::cout << "Time gradient: " << t1.get_time() << t1.get_units() << std::endl;
+    
     img10.print_data("i");
     grad[0]->print_data("didx");
     grad[1]->print_data("didy");
