@@ -15,9 +15,11 @@
 #include <cassert>      // assert
 
 // images 
-#include "image.h"
+#include "image_base.h"
 #include "grid.h"
 
+namespace imart
+{
 
 template <typename pixel_type>
 struct borders
@@ -46,8 +48,8 @@ protected:
     // ===========================================
     pixel_type fill;
     borders<pixel_type> region;
-    image<pixel_type> image_reference;
-    grid<pixel_type> x_reference;
+    typename image_base<pixel_type>::pointer image_reference;
+    typename grid<pixel_type>::pointer x_reference;
 
     // ===========================================
     // Functions
@@ -57,20 +59,22 @@ protected:
     int search_(pixel_type x, pixel_type y);
     int search_(pixel_type x, pixel_type y, pixel_type z);
 
-    image<pixel_type> linear2(const grid<pixel_type> & xin);
-    image<pixel_type> linear3(const grid<pixel_type> & xin);
+    image_base<pixel_type> linear2(const grid<pixel_type> & xin);
+    image_base<pixel_type> linear3(const grid<pixel_type> & xin);
 
     pixel_type linear_(pixel_type r[2], pixel_type x); // unitary distance
     pixel_type bilinear_(pixel_type r[4], pixel_type x, pixel_type y);
     pixel_type trilinear_(pixel_type r[8], pixel_type x, pixel_type y, pixel_type z);
+
+    void init(int d);
     
 public:
     // ===========================================
     // Create Functions
     // ===========================================
     // interpolate();
-    // interpolate(image<pixel_type> & input, grid<pixel_type> & xref);
-    interpolate(image<pixel_type> input, grid<pixel_type> xref);
+    // interpolate(const image_base<pixel_type> & input, const grid<pixel_type> & xref);
+    interpolate(typename image_base<pixel_type>::pointer input, typename grid<pixel_type>::pointer xref);
 
     template<typename... ARGS>
     static pointer new_pointer(const ARGS&... args);
@@ -78,9 +82,9 @@ public:
     // ===========================================
     // Functions
     // ===========================================
-    image<pixel_type> linear(const grid<pixel_type> & xin);
+    image_base<pixel_type> linear(const grid<pixel_type> & xin);
 
-    image<pixel_type> operator * (const grid<pixel_type> & xin);    
+    image_base<pixel_type> operator * (const grid<pixel_type> & xin);    
 };
 
 
@@ -96,14 +100,23 @@ public:
 // Create Functions
 // ===========================================
 // template <typename pixel_type>
-// interpolate<pixel_type>::interpolate(image<pixel_type> & input, grid<pixel_type> & xref)
+// interpolate<pixel_type>::interpolate(const image_base<pixel_type> & input, const grid<pixel_type> & xref)
 template <typename pixel_type>
-interpolate<pixel_type>::interpolate(image<pixel_type> input, grid<pixel_type> xref)
+interpolate<pixel_type>::interpolate(typename image_base<pixel_type>::pointer input, typename grid<pixel_type>::pointer xref)
 {
-    assert(input.get_dimension() == xref.get_dimension());
+    assert(input->get_dimension() == xref->get_dimension());
+    // init(input->get_dimension());
+
     image_reference = input;
     x_reference = xref;
     fill = 0;               // fill values that are not interpolated
+};
+
+template <typename pixel_type>
+void interpolate<pixel_type>::init(int d)
+{
+    image_reference = image_base<pixel_type>::new_pointer(d);
+    x_reference = grid<pixel_type>::new_pointer(d);
 };
 
 template <typename pixel_type>
@@ -117,22 +130,22 @@ typename interpolate<pixel_type>::pointer interpolate<pixel_type>::new_pointer(c
 // Functions
 // ===========================================
 template <typename pixel_type>
-image<pixel_type> interpolate<pixel_type>::operator *(const grid<pixel_type> & xin)
+image_base<pixel_type> interpolate<pixel_type>::operator *(const grid<pixel_type> & xin)
 {
     return linear(xin);
 }
 
 template <typename pixel_type>
-image<pixel_type> interpolate<pixel_type>::linear(const grid<pixel_type> & xin)
+image_base<pixel_type> interpolate<pixel_type>::linear(const grid<pixel_type> & xin)
 {
-    // image<pixel_type> (*linear_function)(grid<pixel_type> &);
+    // image_base<pixel_type> (*linear_function)(grid<pixel_type> &);
     // if(xin.get_dimension() == 2){ linear_function = &interpolate<pixel_type>::linear2;};
     // if(xin.get_dimension() == 3){ linear_function = &interpolate<pixel_type>::linear3;};
     // return (*linear_function)(xin);
 
     // TODO: Make this work. Consider a single image class, a single affine transform.
-    // image<pixel_type> a(xin.get_size()[0], xin.get_size()[1]);
-    image<pixel_type> a(xin.get_dimension());
+    // image_base<pixel_type> a(xin.get_size()[0], xin.get_size()[1]);
+    image_base<pixel_type> a(xin.get_dimension());
     if(xin.get_dimension() == 2){ a = linear2(xin); };
     if(xin.get_dimension() == 3){ a = linear3(xin); };
     return a;
@@ -140,26 +153,26 @@ image<pixel_type> interpolate<pixel_type>::linear(const grid<pixel_type> & xin)
 
 
 template <typename pixel_type>
-image<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & xin)
+image_base<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & xin)
 {
     assert(xin.get_dimension() == 2);
-    assert(xin.get_dimension() == x_reference.get_dimension());
+    assert(xin.get_dimension() == x_reference->get_dimension());
 
     using ptr_pixels4 = std::unique_ptr<std::array<pixel_type,4>>;
 
-    image<pixel_type> image_out(xin.get_size()[0], xin.get_size()[1]);
+    image_base<pixel_type> image_out(xin.get_size()[0], xin.get_size()[1]);
     // image_out.print();
     pixel_type * pout = image_out.ptr();
 
     pixel_type * xi = (xin.ptr()[0]).ptr();   // raw pointer to
     pixel_type * yi = (xin.ptr()[1]).ptr();   // input grid coordinates
 
-    pixel_type * xr = (x_reference.ptr()[0]).ptr();  // raw pointer to
-    pixel_type * yr = (x_reference.ptr()[1]).ptr();  // ref grid coordinates
+    pixel_type * xr = (x_reference->ptr()[0]).ptr();  // raw pointer to
+    pixel_type * yr = (x_reference->ptr()[1]).ptr();  // ref grid coordinates
 
-    double sx = image_reference.get_spacing()[0];   // scales
-    double sy = image_reference.get_spacing()[1];
-    // image_reference.print_data();    // debug
+    double sx = image_reference->get_spacing()[0];   // scales
+    double sy = image_reference->get_spacing()[1];
+    // image_reference->print_data();    // debug
 
     // ptr_pixels4 i4;
     // pixel_type iout;
@@ -182,7 +195,7 @@ image<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & xin)
             pixel_type dx = (xk - xr[idx])/ sx;
             pixel_type dy = (yk - yr[idx])/ sy;
             
-            ptr_pixels4 i4 = image_reference.neighbors4(idx);
+            ptr_pixels4 i4 = image_reference->neighbors4(idx);
             iout = bilinear_((*i4).data(), dx, dy);
 
             // std::cout << "dx,dy: " << dx << ", " << dy <<"\n";
@@ -206,27 +219,27 @@ image<pixel_type> interpolate<pixel_type>::linear2(const grid<pixel_type> & xin)
 };
 
 template <typename pixel_type>
-image<pixel_type> interpolate<pixel_type>::linear3(const grid<pixel_type> & xin)
+image_base<pixel_type> interpolate<pixel_type>::linear3(const grid<pixel_type> & xin)
 {
     assert(xin.get_dimension() == 3);
-    assert(xin.get_dimension() == x_reference.get_dimension());
+    assert(xin.get_dimension() == x_reference->get_dimension());
 
     using ptr_pixels8 = std::unique_ptr<std::array<pixel_type,8>>;
 
-    image<pixel_type> image_out(xin.get_size()[0],xin.get_size()[1],xin.get_size()[2]);
+    image_base<pixel_type> image_out(xin.get_size()[0],xin.get_size()[1],xin.get_size()[2]);
     pixel_type * pout = image_out.ptr();
 
     pixel_type * xi = (xin.ptr()[0]).ptr();   // raw pointer to
     pixel_type * yi = (xin.ptr()[1]).ptr();   // input grid coordinates
     pixel_type * zi = (xin.ptr()[2]).ptr();
 
-    pixel_type * xr = (x_reference.ptr()[0]).ptr();  // raw pointer to
-    pixel_type * yr = (x_reference.ptr()[1]).ptr();  // ref grid coordinates
-    pixel_type * zr = (x_reference.ptr()[2]).ptr();
+    pixel_type * xr = (x_reference->ptr()[0]).ptr();  // raw pointer to
+    pixel_type * yr = (x_reference->ptr()[1]).ptr();  // ref grid coordinates
+    pixel_type * zr = (x_reference->ptr()[2]).ptr();
 
-    double sx = image_reference.get_spacing()[0];   // scales
-    double sy = image_reference.get_spacing()[1];
-    double sz = image_reference.get_spacing()[2];
+    double sx = image_reference->get_spacing()[0];   // scales
+    double sy = image_reference->get_spacing()[1];
+    double sz = image_reference->get_spacing()[2];
     
     boundaries3(); // call to compute region used in search_
     int num = xin.ptr()[0].get_total_elements();
@@ -245,7 +258,7 @@ image<pixel_type> interpolate<pixel_type>::linear3(const grid<pixel_type> & xin)
             pixel_type dy = (yk - yr[idx])/ sy;
             pixel_type dz = (zk - zr[idx])/ sz;
             
-            ptr_pixels8 i8 = image_reference.neighbors8(idx);
+            ptr_pixels8 i8 = image_reference->neighbors8(idx);
             iout = trilinear_((*i8).data(), dx, dy, dz);
         };
 
@@ -259,11 +272,11 @@ image<pixel_type> interpolate<pixel_type>::linear3(const grid<pixel_type> & xin)
 template <typename pixel_type>
 void interpolate<pixel_type>::boundaries2()
 {
-    int w = x_reference.get_size()[0];
-    int h = x_reference.get_size()[1];
+    int w = x_reference->get_size()[0];
+    int h = x_reference->get_size()[1];
 
-    pixel_type * xr = (x_reference.ptr()[0]).ptr();  // raw pointer to
-    pixel_type * yr = (x_reference.ptr()[1]).ptr();  // ref grid coordinates
+    pixel_type * xr = (x_reference->ptr()[0]).ptr();  // raw pointer to
+    pixel_type * yr = (x_reference->ptr()[1]).ptr();  // ref grid coordinates
 
     region.xmin = xr[0];
     region.xmax = xr[w-1];
@@ -277,11 +290,11 @@ void interpolate<pixel_type>::boundaries3()
 {
     boundaries2();
 
-    int w = x_reference.get_size()[0];
-    int h = x_reference.get_size()[1];
-    int l = x_reference.get_size()[2];
+    int w = x_reference->get_size()[0];
+    int h = x_reference->get_size()[1];
+    int l = x_reference->get_size()[2];
 
-    pixel_type * zr = (x_reference.ptr()[2]).ptr();
+    pixel_type * zr = (x_reference->ptr()[2]).ptr();
     region.zmin = zr[0];
     region.zmax = zr[w*h*l-1];
 }
@@ -291,15 +304,15 @@ int interpolate<pixel_type>::search_(pixel_type x, pixel_type y)
 {
     // This algorithm assumes a regular fixed grid
     int idx = 0;
-    int w = x_reference.get_size()[0];
-    // int h = x_reference.get_size()[1];
+    int w = x_reference->get_size()[0];
+    // int h = x_reference->get_size()[1];
     // std::cout << "w,h: " << w << " , " << h << "\n";
-    // x_reference.print_data();
+    // x_reference->print_data();
 
-    // pixel_type * xr = (x_reference.ptr()[0]).ptr();  // raw pointer to
-    // pixel_type * yr = (x_reference.ptr()[1]).ptr();  // ref grid coordinates
+    // pixel_type * xr = (x_reference->ptr()[0]).ptr();  // raw pointer to
+    // pixel_type * yr = (x_reference->ptr()[1]).ptr();  // ref grid coordinates
 
-    std::vector<double> ss = (x_reference.ptr()[0]).get_spacing();
+    std::vector<double> ss = (x_reference->ptr()[0]).get_spacing();
     double sx = ss[0];
     double sy = ss[1];
     
@@ -330,10 +343,10 @@ int interpolate<pixel_type>::search_(pixel_type x, pixel_type y, pixel_type z)
 {
     // This algorithm assumes a regular fixed grid
     int idx = 0;
-    int w = x_reference.get_size()[0];
-    int h = x_reference.get_size()[1];
+    int w = x_reference->get_size()[0];
+    int h = x_reference->get_size()[1];
 
-    std::vector<double> ss = (x_reference.ptr()[0]).get_spacing();
+    std::vector<double> ss = (x_reference->ptr()[0]).get_spacing();
     pixel_type sx = ss[0];
     pixel_type sy = ss[1];
     pixel_type sz = ss[2];
@@ -378,6 +391,8 @@ pixel_type interpolate<pixel_type>::trilinear_(pixel_type r[8], pixel_type x, pi
     out[1] = bilinear_(r+4, x, y);
     return linear_(out, z);
 };
+
+}; //end namespace
 
 
 #endif

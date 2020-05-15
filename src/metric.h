@@ -11,6 +11,9 @@
 #include "image_base.h"
 #include "transform_base.h"
 
+namespace imart
+{
+
 template <typename pixel_type>
 class metric: public object<pixel_type>
 {
@@ -72,7 +75,7 @@ public:
     // !compute the cost
     virtual pixel_type cost();
     // !calculate derivative
-    virtual transform_base<pixel_type> derivative();
+    virtual typename transform_base<pixel_type>::pointer derivative();
 };
 
 
@@ -99,16 +102,23 @@ void metric<pixel_type>::init( typename image_base<pixel_type>::pointer fixed_im
                                typename transform_base<pixel_type>::pointer transform_reg)
 {
     assert(fixed_image->get_dimension() == moving_image->get_dimension());
+    // std::cout << "metric init" << std::endl;
     this->class_name = "metric";
+    this->dim = fixed_image->get_dimension();
+
     cost_value = 1e40;
     fixed = fixed_image;
     moving = moving_image;
     transform = transform_reg;
     x0 = grid<pixel_type>::new_pointer(*fixed);
     x1 = grid<pixel_type>::new_pointer(*moving);
-    interpolator0 = interpolate<pixel_type>::new_pointer(*fixed, *x0);
-    interpolator1 = interpolate<pixel_type>::new_pointer(*moving, *x1);
+    // x0->print_data();
+    // x1->print_data();
 
+    interpolator0 = interpolate<pixel_type>::new_pointer(fixed, x0);
+    interpolator1 = interpolate<pixel_type>::new_pointer(moving, x1);
+    // std::cout << "metric init end" << std::endl;
+    return;
 };
 
 template <typename pixel_type>
@@ -184,9 +194,11 @@ pixel_type metric<pixel_type>::cost()
 };
 
 template <typename pixel_type>
-transform_base<pixel_type> metric<pixel_type>::derivative()
+typename transform_base<pixel_type>::pointer metric<pixel_type>::derivative()
 {
-    return *transform;
+    return transform;
 };
+
+}; //end namespace
 
 #endif

@@ -18,6 +18,9 @@
 // #include "utils/timer.h"
 
 
+namespace imart
+{
+    
 // Class image_base
 template <typename pixel_type>
 class image : public image_base<pixel_type>
@@ -48,6 +51,12 @@ public:
     using image_base<pixel_type>::operator =;
     // using image_base<pixel_type>::operator +;
     // using image_base<pixel_type>::operator -;
+
+    template<typename... ARGS>
+    static pointer new_pointer(const ARGS&... args);
+
+    template<typename... ARGS>
+    pointer another_pointer(const ARGS&... args);;
     
     // Access
     ptr_pixels4 neighbors4(int e);
@@ -61,6 +70,20 @@ public:
 // ===========================================
 //      Functions of Class image
 // ===========================================
+template <typename pixel_type>
+template <typename ... ARGS>
+typename image<pixel_type>::pointer image<pixel_type>::new_pointer(const ARGS&... args)
+{
+    return std::make_shared<image<pixel_type>>(args...); // not working for inherited classes
+};
+
+template <typename pixel_type>
+template <typename ... ARGS>
+typename image<pixel_type>::pointer image<pixel_type>::another_pointer(const ARGS&... args)
+{
+    return std::make_shared<image<pixel_type>>(args...); // not working for inherited classes
+};
+
 template <typename pixel_type>
 typename image<pixel_type>::ptr_pixels4 image<pixel_type>::neighbors4(int e)
 {
@@ -95,6 +118,6 @@ typename image<pixel_type>::ptr_pixels8 image<pixel_type>::neighbors8(int e)
     return arr;
 };
 
-
+}; //end namespace
 
 #endif

@@ -19,6 +19,9 @@
 #include "image_base.h"
 #include "grid.h"
 
+namespace imart
+{
+
 // Class transform_base
 template <typename pixel_type>
 class transform_base: public object<pixel_type>
@@ -56,8 +59,9 @@ public:
     template<typename... ARGS>
     static pointer new_pointer(const ARGS&... args);
 
-    virtual void copy(const transform_base<pixel_type> & input);
-    virtual void duplicate(const transform_base & input);
+    void copy(const transform_base<pixel_type> & input);
+    void duplicate(const transform_base & input);
+    void imitate(const transform_base & input);
 
     // ===========================================
     // Get Functions
@@ -100,6 +104,11 @@ public:
 
     std::vector<pixel_type> operator * (std::vector<pixel_type> & point);
     grid<pixel_type> operator * (grid<pixel_type> & input);
+
+    transform_base<pixel_type> operator + (const transform_base<pixel_type> & input);
+    transform_base<pixel_type> operator - (const transform_base<pixel_type> & input);
+    transform_base<pixel_type> operator * (pixel_type scalar);
+    transform_base<pixel_type> operator * (const image_base<pixel_type> & input);
 };
 
 
@@ -160,6 +169,7 @@ typename transform_base<pixel_type>::pointer transform_base<pixel_type>::new_poi
     return std::make_shared< transform_base<pixel_type> >(args...); // not working for inherited classes
 };
 
+// Full copy
 template <typename pixel_type>
 void transform_base<pixel_type>::copy(const transform_base<pixel_type> & input)
 {
@@ -169,11 +179,8 @@ void transform_base<pixel_type>::copy(const transform_base<pixel_type> & input)
 
     parameters->copy(*input.get_parameters());
     inverse_parameters->copy(*input.get_inverse_parameters());
-    
 };
 
-
-// Full copy
 template <typename pixel_type>
 void transform_base<pixel_type>::duplicate(const transform_base<pixel_type> & input)
 {
@@ -181,6 +188,14 @@ void transform_base<pixel_type>::duplicate(const transform_base<pixel_type> & in
 
     parameters = input.get_parameters();
     inverse_parameters = input.get_inverse_parameters();
+};
+
+template <typename pixel_type>
+void transform_base<pixel_type>::imitate(const transform_base<pixel_type> & input)
+{
+    object<pixel_type>::copy_properties(input);
+    parameters->imitate(*input.get_parameters());
+    inverse_parameters->imitate(*input.get_inverse_parameters());
 };
 
 // Equal
@@ -214,7 +229,7 @@ template <typename pixel_type>
 void transform_base<pixel_type>::set_parameters(typename image_base<pixel_type>::pointer params)
 {
     parameters = params;
-    inverse_();
+    // inverse_();
 };
 
 
@@ -314,5 +329,56 @@ grid<pixel_type> transform_base<pixel_type>::operator *(grid<pixel_type> & input
 {
     return this->transform(input);
 };
+
+// Transform to Transform
+template <typename pixel_type>
+transform_base<pixel_type> transform_base<pixel_type>::operator + (const transform_base<pixel_type> & input)
+{
+    auto pp = image_base<pixel_type>::new_pointer();
+    *pp = *parameters + *(input.get_parameters());
+
+    transform_base<pixel_type> result;
+    result.imitate(*this);
+    result.set_parameters( pp );
+    return result;
+};
+
+template <typename pixel_type>
+transform_base<pixel_type> transform_base<pixel_type>::operator - (const transform_base<pixel_type> & input)
+{
+    auto pp = image_base<pixel_type>::new_pointer();
+    *pp = *parameters - *(input.get_parameters());
+
+    transform_base<pixel_type> result;
+    result.imitate(*this);
+    result.set_parameters( pp );
+    return result;
+};
+
+template <typename pixel_type>
+transform_base<pixel_type> transform_base<pixel_type>::operator * (pixel_type scalar)
+{
+    auto pp = image_base<pixel_type>::new_pointer();
+    *pp = scalar*(*parameters);
+
+    transform_base<pixel_type> result;
+    result.imitate(*this);
+    result.set_parameters( pp );
+    return result;
+};
+
+template <typename pixel_type>
+transform_base<pixel_type> transform_base<pixel_type>::operator * (const image_base<pixel_type> & input)
+{
+    auto pp = image_base<pixel_type>::new_pointer();
+    *pp = input*(*parameters);
+
+    transform_base<pixel_type> result;
+    result.imitate(*this);
+    result.set_parameters( pp );
+    return result;
+};
+
+}; //end namespace
 
 #endif

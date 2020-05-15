@@ -49,6 +49,8 @@
 // template <typename pixel_type>
 // std::ostream & operator << (std::ostream & os, image_base<pixel_type> & input);
 
+namespace imart
+{
 
 // Class image_base
 template <typename pixel_type>
@@ -134,7 +136,7 @@ public:
     // { return std::make_shared<image_base>(args...);};
 
     //! Full copy image
-    void copy(const image_base & input);
+    virtual void copy(const image_base & input);
     //! Duplicate data array for images
     void duplicate(const image_base & input);
     //! Imitate other image with a property copy
@@ -177,6 +179,8 @@ public:
     iterator begin() const;
 
     iterator end() const;
+
+    void assert_size(const image_base<pixel_type> & input);
 
     // ===========================================
     // Print Functions
@@ -929,6 +933,8 @@ std::string image_base<pixel_type>::info(std::string msg)
     ss << "]" << std::endl;
 
     ss << "Total elements: \t" << num_elements << std::endl; //Get the total number of pixels
+
+    ss << "Data pointer: \t\t" << ptr() << std::endl; //Get the total number of pixels
     // ss << std::endl;
 
     return ss.str();
@@ -1070,6 +1076,16 @@ pixel_type & image_base<pixel_type>::operator () (int w, int h, int l)
     return (*data)[w+h*width+l*height*width];
 };
 
+template <typename pixel_type>
+void image_base<pixel_type>::assert_size(const image_base<pixel_type> & input)
+{
+    assert(this->get_width()  == input.get_width());
+    assert(this->get_height() == input.get_height());
+    assert(this->get_length() == input.get_length());
+    assert(this->get_channels() == input.get_channels());
+    return;
+};
+
 // Equal
 template <typename pixel_type>
 image_base<pixel_type> & image_base<pixel_type>::operator = (const image_base<pixel_type> & input)
@@ -1084,8 +1100,7 @@ template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator + (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
-    assert(this->get_width()==input.get_width());
-    assert(this->get_height()==input.get_height());
+    assert_size(input);
 
     // int w = input.get_width();
     // int h = input.get_height();
@@ -1114,8 +1129,7 @@ template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator - (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
-    assert(this->get_width()==input.get_width());
-    assert(this->get_height()==input.get_height());
+    assert_size(input);
 
     // int w = input.get_width();
     // int h = input.get_height();
@@ -1141,8 +1155,7 @@ template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator * (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
-    assert(this->get_width()==input.get_width());
-    assert(this->get_height()==input.get_height());
+    assert_size(input);
 
     // int w = input.get_width();
     // int h = input.get_height();
@@ -1168,8 +1181,7 @@ template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator / (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
-    assert(this->get_width()==input.get_width());
-    assert(this->get_height()==input.get_height());
+    assert_size(input);
 
     // int w = input.get_width();
     // int h = input.get_height();
@@ -1195,8 +1207,7 @@ template <typename pixel_type>
 image_base<pixel_type> image_base<pixel_type>::operator ^ (const image_base<pixel_type> & input)
 {
     // std::cout << "assert images size" << std::endl;
-    assert(this->get_width()==input.get_width());
-    assert(this->get_height()==input.get_height());
+    assert_size(input);
 
     // int w = input.get_width();
     // int h = input.get_height();
@@ -1575,13 +1586,18 @@ image_base<pixel_t_out> cast(const image_base<pixel_t_in> & input, pixel_t_out c
 template<typename pixel_type>
 image_base<pixel_type> normalize(const image_base<pixel_type> & input, pixel_type min = 0.0, pixel_type max = 1.0)
 {
-    pixel_type minv = input.min();
-    pixel_type maxv = input.max();
+    // pixel_type minv = input.min();
+    // pixel_type maxv = input.max();
 
-    image_base<pixel_type> result = (input - minv)*((max - min)/(maxv - minv)) + min;
+    image_base<pixel_type> in;
+    in.copy(input); 
+
+    pixel_type minv = in.min();
+    pixel_type maxv = in.max();
+
+    image_base<pixel_type> result = (in - minv)*((max - min)/(maxv - minv)) + min;
     return result;
 };
-
 
 template<typename pixel_type>
 image_base<pixel_type> complex2real(const image_base<std::complex<pixel_type>> & input)
@@ -1669,7 +1685,7 @@ typename image_base<pixel_type>::vector gradient(const image_base<pixel_type> & 
     std::vector<int> none{0,0};    
     std::vector<int> extra{1,1};
     image_base<pixel_type> input_pad = pad(input, none, extra);
-    input_pad.print_data();
+    // input_pad.print_data();
     int w = input_pad.get_width();
     int h = input_pad.get_height();
 
@@ -1724,6 +1740,8 @@ typename image_base<pixel_type>::ptr_pixels8 image_base<pixel_type>::neighbors8(
     ptr_pixels8 arr = std::make_unique<std::array<pixel_type,8>>();
     return arr;
 }
+
+}; //end namespace
 
 // Template constructions
 // template class image_base<unsigned char>;  // 1 byte

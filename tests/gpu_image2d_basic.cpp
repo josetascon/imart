@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-05-14 15:36:11
+* @Last Modified time: 2020-04-06 23:20:41
 */
 
 // std libs
@@ -10,9 +10,7 @@
 #include <memory>
 
 // local libs
-#include "../src/image.h"
-
-using namespace imart;
+#include "../src/image_gpu.h"
 
 int main()
 {
@@ -20,7 +18,7 @@ int main()
     //      Testing image basic features
     // ============================================
     // Create empty image
-    image<int> image0;
+    image_gpu<int> image0;
 
     std::cout << "===================== ";
     std::cout << "Test class image, basic features";
@@ -56,7 +54,7 @@ int main()
 
 
     // Create medium size image 
-    image<float> image1(4, 3);
+    image_gpu<float> image1(4, 3);
 
     std::cout << std::endl;
     std::cout << "===================== ";
@@ -79,21 +77,21 @@ int main()
     std::cout << image1.get_total_elements();
     std::cout << std::endl;
 
-    std::cout << "Image data pointer: ";
-    std::cout << image1.get_data();
-    std::cout << std::endl;
-    image1.print_ptr_count();   // testing print function, 
-                                // equivalent to the commented lines
-    // std::cout << "internal image ptr count: ";
-    // std::cout << image1.get_ptr_count();
+    // std::cout << "Image data pointer: ";
+    // std::cout << image1.get_data();
     // std::cout << std::endl;
-    std::cout << "external image ptr count: ";
-    std::cout << image1.get_data().use_count();
-    std::cout << std::endl;
+    // image1.print_ptr_count();   // testing print function, 
+    //                             // equivalent to the commented lines
+    // // std::cout << "internal image ptr count: ";
+    // // std::cout << image1.get_ptr_count();
+    // // std::cout << std::endl;
+    // std::cout << "external image ptr count: ";
+    // std::cout << image1.get_data().use_count();
+    // std::cout << std::endl;
 
-    image1.print_data();
+    // image1.print_data();
 
-
+    /*
     // Create medium size image 
     image<double> image2(128, 64);
 
@@ -127,7 +125,7 @@ int main()
     std::cout << "external image ptr count: ";
     std::cout << image2.get_data().use_count();
     std::cout << std::endl;
-    
+    */
 
     // Create different image objects
     std::cout << std::endl;
@@ -139,16 +137,18 @@ int main()
     std::shared_ptr<std::vector<float>> buffer = std::make_shared<std::vector<float>>(6);
     *buffer = {1.1, 2.1, 3.1, 4.1, 5.1, 6.1};
 
-    image<float> image3(5,3);
-    image<float> image4(buffer, 3,2);
+    // image_gpu<float> image3(5,3);
+    image_gpu<float> image4(buffer, 3,2);
     // image4 = image4 + image4;
 
-    std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;
-    std::cout << "image4 ptr count: " << image4.get_ptr_count() << std::endl;
+    // std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;
+    // std::cout << "image4 ptr count: " << image4.get_ptr_count() << std::endl;
 
-    image3.print("image3");
+    // image3.print("image3");
     image4.print("image4");
+    image4.print_data();
 
+    /*
     image3 = image4;
     std::cout << std::endl << "Making image3 = image4. " << std::endl;
 
@@ -217,6 +217,6 @@ int main()
     std::cout << "image5(2,3) = " << image5(2,3) << std::endl;
     std::cout << "image5(5,4) = " << image5(5,4) << std::endl;
     std::cout << "image5(5,5) = " << image5(5,5) << std::endl;
-
+    */
     return 0;
 };

@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-03-19 14:20:48
+* @Last Modified time: 2020-03-19 19:01:38
 */
 
 
@@ -11,8 +11,7 @@
 #include <memory>
 
 // local libs
-#include "../src/image_2d.h"
-#include "../src/image_3d.h"
+#include "../src/image.h"
 #include "../src/grid.h"
 
 int main()
