@@ -1,11 +1,11 @@
 # Author: José D. Tascón-Vidarte <josedtascon@gmail.com>
 
 cmake_minimum_required(VERSION 3.8)
-project(ParallelRegistration C CXX)
+project(imart C CXX)
 
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 1)
-set(VERSION_PATCH 2)
+set(VERSION_PATCH 3)
 set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
 # Path where all your libraries are

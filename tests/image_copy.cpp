@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-01-27 15:51:36
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-03-05 12:23:51
+* @Last Modified time: 2020-05-11 10:09:08
 */
 
 // std libs
@@ -70,6 +70,13 @@ int main()
     std::cout << "Image 12 ptr value: " << image12.ptr() << "\n";
     if (image11.ptr() != image12.ptr()) { std::cout << "Different pointers!\n"; };
 
+    image<type>::pointer image21 = image<type>::new_pointer(6,1);
+    image_base<type>::pointer image22;
+    image22 = image21->another_pointer(image21->get_size());
+
+    image21->print("Image21:");
+    image22->print("Image22:");
+
 
     std::cout << "===================== ";
     std::cout << "Test transform, equal and duplicate functions";
@@ -102,9 +109,9 @@ int main()
     // std::cout << "Ptr count: " << imaget1->get_ptr_count() << std::endl;
     // std::cout << "Ptr count: " << imaget2->get_ptr_count() << std::endl;
 
-    image<type>::pointer param_t1 = transform1.get_parameters();
-    image<type>::pointer param_t2 = transform2.get_parameters();
-    image<type>::pointer param_t3 = transform3.get_parameters();
+    image_base<type>::pointer param_t1 = transform1.get_parameters();
+    image_base<type>::pointer param_t2 = transform2.get_parameters();
+    image_base<type>::pointer param_t3 = transform3.get_parameters();
 
     std::cout << "Transform 1 parameters (image) ptr count: " << param_t1.use_count() << "\n";    
     std::cout << "Transform 1 parameters (image) ptr value: " << param_t1.get() << "\n";

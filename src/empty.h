@@ -10,6 +10,9 @@
 
 #include "image.h"
 
+namespace imart
+{
+
 template <typename pixel_type>
 class myclass: public object<pixel_type>
 {
@@ -88,5 +91,6 @@ std::string myclass::<pixel_type>::info(std::string msg)
     ss << object<pixel_type>::info(title);
 };
 
+}; //end namespace
 
 #endif

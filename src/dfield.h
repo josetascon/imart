@@ -12,6 +12,9 @@
 #include "image_base.h"
 #include "transform_base.h"
 
+namespace imart
+{
+
 // Class affine
 template <typename pixel_type>
 class dfield: public transform_base<pixel_type>
@@ -31,5 +34,7 @@ public:
     std::vector<pixel_type> transform(std::vector<pixel_type> & point);
     grid<pixel_type> transform(grid<pixel_type> & input);
 };
+
+}; //end namespace
 
 #endif

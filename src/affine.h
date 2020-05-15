@@ -12,6 +12,9 @@
 #include "image.h"
 #include "transform_base.h"
 
+namespace imart
+{
+
 // Class affine
 template <typename pixel_type>
 class affine: public transform_base<pixel_type>
@@ -260,5 +263,7 @@ grid<pixel_type> affine<pixel_type>::transform_3d(grid<pixel_type> & input)
 
     return output;
 };
+
+}; //end namespace
 
 #endif

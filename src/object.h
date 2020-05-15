@@ -14,6 +14,9 @@
 #include <vector>       // std::vector
 #include <typeinfo>     // operator typeids
 
+namespace imart
+{
+
 // Class object
 template <typename pixel_type>
 class object
@@ -28,11 +31,11 @@ protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    std::string class_name;             // class string name
-    pixel_type value;                   // single value of pixel_type
+    std::string class_name;         // class string name
+    pixel_type value;               // single value of pixel_type
 
-    int dim;                            // dimension
-    std::vector<int> size;              // object size
+    int dim;                        // dimension
+    std::vector<int> size;          // object size
     std::vector<double> spacing;    // spacing between elements
     std::vector<double> origin;     // origin of coordinates
     std::vector<double> direction;  // direction of elements
@@ -312,6 +315,8 @@ object<pixel_type> & object<pixel_type>::operator = (const object<pixel_type> & 
     duplicate(input);
     return *this;
 };
+
+}; //end namespace
 
 
 #endif

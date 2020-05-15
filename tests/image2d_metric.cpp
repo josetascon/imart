@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-03-19 15:48:46
+* @Last Modified time: 2020-03-23 14:35:31
 */
 
 
@@ -41,7 +41,7 @@ int main()
     taffine->print();
 
     auto image0t = image<type>::new_pointer();
-    auto image0_itp = interpolate<type>::new_pointer(*image0, *x0);
+    auto image0_itp = interpolate<type>::new_pointer(image0, x0);
     *image0t = image0_itp->linear(taffine->transform(*x0));
 
     image0->print();
@@ -53,7 +53,8 @@ int main()
     // std::cout << image0t->ptr() << std::endl;
 
     
-    ssd<type> ssd1(image0, image0t, taffine);
+    // ssd<type> ssd1(image0, image0t, taffine);
+    ssd<type> ssd1(image0t, image0, taffine);
     std::cout << "SSD: " << ssd1.cost() << std::endl;
 
     ssd1.print();

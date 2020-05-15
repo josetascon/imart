@@ -20,6 +20,9 @@
 // #include "image_2d.h"
 // #include "image_3d.h"
 
+namespace imart
+{
+
 template <typename pixel_type>
 class grid: public object<pixel_type>
 {
@@ -60,6 +63,8 @@ public:
     grid(int dim);
     grid(const grid<pixel_type> & input);
     grid(const image_base<pixel_type> & input);
+    // grid(const typename image_base<pixel_type>::pointer input);
+
     // grid(const image_2d<pixel_type> & input);
     // grid(const image_3d<pixel_type> & input);
 
@@ -429,5 +434,6 @@ void grid<pixel_type>::meshgrid_3d()
 //     meshgrid_3d();
 // };
 
+}; //end namespace
 
 #endif
