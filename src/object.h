@@ -9,20 +9,22 @@
 #define __OBJECT_H__
 
 // std libs
-#include <iostream>     // std::cout
-#include <sstream>      // stringstream
 #include <vector>       // std::vector
+#include <sstream>      // std::stringstream
 #include <typeinfo>     // operator typeids
+
+// local libs
+#include "inherit.h"
 
 namespace imart
 {
 
-// Class object
-template <typename pixel_type>
-class object
+//! Class object
+template <typename type>
+class object : public inherit<object<type>, base>
 {
 public:
-    //Type definitions
+    // Type definitions
     using self    = object;
     using pointer = std::shared_ptr<self>;
     using vector  = std::vector<self::pointer>;
@@ -31,59 +33,36 @@ protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    std::string class_name;         // class string name
-    pixel_type value;               // single value of pixel_type
-
-    int dim;                        // dimension
-    std::vector<int> size;          // object size
-    std::vector<double> spacing;    // spacing between elements
-    std::vector<double> origin;     // origin of coordinates
-    std::vector<double> direction;  // direction of elements
+    std::string class_name;                     // class string name
+    type value;                                 // single value of type
 
     // ===========================================
-    // Functions
+    // Print Functions
     // ===========================================
-    virtual void init(int d);                           // init default properties
-    virtual void copy_properties(const object & input); // copy only properties
+    virtual std::string info(std::string msg);
+    virtual std::string info_data(std::string msg);
 
 public:
     // ===========================================
+    // Constructor Functions
+    // ===========================================
+    object();                                   // constructor empty
+    object(const object & input);               // constructor clone
+    ~object();                                  // destructor empty
+
+    // ===========================================
     // Create Functions
     // ===========================================
-    object();                           // constructor empty
-    object(int d);                      // constructor with dimension
-    object(const object & input);       // constructor with same type
-    
-    ~object();                          // destructor empty
-
-    template<typename... ARGS>
-    static pointer new_pointer(const ARGS&... args);
-    // {
-    //     return std::make_shared<object>(args...);
-    // };
-
-    virtual void copy(const object & input);            // copy everything
-    virtual void duplicate(const object & input);       // share data
-    virtual void imitate(const object & input);         // copy meta data
+    virtual void clone_(const object & input);  // copy everything
+    virtual void copy_ (const object & input);  // copy properties and share data
+    virtual void mimic_(const object & input);  // copy only properties
 
     // ===========================================
     // Get Functions
     // ===========================================
     std::string get_name() const;
     std::string get_type() const;
-    int get_dimension() const;
-    std::vector<int> get_size() const;
-    std::vector<double> get_spacing() const;
-    std::vector<double> get_origin() const;
-    std::vector<double> get_direction() const;
 
-    // ===========================================
-    // Set Functions
-    // ===========================================
-    void set_spacing(std::vector<double> s);
-    void set_origin(std::vector<double> o);
-    void set_direction(std::vector<double> d);
-    
     // ===========================================
     // Print Functions
     // ===========================================
@@ -93,13 +72,10 @@ public:
     template<typename pixel_t>
     friend std::ostream & operator << (std::ostream & os, object<pixel_t> & input);
 
-    virtual std::string info(std::string msg);
-    virtual std::string info_data(std::string msg);
-
     // ===========================================
     // Overloading Functions
     // ===========================================
-    virtual object<pixel_type> & operator = (const object<pixel_type> & input);
+    virtual object<type> & operator = (const object<type> & input);
 };
 
 
@@ -110,197 +86,105 @@ public:
 // ===========================================
 // Create Functions
 // ===========================================
-template <typename pixel_type>
-object<pixel_type>::object()
+//! Constructor empty
+template <typename type>
+object<type>::object()
 {
     class_name = "object";
-    init(1);
 };
 
-template <typename pixel_type>
-object<pixel_type>::object(int d)
+//! Constructor to clone
+template <typename type>
+object<type>::object(const object<type> & input)
 {
-    class_name = "object";
-    init(d);
+    clone_(input);                // call the virtual function clone_
 };
 
-template <typename pixel_type>
-object<pixel_type>::object(const object<pixel_type> & input)
-{
-    copy(input);                // call the virtual
-    // copy_properties(input);     // in object class everything is copied with this method)
-};
-
-// Destructor
-template <typename pixel_type>
-object<pixel_type>::~object()
+//! Destructor
+template <typename type>
+object<type>::~object()
 {
     ;
 };
 
-template <typename pixel_type>
-template <typename ... ARGS>
-typename object<pixel_type>::pointer object<pixel_type>::new_pointer(const ARGS&... args)
+template <typename type>
+void object<type>::clone_(const object & input)
 {
-    return std::make_shared<object<pixel_type>>(args...); // not working for inherited classes
+    ;
 };
 
-template <typename pixel_type>
-void object<pixel_type>::init(int d)
+template <typename type>
+void object<type>::copy_(const object & input)
 {
-    dim = d;
-    size = std::vector<int>(dim, 0);
-    spacing = std::vector<double>(dim, 1.0);
-    origin = std::vector<double>(dim, 0.0);
-    direction = std::vector<double>(dim*dim);
-
-    // initialize direction, identity matrix
-    int den = dim + 1;
-    for(int i=0; i < dim*dim; i++){ if((i%den)==0) { direction[i] = 1.0; }; };
+    ;
 };
 
-template <typename pixel_type>
-void object<pixel_type>::copy_properties(const object<pixel_type> & input)
+template <typename type>
+void object<type>::mimic_(const object & input)
 {
-    class_name = input.get_name();
-    dim = input.get_dimension();
-    size = input.get_size();
-    spacing = input.get_spacing();
-    origin = input.get_origin();
-    direction = input.get_direction();
-};
-
-template <typename pixel_type>
-void object<pixel_type>::copy(const object & input)
-{
-    copy_properties(input);
-};
-
-template <typename pixel_type>
-void object<pixel_type>::duplicate(const object & input)
-{
-    copy_properties(input);
-};
-
-template <typename pixel_type>
-void object<pixel_type>::imitate(const object & input)
-{
-    copy_properties(input);
+    ;
 };
 
 // ===========================================
 // Get Functions
 // ===========================================
-template <typename pixel_type>
-std::string object<pixel_type>::get_name() const
+template <typename type>
+std::string object<type>::get_name() const
 {
     return class_name;
 };
 
-template <typename pixel_type>
-std::string object<pixel_type>::get_type() const
+template <typename type>
+std::string object<type>::get_type() const
 {
     return typeid(value).name();
-};
-
-template <typename pixel_type>
-int object<pixel_type>::get_dimension() const
-{
-    return dim;
-};
-
-template <typename pixel_type>
-std::vector<int> object<pixel_type>::get_size() const
-{
-    return size;
-};
-
-template <typename pixel_type>
-std::vector<double> object<pixel_type>::get_spacing() const
-{
-    return spacing;
-};
-
-template <typename pixel_type>
-std::vector<double> object<pixel_type>::get_origin() const
-{
-    return origin;
-};
-
-template <typename pixel_type>
-std::vector<double> object<pixel_type>::get_direction() const
-{
-    return direction;
-};
-
-// ===========================================
-// Set Functions
-// ===========================================
-template <typename pixel_type>
-void object<pixel_type>::set_spacing(std::vector<double> s)
-{
-    assert(dim == s.size());
-    spacing = s;
-};
-
-template <typename pixel_type>
-void object<pixel_type>::set_origin(std::vector<double> o)
-{
-    assert(dim == o.size());
-    origin = o;
-};
-
-template <typename pixel_type>
-void object<pixel_type>::set_direction(std::vector<double> d)
-{
-    assert(dim*dim == d.size());
-    direction = d;
 };
 
 // ===========================================
 // Print Functions
 // ===========================================
-template <typename pixel_type>
-void object<pixel_type>::print(std::string msg)
+template <typename type>
+void object<type>::print(std::string msg)
 {
     std::string ss = info(msg);
     std::cout << ss;
 };
 
-template <typename pixel_type>
-void object<pixel_type>::print_data(std::string msg)
+template <typename type>
+void object<type>::print_data(std::string msg)
 {
     std::string ss = info_data(msg);
     std::cout << ss;
 };
 
-template <typename pixel_type>
-std::ostream & operator << (std::ostream & os, object<pixel_type> & input)
+template <typename type>
+std::ostream & operator << (std::ostream & os, object<type> & input)
 {
     os << input.info("");
     return os;
 };
 
-template <typename pixel_type>
-std::string object<pixel_type>::info(std::string msg)
+template <typename type>
+std::string object<type>::info(std::string msg)
 {
     std::stringstream ss;
     std::string title = "Object Information";
     if (msg != "") { title = msg; };
+    
     // Summary of the object information
     ss << "\n===== " << title << " =====\n";
+    ss << "Pointer: \t\t" << this << std::endl;
     ss << "Class name: \t\t" << get_name() << std::endl;
     ss << "Data type: \t\t" << get_type() << std::endl;
-    ss << "Dimensions: \t\t" << get_dimension() << std::endl;
+
     return ss.str();
 };
 
-template <typename pixel_type>
-std::string object<pixel_type>::info_data(std::string msg)
+template <typename type>
+std::string object<type>::info_data(std::string msg)
 {
     // Totally override when implemented in inherited classes
     std::stringstream ss;
-    // if (msg != "") { ss << msg << std::endl; };
     ss << "This method of " << get_name();
     ss << " is not implemented" << std::endl;
     return ss.str();
@@ -309,14 +193,13 @@ std::string object<pixel_type>::info_data(std::string msg)
 // ===========================================
 // Overloading Functions
 // ===========================================
-template <typename pixel_type>
-object<pixel_type> & object<pixel_type>::operator = (const object<pixel_type> & input)
+template <typename type>
+object<type> & object<type>::operator = (const object<type> & input)
 {
-    duplicate(input);
+    copy_(input);
     return *this;
 };
 
 }; //end namespace
-
 
 #endif
