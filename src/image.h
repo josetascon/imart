@@ -56,7 +56,7 @@ public:
     static pointer new_pointer(const ARGS&... args);
 
     template<typename... ARGS>
-    pointer another_pointer(const ARGS&... args);;
+    pointer another_pointer(const ARGS&... args);
     
     // Access
     ptr_pixels4 neighbors4(int e);

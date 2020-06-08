@@ -21,7 +21,7 @@
 
 #include <fftw3.h>      // fft library
 
-// images itk
+// itk headers
 #include <itkPoint.h>
 #include <itkImage.h>
 #include <itkImageBase.h>
@@ -32,38 +32,29 @@
 #include <eigen3/Eigen/Core>
 
 // local libs
-#include "object.h"
-
-// parallel
-// openmp
-// opencl
-
-// Definitions
-// typedef float pixel_type;
-
-// Class to allow friend methods
-// template <typename pixel_type>
-// class image_base;
-
-// // Friend definitions
-// template <typename pixel_type>
-// std::ostream & operator << (std::ostream & os, image_base<pixel_type> & input);
+#include "space_object.h"
 
 namespace imart
 {
 
 // Class image_base
 template <typename pixel_type>
-class image_base: public object<pixel_type>
+class image_base: public space_object<pixel_type>
 {
 public:
-    //Type definitions
+    // Type definitions
     using self    = image_base;
     using pointer = std::shared_ptr<self>;
     using vector  = std::vector<self::pointer>;
 
+    // Inherited variables
+    using space_object<pixel_type>::dim;
+    using space_object<pixel_type>::size;
+    using space_object<pixel_type>::spacing;
+    using space_object<pixel_type>::direction;
+
 protected:
-    //Type definitions
+    // Type definitions
     using iterator    = typename std::vector<pixel_type>::iterator;
     using ptr_vector  = std::shared_ptr<std::vector<pixel_type>>;
     using ptr_pixels4 = std::unique_ptr<std::array<pixel_type,4>>;
@@ -136,11 +127,11 @@ public:
     // { return std::make_shared<image_base>(args...);};
 
     //! Full copy image
-    virtual void copy(const image_base & input);
+    virtual void clone(const image_base & input);
     //! Duplicate data array for images
-    void duplicate(const image_base & input);
+    virtual void copy(const image_base & input);
     //! Imitate other image with a property copy
-    void imitate(const image_base & input);
+    virtual void mimic(const image_base & input);
 
     // typename image_base<pixel_type>::pointer new_pointer();
 
@@ -422,7 +413,7 @@ void image_base<pixel_type>::init(int w, int h)
     length = 1;
     num_elements = width*height;
 
-    object<pixel_type>::init(2);
+    space_object<pixel_type>::init(2);
 
     this->size = std::vector<int>{width, height};
 };
@@ -437,7 +428,7 @@ void image_base<pixel_type>::init(int w, int h, int l)
     length = l;
     num_elements = width*height*length;
 
-    object<pixel_type>::init(3);
+    space_object<pixel_type>::init(3);
 
     this->size = std::vector<int>{width, height, length};
 };
@@ -452,10 +443,10 @@ void image_base<pixel_type>::copy_properties(const image_base<pixel_type> & inpu
     channels = input.get_channels();
     num_elements = input.get_total_elements();
 
-    object<pixel_type>::copy_properties(input);
+    space_object<pixel_type>::mimic_(input);
 };
 
-// Copy metadata
+// Allocate
 template <typename pixel_type>
 void image_base<pixel_type>::allocate(int total_elements)
 {
@@ -471,7 +462,7 @@ void image_base<pixel_type>::allocate(int total_elements)
 
 // Full copy
 template <typename pixel_type>
-void image_base<pixel_type>::copy(const image_base<pixel_type> & input)
+void image_base<pixel_type>::clone(const image_base<pixel_type> & input)
 {
     copy_properties(input);
     allocate(input.get_total_elements());
@@ -488,7 +479,7 @@ void image_base<pixel_type>::copy(const image_base<pixel_type> & input)
 
 // Point to the same data
 template <typename pixel_type>
-void image_base<pixel_type>::duplicate(const image_base<pixel_type> & input)
+void image_base<pixel_type>::copy(const image_base<pixel_type> & input)
 {
     copy_properties(input);
     data.reset();
@@ -496,7 +487,7 @@ void image_base<pixel_type>::duplicate(const image_base<pixel_type> & input)
 };
 
 template <typename pixel_type>
-void image_base<pixel_type>::imitate(const image_base<pixel_type> & input)
+void image_base<pixel_type>::mimic(const image_base<pixel_type> & input)
 {
     copy_properties(input);
     data.reset();
@@ -914,23 +905,23 @@ std::string image_base<pixel_type>::info(std::string msg)
     std::string title = "Image Information";
     if (msg != "") { title = msg; };
     // Summary of the image information
-    ss << object<pixel_type>::info(title);
+    ss << space_object<pixel_type>::info(title);
     // ss << "\n===== " << title << " =====\n";
     // ss << "Pixel type: \t\t" << typeid((*data)[0]).name() << std::endl;
     // ss << "Dimensions: \t\t" << dim << std::endl;
     ss << "Pixel channels: \t" << channels << std::endl; 
     
-    ss << "Size: \t\t\t[ ";
-    for(int i = 0; i < this->size.size(); i++) { ss << this->size[i] << " "; };
-    ss << "]" << std::endl;
+    // ss << "Size: \t\t\t[ ";
+    // for(int i = 0; i < this->size.size(); i++) { ss << this->size[i] << " "; };
+    // ss << "]" << std::endl;
     
-    ss << "Length (mm): \t\t[ ";
-    for(int i = 0; i < this->spacing.size(); i++) { ss << this->spacing[i] << " "; };
-    ss << "]" << std::endl;
+    // ss << "Length (mm): \t\t[ ";
+    // for(int i = 0; i < this->spacing.size(); i++) { ss << this->spacing[i] << " "; };
+    // ss << "]" << std::endl;
 
-    ss << "Origin (mm): \t\t[ ";
-    for(int i = 0; i < this->origin.size(); i++) { ss << this->origin[i] << " "; };
-    ss << "]" << std::endl;
+    // ss << "Origin (mm): \t\t[ ";
+    // for(int i = 0; i < this->origin.size(); i++) { ss << this->origin[i] << " "; };
+    // ss << "]" << std::endl;
 
     ss << "Total elements: \t" << num_elements << std::endl; //Get the total number of pixels
 
@@ -1091,7 +1082,7 @@ template <typename pixel_type>
 image_base<pixel_type> & image_base<pixel_type>::operator = (const image_base<pixel_type> & input)
 {
     // delete &data;
-    duplicate(input);
+    copy(input);
     return *this;
 };
 
