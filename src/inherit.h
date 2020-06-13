@@ -79,7 +79,8 @@ private:
     virtual inherit_multiple * clone_method() const override
     {
         // std::cout << "clone method inherit" << std::endl;
-        self * p = new self(static_cast<const self & >(*this));
+        // self * p = new self(static_cast<const self & >(*this));
+        self * p = new self();
         p->clone_(static_cast<const self & >(*this));
         return p;
     };
@@ -131,7 +132,8 @@ private:
     virtual inherit * clone_method() const override
     {
         // std::cout << "clone method inherit" << std::endl;
-        self * p = new self(static_cast<const self & >(*this));
+        // self * p = new self(static_cast<const self & >(*this));
+        self * p = new self();
         p->clone_(static_cast<const self & >(*this));
         return p;
     };

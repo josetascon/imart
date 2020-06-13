@@ -39,7 +39,7 @@ namespace imart
 
 // Class image_base
 template <typename pixel_type>
-class image_base: public space_object<pixel_type>
+class image_base: public space_object
 {
 public:
     // Type definitions
@@ -48,10 +48,10 @@ public:
     using vector  = std::vector<self::pointer>;
 
     // Inherited variables
-    using space_object<pixel_type>::dim;
-    using space_object<pixel_type>::size;
-    using space_object<pixel_type>::spacing;
-    using space_object<pixel_type>::direction;
+    using space_object::dim;
+    using space_object::size;
+    using space_object::spacing;
+    using space_object::direction;
 
 protected:
     // Type definitions
@@ -413,7 +413,7 @@ void image_base<pixel_type>::init(int w, int h)
     length = 1;
     num_elements = width*height;
 
-    space_object<pixel_type>::init(2);
+    space_object::init(2);
 
     this->size = std::vector<int>{width, height};
 };
@@ -428,7 +428,7 @@ void image_base<pixel_type>::init(int w, int h, int l)
     length = l;
     num_elements = width*height*length;
 
-    space_object<pixel_type>::init(3);
+    space_object::init(3);
 
     this->size = std::vector<int>{width, height, length};
 };
@@ -443,7 +443,7 @@ void image_base<pixel_type>::copy_properties(const image_base<pixel_type> & inpu
     channels = input.get_channels();
     num_elements = input.get_total_elements();
 
-    space_object<pixel_type>::mimic_(input);
+    space_object::mimic_(input);
 };
 
 // Allocate
@@ -905,7 +905,7 @@ std::string image_base<pixel_type>::info(std::string msg)
     std::string title = "Image Information";
     if (msg != "") { title = msg; };
     // Summary of the image information
-    ss << space_object<pixel_type>::info(title);
+    ss << space_object::info(title);
     // ss << "\n===== " << title << " =====\n";
     // ss << "Pixel type: \t\t" << typeid((*data)[0]).name() << std::endl;
     // ss << "Dimensions: \t\t" << dim << std::endl;

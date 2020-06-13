@@ -12,6 +12,7 @@
 #include <iostream>     // std::cout
 #include <vector>       // std::vector
 #include <cassert>      // assert
+#include <cmath>      // math functions
 
 // local libs
 #include "inherit.h"
@@ -22,7 +23,7 @@ namespace imart
 
 // Class object
 template <typename type>
-class vector_cpu: public inherit<vector_cpu<type>, object<type>>, std::vector<type>
+class vector_cpu: public inherit<vector_cpu<type>, object>, std::vector<type>
 {
 public:
     //Type definitions
@@ -31,7 +32,13 @@ public:
     using vector  = std::vector<self::pointer>;
 
     // Inherited variables
-    using object<type>::class_name;
+    using object::class_name;
+    using object::get_name;
+    using std::vector<type>::size;
+    using std::vector<type>::begin;
+    using std::vector<type>::end;
+    using std::vector<type>::operator[];
+    using std::vector<type>::data;
 
 protected:
     // ===========================================
@@ -71,11 +78,20 @@ public:
     // Functions
     // ===========================================
     void assert_size(const vector_cpu<type> & input);
+
+    // ===========================================
+    // Initialize Functions
+    // ===========================================
+    // TODO
+    // void zeros();
+    // void ones();
+    // void fill(type value);
+    // void random(float min=0.0, float max=1.0);
     
     // ===========================================
     // Overloading operators
     // ===========================================
-    // Image to Image
+    // Vector to vector
     pointer operator = (const vector_cpu<type>::pointer input);
     pointer operator + (const vector_cpu<type> & input);
     pointer operator - (const vector_cpu<type> & input);
@@ -83,12 +99,22 @@ public:
     pointer operator / (const vector_cpu<type> & input);
     pointer operator ^ (const vector_cpu<type> & input);
 
-    // Scalar
+    // Scalar to vector
     pointer operator + (type scalar);
     pointer operator - (type scalar);
     pointer operator * (type scalar);
     pointer operator / (type scalar);
     pointer operator ^ (type scalar);
+
+    // Friend classes to support scalar to vector left hand side
+    template<typename type_>
+    friend typename vector_cpu<type_>::pointer operator + (type_ scalar, vector_cpu<type_> & input);
+    template<typename type_>
+    friend typename vector_cpu<type_>::pointer operator - (type_ scalar, const vector_cpu<type_> & input);
+    template<typename type_>
+    friend typename vector_cpu<type_>::pointer operator * (type_ scalar, vector_cpu<type_> & input);
+    template<typename type_>
+    friend typename vector_cpu<type_>::pointer operator / (type_ scalar, const vector_cpu<type_> & input);
 
     // ===========================================
     // Reduction functions
@@ -96,7 +122,7 @@ public:
     type min();
     type max();
     type sum();
-    type prod();
+    // type prod();    // may produce overflow error
     type dot(const vector_cpu<type> & input);
 
     // ===========================================
@@ -108,7 +134,6 @@ public:
     typename vector_cpu<type_cast>::pointer cast();
 };
 
-
 // ===========================================
 //          Functions of Class vector_cpu
 // ===========================================
@@ -116,27 +141,10 @@ public:
 // ===========================================
 // Constructors
 // ===========================================
-// template <typename type>
-// vector_cpu<type>::vector_cpu(): std::vector<type>()
-// {
-//     class_name = "vector_cpu";
-// };
-
-// template <typename type>
-// vector_cpu<type>::vector_cpu(int s): std::vector<type>(s)
-// {
-//     class_name = "vector_cpu";
-// };
-
-// template <typename type>
-// vector_cpu<type>::vector_cpu(int s, type value): std::vector<type>(s, value)
-// {
-//     class_name = "vector_cpu";
-// };
-
 template <typename type>
 vector_cpu<type>::vector_cpu(const vector_cpu<type> & input)
 {
+    class_name = "vector_cpu";
     clone_(input);          // call the virtual
 };
 
@@ -183,11 +191,9 @@ void vector_cpu<type>::mimic_(const vector_cpu<type> & input)
     this->resize(size);
 };
 
-
 // ===========================================
 // Get Functions
 // ===========================================
-
 
 // ===========================================
 // Print Functions
@@ -200,9 +206,9 @@ std::string vector_cpu<type>::info(std::string msg)
     if (msg != "") { title = msg; };
 
     // Summary of the object information
-    ss << object<type>::info(title);
+    ss << object::info(title);
     ss << "Size: \t\t\t" << this->size() << std::endl;
-    ss << "Capacity: \t\t" << this->capacity() << std::endl;
+    // ss << "Capacity: \t\t" << this->capacity() << std::endl;
     return ss.str();
 };
 
@@ -211,13 +217,10 @@ std::string vector_cpu<type>::info_data(std::string msg)
 {
     std::stringstream ss;
     if (msg != "") { ss << msg << std::endl; };
-    type * p = this->data();
 
+    type * p = this->data();
     ss << "[ ";
-    for(int k=0; k<this->size(); k++)
-    {
-        ss << p[k] << " ";
-    }
+    for(int k=0; k<this->size(); k++) { ss << p[k] << " "; };
     ss << "]" << std::endl;
     return ss.str();
 };
@@ -268,7 +271,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator - (const vector_cp
 
     // Create pointers
     type * p1 = this->data();
-    type * p2 = input.data();
+    const type * p2 = input.data();
     type * p3 = output->data();
 
     for(int k=0; k<size; k++)
@@ -287,7 +290,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator * (const vector_cp
 
     // Create pointers
     type * p1 = this->data();
-    type * p2 = input.data();
+    const type * p2 = input.data();
     type * p3 = output->data();
 
     for(int k=0; k<size; k++)
@@ -306,7 +309,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator / (const vector_cp
 
     // Create pointers
     type * p1 = this->data();
-    type * p2 = input.data();
+    const type * p2 = input.data();
     type * p3 = output->data();
 
     for(int k=0; k<size; k++)
@@ -325,12 +328,12 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator ^ (const vector_cp
 
     // Create pointers
     type * p1 = this->data();
-    type * p2 = input.data();
+    const type * p2 = input.data();
     type * p3 = output->data();
 
     for(int k=0; k<size; k++)
     {
-        p3[k] = p1[k] ^ p2[k];
+        p3[k] = pow(p1[k],p2[k]);
     };
     return output;
 };
@@ -342,7 +345,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator + (type scalar)
     int size = this->size();
     vector_cpu<type>::pointer output = this->mimic(); // init a image with same poperties
     type * p1 = this->data();
-    type * p2 = output.data();
+    type * p2 = output->data();
 
     for(int k=0; k<size; k++)
     {
@@ -357,7 +360,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator - (type scalar)
     int size = this->size();
     vector_cpu<type>::pointer output = this->mimic(); // init a image with same poperties
     type * p1 = this->data();
-    type * p2 = output.data();
+    type * p2 = output->data();
 
     for(int k=0; k<size; k++)
     {
@@ -372,7 +375,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator * (type scalar)
     int size = this->size();
     vector_cpu<type>::pointer output = this->mimic(); // init a image with same poperties
     type * p1 = this->data();
-    type * p2 = output.data();
+    type * p2 = output->data();
 
     for(int k=0; k<size; k++)
     {
@@ -387,7 +390,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator / (type scalar)
     int size = this->size();
     vector_cpu<type>::pointer output = this->mimic(); // init a image with same poperties
     type * p1 = this->data();
-    type * p2 = output.data();
+    type * p2 = output->data();
 
     for(int k=0; k<size; k++)
     {
@@ -402,11 +405,54 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator ^ (type scalar)
     int size = this->size();
     vector_cpu<type>::pointer output = this->mimic(); // init a image with same poperties
     type * p1 = this->data();
-    type * p2 = output.data();
+    type * p2 = output->data();
 
     for(int k=0; k<size; k++)
     {
-        p2[k] = p1[k] / scalar;
+        p2[k] = pow(p1[k],scalar);
+    };
+    return output;
+};
+
+// Scalar left hand side
+template <typename type>
+typename vector_cpu<type>::pointer operator + (type scalar, vector_cpu<type> & input)
+{
+    return input + scalar;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer operator - (type scalar, const vector_cpu<type> & input)
+{
+    int size = input.size();
+    typename vector_cpu<type>::pointer output = input.mimic(); // init a image with same poperties
+    const type * p1 = input.data();
+    type * p2 = output->data();
+
+    for(int k=0; k<size; k++)
+    {
+        p2[k] = scalar - p1[k];
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer operator * (type scalar, vector_cpu<type> & input)
+{
+    return input * scalar;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer operator / (type scalar, const vector_cpu<type> & input)
+{
+    int size = input.size();
+    typename vector_cpu<type>::pointer output = input.mimic(); // init a image with same poperties
+    const type * p1 = input.data();
+    type * p2 = output->data();
+
+    for(int k=0; k<size; k++)
+    {
+        p2[k] = scalar / p1[k];
     };
     return output;
 };
@@ -458,19 +504,19 @@ type vector_cpu<type>::sum()
     return x;
 };
 
-template <typename type>
-type vector_cpu<type>::prod()
-{
-    type x = 1;
-    type * p1 = this->data();
-    int size = this->size();
+// template <typename type>
+// type vector_cpu<type>::prod()
+// {
+//     type x = 1;
+//     type * p1 = this->data();
+//     int size = this->size();
 
-    for(int k=0; k<size; k++)
-    {
-        x *= p1[k];
-    };
-    return x;
-};
+//     for(int k=0; k<size; k++)
+//     {
+//         x *= p1[k];
+//     };
+//     return x;
+// };
 
 // Vectorial dot product. Verify the same number of elements, then product and reduce
 template <typename type>
@@ -480,7 +526,7 @@ type vector_cpu<type>::dot(const vector_cpu<type> & input)
 
     type x = 0;
     type * p1 = this->data();
-    type * p2 = input.data();
+    const type * p2 = input.data();
     int size = this->size();
 
     for(int k=0; k<size; k++)
@@ -493,12 +539,23 @@ type vector_cpu<type>::dot(const vector_cpu<type> & input)
 // ===========================================
 // Functions
 // ===========================================
-template <class type> template <class type_cast>
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::normalize(type min, type max)
+{
+    type minv = this->min();
+    type maxv = this->max();
+
+    vector_cpu<type>::pointer output = *this - minv;
+    output = *(*output*((max - min)/(maxv - minv))) + min;
+    return output;
+};
+
+template <typename type> template <typename type_cast> 
 typename vector_cpu<type_cast>::pointer vector_cpu<type>::cast()
 {
-    typename vector_cpu<type_cast>::pointer output = this->mimic();
-    
     int size = this->size();
+    typename vector_cpu<type_cast>::pointer output = vector_cpu<type_cast>::new_pointer(size);
+    
     type * p1 = this->data();
     type_cast * p2 = output->data();
 
@@ -506,16 +563,6 @@ typename vector_cpu<type_cast>::pointer vector_cpu<type>::cast()
     {
         p2[k] = (type_cast)p1[k];
     };
-    return output;
-};
-
-template <typename type>
-typename vector_cpu<type>::pointer vector_cpu<type>::normalize(type min, type max)
-{
-    type minv = this->min();
-    type maxv = this->max();
-
-    vector_cpu<type>::pointer output = (*this - minv)*((max - min)/(maxv - minv)) + min;
     return output;
 };
 

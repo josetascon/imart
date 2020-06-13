@@ -24,7 +24,7 @@ namespace imart
 {
 
 template <typename pixel_type>
-class grid: public object<pixel_type>
+class grid: public object
 {
 public:
     //Type definitions
@@ -158,7 +158,7 @@ void grid<pixel_type>::init(int d)
     // xyz.reset();
     // xyz = std::make_shared<vector_image>(d);
     allocate(d);
-    object<pixel_type>::init(d);
+    object::init(d);
 };
 
 template <typename pixel_type>
@@ -215,7 +215,7 @@ void grid<pixel_type>::copy_properties(const grid<pixel_type> & input)
 
     xyz.reset();
     xyz = std::make_shared<vector_image>(d);
-    object<pixel_type>::copy_properties(input);
+    object::copy_properties(input);
 };
 
 template <typename pixel_type>
@@ -225,7 +225,7 @@ void grid<pixel_type>::copy_properties(const image_base<pixel_type> & input)
 
     xyz.reset();
     xyz = std::make_shared<vector_image>(d);
-    object<pixel_type>::copy_properties(input);
+    object::copy_properties(input);
 };
 
 // template <typename pixel_type>
@@ -235,7 +235,7 @@ void grid<pixel_type>::copy_properties(const image_base<pixel_type> & input)
 
 //     xyz.reset();
 //     xyz = std::make_shared<vector_image>(d);
-//     object<pixel_type>::copy_properties(input);
+//     object::copy_properties(input);
     
 //     // this->dim = input.get_dimension();
 //     // this->size = input.get_size();
@@ -251,7 +251,7 @@ void grid<pixel_type>::copy_properties(const image_base<pixel_type> & input)
 
 //     xyz.reset();
 //     xyz = std::make_shared<vector_image>(d);
-//     object<pixel_type>::copy_properties(input);
+//     object::copy_properties(input);
 // }
 
 // ===========================================
@@ -290,7 +290,7 @@ std::string grid<pixel_type>::info(std::string msg)
     std::string title = "Grid Information";
     if (msg != "") { title = msg; };
 
-    ss << object<pixel_type>::info(title);
+    ss << object::info(title);
     
     ss << "Size: \t\t\t[ ";
     for(int i = 0; i < this->size.size(); i++) { ss << this->size[i] << " "; };
@@ -348,7 +348,7 @@ template <typename pixel_type>
 void grid<pixel_type>::meshgrid_2d()
 {
     // TODO: DIRECTION IS DISABLED ****
-    // object<pixel_type>::print("internal"); // debug
+    // object::print("internal"); // debug
     int w = this->get_size()[0];
     int h = this->get_size()[1];
     int elements = w*h;

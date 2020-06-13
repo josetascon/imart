@@ -18,13 +18,13 @@ set(CMAKE_LIBRARY_PATH "/usr/lib")
 find_package( ITK REQUIRED )
 include(${ITK_USE_FILE})
 # Find OpenMP
-find_package( OpenMP REQUIRED )
+# find_package( OpenMP REQUIRED )
 # Find OpenCL.
 find_package( OpenCL REQUIRED )
 
 
-set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL "fftw3" OpenMP::OpenMP_CXX)
-# set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL )
+set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL fftw3  gtest)
+# set(link_targets OpenMP::OpenMP_CXX )
 
 # ===========================================
 #               Compiler Flags

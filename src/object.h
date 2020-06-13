@@ -9,6 +9,7 @@
 #define __OBJECT_H__
 
 // std libs
+#include <iostream>     // std::cout
 #include <vector>       // std::vector
 #include <sstream>      // std::stringstream
 #include <typeinfo>     // operator typeids
@@ -20,8 +21,7 @@ namespace imart
 {
 
 //! Class object
-template <typename type>
-class object : public inherit<object<type>, base>
+class object : public inherit<object, base>
 {
 public:
     // Type definitions
@@ -34,7 +34,7 @@ protected:
     // Internal Variables
     // ===========================================
     std::string class_name;                     // class string name
-    type value;                                 // single value of type
+    // type value;                              // single value of type
 
     // ===========================================
     // Print Functions
@@ -61,7 +61,7 @@ public:
     // Get Functions
     // ===========================================
     std::string get_name() const;
-    std::string get_type() const;
+    // std::string get_type() const;
 
     // ===========================================
     // Print Functions
@@ -69,13 +69,12 @@ public:
     void print(std::string msg = "");
     void print_data(std::string msg = "");
 
-    template<typename pixel_t>
-    friend std::ostream & operator << (std::ostream & os, object<pixel_t> & input);
+    friend std::ostream & operator << (std::ostream & os, object & input);
 
     // ===========================================
     // Overloading Functions
     // ===========================================
-    virtual object<type> & operator = (const object<type> & input);
+    virtual object & operator = (const object & input);
 };
 
 
@@ -84,43 +83,40 @@ public:
 // ===========================================
 
 // ===========================================
-// Create Functions
+// Constructor Functions
 // ===========================================
 //! Constructor empty
-template <typename type>
-object<type>::object()
+object::object()
 {
     class_name = "object";
 };
 
 //! Constructor to clone
-template <typename type>
-object<type>::object(const object<type> & input)
+object::object(const object & input)
 {
     clone_(input);                // call the virtual function clone_
 };
 
 //! Destructor
-template <typename type>
-object<type>::~object()
+object::~object()
 {
     ;
 };
 
-template <typename type>
-void object<type>::clone_(const object & input)
+// ===========================================
+// Create Functions
+// ===========================================
+void object::clone_(const object & input)
 {
     ;
 };
 
-template <typename type>
-void object<type>::copy_(const object & input)
+void object::copy_(const object & input)
 {
     ;
 };
 
-template <typename type>
-void object<type>::mimic_(const object & input)
+void object::mimic_(const object & input)
 {
     ;
 };
@@ -128,44 +124,39 @@ void object<type>::mimic_(const object & input)
 // ===========================================
 // Get Functions
 // ===========================================
-template <typename type>
-std::string object<type>::get_name() const
+std::string object::get_name() const
 {
     return class_name;
 };
 
-template <typename type>
-std::string object<type>::get_type() const
-{
-    return typeid(value).name();
-};
+// template <typename type>
+// std::string object::get_type() const
+// {
+//     return typeid(value).name();
+// };
 
 // ===========================================
 // Print Functions
 // ===========================================
-template <typename type>
-void object<type>::print(std::string msg)
+void object::print(std::string msg)
 {
     std::string ss = info(msg);
     std::cout << ss;
 };
 
-template <typename type>
-void object<type>::print_data(std::string msg)
+void object::print_data(std::string msg)
 {
     std::string ss = info_data(msg);
     std::cout << ss;
 };
 
-template <typename type>
-std::ostream & operator << (std::ostream & os, object<type> & input)
+std::ostream & operator << (std::ostream & os, object & input)
 {
     os << input.info("");
     return os;
 };
 
-template <typename type>
-std::string object<type>::info(std::string msg)
+std::string object::info(std::string msg)
 {
     std::stringstream ss;
     std::string title = "Object Information";
@@ -175,13 +166,11 @@ std::string object<type>::info(std::string msg)
     ss << "\n===== " << title << " =====\n";
     ss << "Pointer: \t\t" << this << std::endl;
     ss << "Class name: \t\t" << get_name() << std::endl;
-    ss << "Data type: \t\t" << get_type() << std::endl;
-
+    // ss << "Data type: \t\t" << get_type() << std::endl;
     return ss.str();
 };
 
-template <typename type>
-std::string object<type>::info_data(std::string msg)
+std::string object::info_data(std::string msg)
 {
     // Totally override when implemented in inherited classes
     std::stringstream ss;
@@ -193,8 +182,7 @@ std::string object<type>::info_data(std::string msg)
 // ===========================================
 // Overloading Functions
 // ===========================================
-template <typename type>
-object<type> & object<type>::operator = (const object<type> & input)
+object & object::operator = (const object & input)
 {
     copy_(input);
     return *this;

@@ -10,6 +10,7 @@
 
 // std libs
 #include <iostream>     // std::cout
+#include <cassert>      // assert
 
 // local libs
 #include "inherit.h"
@@ -19,8 +20,7 @@ namespace imart
 {
 
 // Class object
-template <typename type>
-class space_object: public inherit<space_object<type>, object<type>>
+class space_object: public inherit<space_object, object>
 {
 public:
     //Type definitions
@@ -87,39 +87,37 @@ public:
 // Create Functions
 // ===========================================
 //! Constructor empty
-template <typename type>
-space_object<type>::space_object()
+space_object::space_object()
 {
     this->class_name = "space_object";
     init(1);
 };
 
 //! Constructor with number of dimensions
-template <typename type>
-space_object<type>::space_object(int d)
+space_object::space_object(int d)
 {
     this->class_name = "space_object";
     init(d);
 };
 
 //! Constructor to clone
-template <typename type>
-space_object<type>::space_object(const space_object & input)
+space_object::space_object(const space_object & input)
 {
     clone_(input);                // call the virtual
     // copy_properties(input);    // in object class everything is copied with this method)
 };
 
 // Destructor
-template <typename type>
-space_object<type>::~space_object()
+space_object::~space_object()
 {
     ;
 };
 
+// ===========================================
+// Create Functions
+// ===========================================
 // Initialization function
-template <typename type>
-void space_object<type>::init(int d)
+void space_object::init(int d)
 {
     // Attributes initialization
     dim = d;
@@ -134,25 +132,22 @@ void space_object<type>::init(int d)
 };
 
 // template <typename type>
-// void space_object<type>::copy_properties(const space_object<type> & input)
+// void space_object::copy_properties(const space_object & input)
 // {
 
 // };
 
-template <typename type>
-void space_object<type>::clone_(const space_object & input)
+void space_object::clone_(const space_object & input)
 {
     mimic_(input);
 };
 
-template <typename type>
-void space_object<type>::copy_(const space_object & input)
+void space_object::copy_(const space_object & input)
 {
     mimic_(input);
 };
 
-template <typename type>
-void space_object<type>::mimic_(const space_object & input)
+void space_object::mimic_(const space_object & input)
 {
     dim = input.get_dimension();
     size = input.get_size();
@@ -164,32 +159,27 @@ void space_object<type>::mimic_(const space_object & input)
 // ===========================================
 // Get Functions
 // ===========================================
-template <typename type>
-int space_object<type>::get_dimension() const
+int space_object::get_dimension() const
 {
     return dim;
 };
 
-template <typename type>
-std::vector<int> space_object<type>::get_size() const
+std::vector<int> space_object::get_size() const
 {
     return size;
 };
 
-template <typename type>
-std::vector<double> space_object<type>::get_spacing() const
+std::vector<double> space_object::get_spacing() const
 {
     return spacing;
 };
 
-template <typename type>
-std::vector<double> space_object<type>::get_origin() const
+std::vector<double> space_object::get_origin() const
 {
     return origin;
 };
 
-template <typename type>
-std::vector<double> space_object<type>::get_direction() const
+std::vector<double> space_object::get_direction() const
 {
     return direction;
 };
@@ -197,22 +187,19 @@ std::vector<double> space_object<type>::get_direction() const
 // ===========================================
 // Set Functions
 // ===========================================
-template <typename type>
-void space_object<type>::set_spacing(std::vector<double> s)
+void space_object::set_spacing(std::vector<double> s)
 {
     assert(dim == s.size());
     spacing = s;
 };
 
-template <typename type>
-void space_object<type>::set_origin(std::vector<double> o)
+void space_object::set_origin(std::vector<double> o)
 {
     assert(dim == o.size());
     origin = o;
 };
 
-template <typename type>
-void space_object<type>::set_direction(std::vector<double> d)
+void space_object::set_direction(std::vector<double> d)
 {
     assert(dim*dim == d.size());
     direction = d;
@@ -221,30 +208,24 @@ void space_object<type>::set_direction(std::vector<double> d)
 // ===========================================
 // Print Functions
 // ===========================================
-template <typename type>
-std::string space_object<type>::info(std::string msg)
+std::string space_object::info(std::string msg)
 {
     std::stringstream ss;
     std::string title = "Space Object Information";
     if (msg != "") { title = msg; };
 
     // Summary of the object information
-    ss << object<type>::info(title);
-    
+    ss << object::info(title);
     ss << "Dimensions: \t\t" << get_dimension() << std::endl;
-
     ss << "Size: \t\t\t[ ";
     for(int i = 0; i < this->size.size(); i++) { ss << this->size[i] << " "; };
     ss << "]" << std::endl;
-    
     ss << "Length (mm): \t\t[ ";
     for(int i = 0; i < this->spacing.size(); i++) { ss << this->spacing[i] << " "; };
     ss << "]" << std::endl;
-
     ss << "Origin (mm): \t\t[ ";
     for(int i = 0; i < this->origin.size(); i++) { ss << this->origin[i] << " "; };
     ss << "]" << std::endl;
-
     return ss.str();
 };
 

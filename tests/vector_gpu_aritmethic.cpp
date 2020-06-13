@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-06 00:00:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-13 11:26:08
+* @Last Modified time: 2020-06-13 11:34:25
 */
 
 // std libs
@@ -14,44 +14,44 @@
 #include <gtest/gtest.h>
 
 // local header
-#include "../src/vector_cpu.h"
+#include "../src/vector_gpu.h"
 
 using namespace imart;
 
 template <typename T>
-class test_vector_cpu : public ::testing::Test{};
+class test_vector_gpu : public ::testing::Test{};
 
 using test_types = ::testing::Types<float, double>;
 
 // ============================================
 //          Testing Constructors
 // ============================================
-TYPED_TEST_CASE(test_vector_cpu, test_types);
+TYPED_TEST_CASE(test_vector_gpu, test_types);
 
-TYPED_TEST(test_vector_cpu, constructor)
+TYPED_TEST(test_vector_gpu, constructor)
 {
-    vector_cpu<TypeParam> vec1;
-    ASSERT_TRUE("vector_cpu" == vec1.get_name());
+    vector_gpu<TypeParam> vec1;
+    ASSERT_TRUE("vector_gpu" == vec1.get_name());
     ASSERT_EQ( 0, vec1.size() );
 
-    vector_cpu<TypeParam> vec2(0);
+    vector_gpu<TypeParam> vec2(0);
     ASSERT_EQ( 0, vec2.size() );
 
-    vector_cpu<TypeParam> vec3(121);
-    ASSERT_TRUE("vector_cpu" == vec3.get_name());
+    vector_gpu<TypeParam> vec3(121);
+    ASSERT_TRUE("vector_gpu" == vec3.get_name());
     ASSERT_EQ( 121, vec3.size() );
 
-    vector_cpu<TypeParam> vec4(1,3.0);
+    vector_gpu<TypeParam> vec4(1,3.0);
     ASSERT_FLOAT_EQ( 3.0, vec4[0] );
 
-    vector_cpu<TypeParam> vec5(10,-5.2);
-    ASSERT_TRUE("vector_cpu" == vec5.get_name());
+    vector_gpu<TypeParam> vec5(10,-5.2);
+    ASSERT_TRUE("vector_gpu" == vec5.get_name());
     ASSERT_FLOAT_EQ( -5.2, vec5[0] );
     ASSERT_FLOAT_EQ( -5.2, vec5[4] );
     ASSERT_FLOAT_EQ( -5.2, vec5[9] );
 
-    vector_cpu<TypeParam> vec6(vec5);
-    ASSERT_TRUE("vector_cpu" == vec6.get_name());
+    vector_gpu<TypeParam> vec6(vec5);
+    ASSERT_TRUE("vector_gpu" == vec6.get_name());
     ASSERT_FLOAT_EQ( -5.2, vec5[0] );
     ASSERT_FLOAT_EQ( -5.2, vec5[4] );
     ASSERT_FLOAT_EQ( -5.2, vec5[9] );
@@ -60,25 +60,25 @@ TYPED_TEST(test_vector_cpu, constructor)
 // ============================================
 //          Testing Pointers
 // ============================================
-TYPED_TEST(test_vector_cpu, pointers)
+TYPED_TEST(test_vector_gpu, pointers)
 {
-    using vcpu_pointer = typename vector_cpu<TypeParam>::pointer;
-    vcpu_pointer vec1 = vector_cpu<TypeParam>::new_pointer();
-    ASSERT_TRUE("vector_cpu" == vec1->get_name());
+    using vgpu_pointer = typename vector_gpu<TypeParam>::pointer;
+    vgpu_pointer vec1 = vector_gpu<TypeParam>::new_pointer();
+    ASSERT_TRUE("vector_gpu" == vec1->get_name());
     ASSERT_EQ( 0, vec1->size() );
 
-    vcpu_pointer vec2 = vector_cpu<TypeParam>::new_pointer(0);
+    vgpu_pointer vec2 = vector_gpu<TypeParam>::new_pointer(0);
     ASSERT_EQ( 0, vec2->size() );
 
-    vcpu_pointer vec3 = vector_cpu<TypeParam>::new_pointer(201);
-    ASSERT_TRUE("vector_cpu" == vec3->get_name());
+    vgpu_pointer vec3 = vector_gpu<TypeParam>::new_pointer(201);
+    ASSERT_TRUE("vector_gpu" == vec3->get_name());
     ASSERT_EQ( 201, vec3->size() );
 
-    vcpu_pointer vec4 = vector_cpu<TypeParam>::new_pointer(1,-7.0);
+    vgpu_pointer vec4 = vector_gpu<TypeParam>::new_pointer(1,-7.0);
     ASSERT_FLOAT_EQ( -7.0, vec4->operator[](0) );
 
-    vcpu_pointer vec5 = vector_cpu<TypeParam>::new_pointer(21,11.2231);
-    ASSERT_TRUE("vector_cpu" == vec5->get_name());
+    vgpu_pointer vec5 = vector_gpu<TypeParam>::new_pointer(21,11.2231);
+    ASSERT_TRUE("vector_gpu" == vec5->get_name());
     ASSERT_FLOAT_EQ( 11.2231, vec5->operator[](0) );
     ASSERT_FLOAT_EQ( 11.2231, vec5->operator[](15) );
     ASSERT_FLOAT_EQ( 11.2231, vec5->operator[](20) );
@@ -87,17 +87,17 @@ TYPED_TEST(test_vector_cpu, pointers)
 // ============================================
 //          Testing Clone Methods
 // ============================================
-TYPED_TEST(test_vector_cpu, clones)
+TYPED_TEST(test_vector_gpu, clones)
 {
-    using vcpu_pointer = typename vector_cpu<TypeParam>::pointer;
-    vcpu_pointer vec1 = vector_cpu<TypeParam>::new_pointer(8,3.14159);
-    vcpu_pointer vec2 = vec1->clone();
-    vcpu_pointer vec3 = vec1->copy();
-    vcpu_pointer vec4 = vec1->mimic();
+    using vgpu_pointer = typename vector_gpu<TypeParam>::pointer;
+    vgpu_pointer vec1 = vector_gpu<TypeParam>::new_pointer(8,3.14159);
+    vgpu_pointer vec2 = vec1->clone();
+    vgpu_pointer vec3 = vec1->copy();
+    vgpu_pointer vec4 = vec1->mimic();
 
-    ASSERT_TRUE("vector_cpu" == vec2->get_name());
-    ASSERT_TRUE("vector_cpu" == vec3->get_name());
-    ASSERT_TRUE("vector_cpu" == vec4->get_name());
+    ASSERT_TRUE("vector_gpu" == vec2->get_name());
+    ASSERT_TRUE("vector_gpu" == vec3->get_name());
+    ASSERT_TRUE("vector_gpu" == vec4->get_name());
 
     ASSERT_EQ( 8, vec1->size() );
     ASSERT_EQ( 8, vec2->size() );
@@ -121,23 +121,23 @@ TYPED_TEST(test_vector_cpu, clones)
 // ============================================
 //          Testing Vector Operations
 // ============================================
-TYPED_TEST(test_vector_cpu, vector_operations)
+TYPED_TEST(test_vector_gpu, vector_operations)
 {
-    using vcpu_pointer = typename vector_cpu<TypeParam>::pointer;
-    vcpu_pointer vec1 = vector_cpu<TypeParam>::new_pointer(30,2.1);
-    vcpu_pointer vec2 = vector_cpu<TypeParam>::new_pointer(30,1.1);
-    vcpu_pointer vec3;
-    vcpu_pointer vec4 = vector_cpu<TypeParam>::new_pointer(30,4.2);
-    vcpu_pointer vec5;
-    vcpu_pointer vec6 = vector_cpu<TypeParam>::new_pointer(30,14.2123);
-    vcpu_pointer vec7;
-    vcpu_pointer vec8 = vector_cpu<TypeParam>::new_pointer(30,-2*14.2123);
-    vcpu_pointer vec9;
-    vcpu_pointer vec10 = vector_cpu<TypeParam>::new_pointer(30,4.0);
-    vcpu_pointer vec11;
+    using vgpu_pointer = typename vector_gpu<TypeParam>::pointer;
+    vgpu_pointer vec1 = vector_gpu<TypeParam>::new_pointer(30,2.1);
+    vgpu_pointer vec2 = vector_gpu<TypeParam>::new_pointer(30,1.1);
+    vgpu_pointer vec3;
+    vgpu_pointer vec4 = vector_gpu<TypeParam>::new_pointer(30,4.2);
+    vgpu_pointer vec5;
+    vgpu_pointer vec6 = vector_gpu<TypeParam>::new_pointer(30,14.2123);
+    vgpu_pointer vec7;
+    vgpu_pointer vec8 = vector_gpu<TypeParam>::new_pointer(30,-2*14.2123);
+    vgpu_pointer vec9;
+    vgpu_pointer vec10 = vector_gpu<TypeParam>::new_pointer(30,4.0);
+    vgpu_pointer vec11;
 
     vec3 = *vec1 + *vec2;
-    ASSERT_TRUE("vector_cpu" == vec3->get_name());
+    ASSERT_TRUE("vector_gpu" == vec3->get_name());
     ASSERT_EQ( 30, vec3->size() );
     ASSERT_FLOAT_EQ( 3.2, vec3->operator[](0) );
     ASSERT_FLOAT_EQ( 3.2, vec3->operator[](7) );
@@ -145,7 +145,7 @@ TYPED_TEST(test_vector_cpu, vector_operations)
     ASSERT_FLOAT_EQ( 3.2, vec3->operator[](29) );
 
     vec5 = *vec3 - *vec4;
-    ASSERT_TRUE("vector_cpu" == vec5->get_name());
+    ASSERT_TRUE("vector_gpu" == vec5->get_name());
     ASSERT_EQ( 30, vec5->size() );
     ASSERT_FLOAT_EQ( -1.0, vec5->operator[](0) );
     ASSERT_FLOAT_EQ( -1.0, vec5->operator[](9) );
@@ -153,7 +153,7 @@ TYPED_TEST(test_vector_cpu, vector_operations)
     ASSERT_FLOAT_EQ( -1.0, vec5->operator[](29) );
 
     vec7 = (*vec5) * (*vec6);
-    ASSERT_TRUE("vector_cpu" == vec7->get_name());
+    ASSERT_TRUE("vector_gpu" == vec7->get_name());
     ASSERT_EQ( 30, vec7->size() );
     ASSERT_FLOAT_EQ( -14.2123, vec7->operator[](0) );
     ASSERT_FLOAT_EQ( -14.2123, vec7->operator[](3) );
@@ -161,7 +161,7 @@ TYPED_TEST(test_vector_cpu, vector_operations)
     ASSERT_FLOAT_EQ( -14.2123, vec7->operator[](29) );
 
     vec9 = (*vec7) / (*vec8);
-    ASSERT_TRUE("vector_cpu" == vec9->get_name());
+    ASSERT_TRUE("vector_gpu" == vec9->get_name());
     ASSERT_EQ( 30, vec9->size() );
     ASSERT_FLOAT_EQ( 0.5, vec9->operator[](0) );
     ASSERT_FLOAT_EQ( 0.5, vec9->operator[](4) );
@@ -169,7 +169,7 @@ TYPED_TEST(test_vector_cpu, vector_operations)
     ASSERT_FLOAT_EQ( 0.5, vec9->operator[](29) );
 
     vec11 = (*vec9) ^ (*vec10);
-    ASSERT_TRUE("vector_cpu" == vec11->get_name());
+    ASSERT_TRUE("vector_gpu" == vec11->get_name());
     ASSERT_EQ( 30, vec11->size() );
     ASSERT_FLOAT_EQ( 0.0625, vec11->operator[](0) );
     ASSERT_FLOAT_EQ( 0.0625, vec11->operator[](5) );
@@ -202,51 +202,51 @@ TYPED_TEST(test_vector_cpu, vector_operations)
 // ============================================
 //          Testing Scalar Operations
 // ============================================
-TYPED_TEST(test_vector_cpu, scalar_operations)
+TYPED_TEST(test_vector_gpu, scalar_operations)
 {
-    using vcpu_pointer = typename vector_cpu<TypeParam>::pointer;
-    vcpu_pointer vec1 = vector_cpu<TypeParam>::new_pointer(14,1.5);
-    vcpu_pointer vec2 = vector_cpu<TypeParam>::new_pointer(16,-4.632);
-    vcpu_pointer vec3 = vector_cpu<TypeParam>::new_pointer(18,-12.0);
-    vcpu_pointer vec4 = vector_cpu<TypeParam>::new_pointer(20,8.4);
-    vcpu_pointer vec5 = vector_cpu<TypeParam>::new_pointer(22,2.0);
-    vcpu_pointer vec6;
-    vcpu_pointer vec7;
-    vcpu_pointer vec8;
-    vcpu_pointer vec9;
-    vcpu_pointer vec10;
+    using vgpu_pointer = typename vector_gpu<TypeParam>::pointer;
+    vgpu_pointer vec1 = vector_gpu<TypeParam>::new_pointer(14,1.5);
+    vgpu_pointer vec2 = vector_gpu<TypeParam>::new_pointer(16,-4.632);
+    vgpu_pointer vec3 = vector_gpu<TypeParam>::new_pointer(18,-12.0);
+    vgpu_pointer vec4 = vector_gpu<TypeParam>::new_pointer(20,8.4);
+    vgpu_pointer vec5 = vector_gpu<TypeParam>::new_pointer(22,2.0);
+    vgpu_pointer vec6;
+    vgpu_pointer vec7;
+    vgpu_pointer vec8;
+    vgpu_pointer vec9;
+    vgpu_pointer vec10;
 
     // Right hand side
     vec6 = *vec1 + 4.5;
-    ASSERT_TRUE("vector_cpu" == vec6->get_name());
+    ASSERT_TRUE("vector_gpu" == vec6->get_name());
     ASSERT_EQ( 14, vec6->size() );
     ASSERT_FLOAT_EQ( 6.0, vec6->operator[](0) );
     ASSERT_FLOAT_EQ( 6.0, vec6->operator[](7) );
     ASSERT_FLOAT_EQ( 6.0, vec6->operator[](13) );
 
     vec7 = *vec2 - 1.111;
-    ASSERT_TRUE("vector_cpu" == vec7->get_name());
+    ASSERT_TRUE("vector_gpu" == vec7->get_name());
     ASSERT_EQ( 16, vec7->size() );
     ASSERT_FLOAT_EQ( -5.743, vec7->operator[](0) );
     ASSERT_FLOAT_EQ( -5.743, vec7->operator[](6) );
     ASSERT_FLOAT_EQ( -5.743, vec7->operator[](15) );
 
-    vec8 = (*vec3) * (-0.9);
-    ASSERT_TRUE("vector_cpu" == vec8->get_name());
+    vec8 = (*vec3)*TypeParam(-0.9);
+    ASSERT_TRUE("vector_gpu" == vec8->get_name());
     ASSERT_EQ( 18, vec8->size() );
     ASSERT_FLOAT_EQ( 10.8, vec8->operator[](0) );
     ASSERT_FLOAT_EQ( 10.8, vec8->operator[](13) );
     ASSERT_FLOAT_EQ( 10.8, vec8->operator[](17) );
 
-    vec9 = (*vec4) / (-4.0);
-    ASSERT_TRUE("vector_cpu" == vec9->get_name());
+    vec9 = (*vec4)/TypeParam(-4.0);
+    ASSERT_TRUE("vector_gpu" == vec9->get_name());
     ASSERT_EQ( 20, vec9->size() );
     ASSERT_FLOAT_EQ( -2.1, vec9->operator[](0) );
     ASSERT_FLOAT_EQ( -2.1, vec9->operator[](11) );
     ASSERT_FLOAT_EQ( -2.1, vec9->operator[](19) );
 
     vec10 = (*vec5) ^ (3.0);
-    ASSERT_TRUE("vector_cpu" == vec10->get_name());
+    ASSERT_TRUE("vector_gpu" == vec10->get_name());
     ASSERT_EQ( 22, vec10->size() );
     ASSERT_FLOAT_EQ( 8.0, vec10->operator[](0) );
     ASSERT_FLOAT_EQ( 8.0, vec10->operator[](8) );
@@ -254,28 +254,28 @@ TYPED_TEST(test_vector_cpu, scalar_operations)
 
     // Left hand size
     vec6 = TypeParam(4.5) + (*vec1);
-    ASSERT_TRUE("vector_cpu" == vec6->get_name());
+    ASSERT_TRUE("vector_gpu" == vec6->get_name());
     ASSERT_EQ( 14, vec6->size() );
     ASSERT_FLOAT_EQ( 6.0, vec6->operator[](0) );
     ASSERT_FLOAT_EQ( 6.0, vec6->operator[](7) );
     ASSERT_FLOAT_EQ( 6.0, vec6->operator[](13) );
 
     vec7 = TypeParam(1.111) - (*vec2);
-    ASSERT_TRUE("vector_cpu" == vec7->get_name());
+    ASSERT_TRUE("vector_gpu" == vec7->get_name());
     ASSERT_EQ( 16, vec7->size() );
     ASSERT_FLOAT_EQ( 5.743, vec7->operator[](0) );
     ASSERT_FLOAT_EQ( 5.743, vec7->operator[](6) );
     ASSERT_FLOAT_EQ( 5.743, vec7->operator[](15) );
 
     vec8 = TypeParam(0.9)*(*vec3);
-    ASSERT_TRUE("vector_cpu" == vec8->get_name());
+    ASSERT_TRUE("vector_gpu" == vec8->get_name());
     ASSERT_EQ( 18, vec8->size() );
     ASSERT_FLOAT_EQ( -10.8, vec8->operator[](0) );
     ASSERT_FLOAT_EQ( -10.8, vec8->operator[](13) );
     ASSERT_FLOAT_EQ( -10.8, vec8->operator[](17) );
 
     vec9 = TypeParam(-4.0)/(*vec4);
-    ASSERT_TRUE("vector_cpu" == vec9->get_name());
+    ASSERT_TRUE("vector_gpu" == vec9->get_name());
     ASSERT_EQ( 20, vec9->size() );
     ASSERT_FLOAT_EQ( -0.47619051, vec9->operator[](0) );
     ASSERT_FLOAT_EQ( -0.47619051, vec9->operator[](11) );
@@ -311,12 +311,12 @@ TYPED_TEST(test_vector_cpu, scalar_operations)
 // ============================================
 //          Testing Reduction Operations
 // ============================================
-TYPED_TEST(test_vector_cpu, reduction_operations)
+TYPED_TEST(test_vector_gpu, reduction_operations)
 {
     int size = 32;
-    using vcpu_pointer = typename vector_cpu<TypeParam>::pointer;
-    vcpu_pointer vec1 = vector_cpu<TypeParam>::new_pointer(size,0.0);
-    vcpu_pointer vec2 = vector_cpu<TypeParam>::new_pointer(size,0.0);
+    using vgpu_pointer = typename vector_gpu<TypeParam>::pointer;
+    vgpu_pointer vec1 = vector_gpu<TypeParam>::new_pointer(size,0.0);
+    vgpu_pointer vec2 = vector_gpu<TypeParam>::new_pointer(size,0.0);
 
     TypeParam dot1 = 0; TypeParam dot2 = 0;
     TypeParam add1 = 0; TypeParam add2 = 0;
@@ -345,38 +345,40 @@ TYPED_TEST(test_vector_cpu, reduction_operations)
 // ============================================
 //          Testing Other Functions
 // ============================================
-TYPED_TEST(test_vector_cpu, auxialiary_functions)
+TYPED_TEST(test_vector_gpu, auxialiary_functions)
 {
     int size = 32;
-    using vcpu_pointer = typename vector_cpu<TypeParam>::pointer;
+    using vgpu_pointer = typename vector_gpu<TypeParam>::pointer;
 
     // cast function
-    vcpu_pointer vec1 = vector_cpu<TypeParam>::new_pointer(size,-1.1);
+    vgpu_pointer vec1 = vector_gpu<TypeParam>::new_pointer(size,-1.1);
 
-    vector_cpu<int>::pointer vec2 = vec1->template cast<int>();
-    vector_cpu<float>::pointer vec3 = vec1->template cast<float>();
-    vector_cpu<double>::pointer vec4 = vec1->template cast<double>();
-    vector_cpu<unsigned int>::pointer vec5 = vec1->template cast<unsigned int>();
+    vector_gpu<int>::pointer vec2 = vec1->template cast<int>();
+    vector_gpu<float>::pointer vec3 = vec1->template cast<float>();
+    vector_gpu<double>::pointer vec4 = vec1->template cast<double>();
+    vector_gpu<unsigned int>::pointer vec5 = vec1->template cast<unsigned int>();
+    // vec2->print_data();
+    // std::cout << vec2->operator[](10);
 
     int vari = -1.0;
     float varf = -1.1;
     double vard = -1.1;
-    unsigned int varui = static_cast<unsigned int>(varf);
+    // unsigned int varui = (unsigned int)(varf);
 
-    ASSERT_TRUE(typeid(int) == typeid(vec2->operator[](10)));
-    ASSERT_TRUE(typeid(float) == typeid(vec3->operator[](10)));
-    ASSERT_TRUE(typeid(double) == typeid(vec4->operator[](10)));
-    ASSERT_TRUE(typeid(unsigned int) == typeid(vec5->operator[](10)));
+    // ASSERT_TRUE(typeid(int) == typeid(vec2->operator[](10)));
+    // ASSERT_TRUE(typeid(float) == typeid(vec3->operator[](10)));
+    // ASSERT_TRUE(typeid(double) == typeid(vec4->operator[](10)));
+    // ASSERT_TRUE(typeid(unsigned int) == typeid(vec5->operator[](10)));
     ASSERT_EQ( vari, vec2->operator[](10) );
-    ASSERT_EQ( varui, vec5->operator[](10) );
+    // ASSERT_EQ( varui, vec5->operator[](10) ); // unsigned int cast not same in gpu as cpu
     ASSERT_FLOAT_EQ( varf, vec3->operator[](10) );
     ASSERT_FLOAT_EQ( vard, vec4->operator[](10) );
 
     // normalize function
-    vcpu_pointer vec11 = vector_cpu<TypeParam>::new_pointer(size,0.0);
-    vcpu_pointer vec12 = vector_cpu<TypeParam>::new_pointer(size,0.0);
-    vcpu_pointer vec13;
-    vcpu_pointer vec14;
+    vgpu_pointer vec11 = vector_gpu<TypeParam>::new_pointer(size,0.0);
+    vgpu_pointer vec12 = vector_gpu<TypeParam>::new_pointer(size,0.0);
+    vgpu_pointer vec13;
+    vgpu_pointer vec14;
 
     for (int i=0; i<size; ++i)
     {
@@ -397,6 +399,29 @@ TYPED_TEST(test_vector_cpu, auxialiary_functions)
     ASSERT_FLOAT_EQ( 0.0, vec14->operator[](0) );
     ASSERT_FLOAT_EQ( 1/double(size-1), vec14->operator[](1) );
     ASSERT_FLOAT_EQ( 1.0, vec14->operator[](size-1) );
+
+    // vec13 = vec11->normalize();
+    // std::vector<TypeParam> a(size);
+    // viennacl::copy(vec13->begin(),vec13->end(),a.begin()); //copy this befor assignment
+    // // for(int k=0;k<size;k++){std::cout<<a[k]<<",";}
+    // // vec13->print_data();
+    // vec14 = vec12->normalize();
+    // // vec13->print_data();
+
+
+    // ASSERT_FLOAT_EQ( -131.2, vec11->operator[](0) );
+    // ASSERT_FLOAT_EQ( -131.2 - size + 1.0, vec11->operator[](size-1) );
+    // ASSERT_FLOAT_EQ( 10.5, vec12->operator[](0) );
+    // ASSERT_FLOAT_EQ( 10.5 + size - 1.0, vec12->operator[](size-1) );
+    // // EXPECT_FLOAT_EQ( 1.0, vec13->operator[](0) );
+    // // EXPECT_FLOAT_EQ( 1/double(size-1), vec13->operator[](size-2) );
+    // // EXPECT_FLOAT_EQ( 0.0, vec13->operator[](size-1) );
+    // EXPECT_FLOAT_EQ( 1.0, a[0] );
+    // EXPECT_FLOAT_EQ( 1/double(size-1), a[size-2] );
+    // EXPECT_FLOAT_EQ( 0.0, a[size-1] );
+    // ASSERT_FLOAT_EQ( 0.0, vec14->operator[](0) );
+    // ASSERT_FLOAT_EQ( 1/double(size-1), vec14->operator[](1) );
+    // ASSERT_FLOAT_EQ( 1.0, vec14->operator[](size-1) );
 }
 
 int main(int argc, char **argv)
