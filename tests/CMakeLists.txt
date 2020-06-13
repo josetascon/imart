@@ -17,6 +17,12 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/images/scaled_rire_ct_001.nrrd
 add_executable(vector_cpu_aritmethic vector_cpu_aritmethic.cpp)
 target_link_libraries(vector_cpu_aritmethic src ${link_targets})
 
+add_executable(vector_gpu_aritmethic vector_gpu_aritmethic.cpp)
+target_link_libraries(vector_gpu_aritmethic src ${link_targets})
+
+add_executable(example_vector_gpu_aritmethic example_vector_gpu_aritmethic.cpp)
+target_link_libraries(example_vector_gpu_aritmethic src ${link_targets})
+
 # 2d test
 add_executable(image2d_basic image2d_basic.cpp)
 target_link_libraries(image2d_basic src ${link_targets})

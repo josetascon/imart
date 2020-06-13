@@ -5,8 +5,8 @@
 * @Last Modified time: 2019-11-20 00:00:00
 */
 
-#ifndef __data_object_H__
-#define __data_object_H__
+#ifndef __DATA_OBJECT_H__
+#define __DATA_OBJECT_H__
 
 // std libs
 #include <iostream>     // std::cout
@@ -20,7 +20,7 @@ namespace imart
 
 // Class object
 template <typename container, typename type>
-class data_object: public inherit<data_object<container,type>, object<type>>
+class data_object: public inherit<data_object<container,type>, object>
 {
 public:
     //Type definitions
@@ -29,7 +29,7 @@ public:
     using vector  = std::vector<self::pointer>;
 
     //Abbreviations
-    using container_pointer = std::shared_ptr<container<type>>
+    using container_pointer = std::shared_ptr<container>;
 
 protected:
     // ===========================================
@@ -130,7 +130,7 @@ template <typename container, typename type>
 void data_object<container, type>::allocate(int total_elements)
 {
     data.reset();
-    data = std::make_shared<container<type>>(total_elements);
+    data = std::make_shared<container>(total_elements);
 };
 
 template <typename container, typename type>
@@ -139,7 +139,7 @@ void data_object<container, type>::clone_(const data_object & input)
     num_elements = input.get_total_elements();
     container_pointer ptr_data = input.get_data();
     data.reset();
-    data = std::make_shared<container<type>>(*ptr_data) // using the default clone constructor of container
+    data = std::make_shared<container>(*ptr_data); // using the default clone constructor of container
 };
 
 template <typename container, typename type>
@@ -173,13 +173,13 @@ int data_object<container, type>::get_total_elements() const
 };
 
 template <typename container, typename type>
-container_pointer data_object<container, type>::get_data() const
+std::shared_ptr<container> data_object<container, type>::get_data() const
 {
     return data;
 };
 
 template <typename container, typename type>
-type data_object<container, type>::ptr() const
+type * data_object<container, type>::ptr() const
 {
     return data->data();
 };
@@ -195,12 +195,10 @@ std::string data_object<container, type>::info(std::string msg)
     if (msg != "") { title = msg; };
 
     // Summary of the object information
-    ss << object<type>::info(title);
-    
+    ss << object::info(title);
+    ss << "Data type: \t\t" << get_type() << std::endl;
     ss << "Total elements: \t" << num_elements << std::endl;    //Get the total number of pixels
-
     ss << "Container: \t" << data << std::endl;                 //Print the pointer of container
-
     return ss.str();
 };
 

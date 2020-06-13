@@ -24,7 +24,7 @@ namespace imart
 
 // Class transform_base
 template <typename pixel_type>
-class transform_base: public object<pixel_type>
+class transform_base: public object
 {
 public:
     //Type definitions
@@ -159,7 +159,7 @@ void transform_base<pixel_type>::init(int d)
     parameters = image_base<pixel_type>::new_pointer(d);
     inverse_parameters = image_base<pixel_type>::new_pointer(d);
     
-    object<pixel_type>::init(d);
+    object::init(d);
 };
 
 template <typename pixel_type>
@@ -173,7 +173,7 @@ typename transform_base<pixel_type>::pointer transform_base<pixel_type>::new_poi
 template <typename pixel_type>
 void transform_base<pixel_type>::copy(const transform_base<pixel_type> & input)
 {
-    object<pixel_type>::copy_properties(input);
+    object::copy_properties(input);
     // (*(parameters)).copy(*input.get_parameters());
     // (*(inverse_parameters)).copy(*input.get_inverse_parameters());
 
@@ -184,7 +184,7 @@ void transform_base<pixel_type>::copy(const transform_base<pixel_type> & input)
 template <typename pixel_type>
 void transform_base<pixel_type>::duplicate(const transform_base<pixel_type> & input)
 {
-    object<pixel_type>::copy_properties(input);
+    object::copy_properties(input);
 
     parameters = input.get_parameters();
     inverse_parameters = input.get_inverse_parameters();
@@ -193,7 +193,7 @@ void transform_base<pixel_type>::duplicate(const transform_base<pixel_type> & in
 template <typename pixel_type>
 void transform_base<pixel_type>::imitate(const transform_base<pixel_type> & input)
 {
-    object<pixel_type>::copy_properties(input);
+    object::copy_properties(input);
     parameters->imitate(*input.get_parameters());
     inverse_parameters->imitate(*input.get_inverse_parameters());
 };
@@ -250,7 +250,7 @@ std::string transform_base<pixel_type>::info(std::string msg)
     std::string title = "Transform Information";
     if (msg != "") { title = msg; };
 
-    ss << object<pixel_type>::info(title);
+    ss << object::info(title);
     
     ss << "Number parameters: \t";
     ss << parameters->get_total_elements() << std::endl;
