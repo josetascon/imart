@@ -20,7 +20,7 @@ namespace imart
 {
 
 // Class object
-class space_object: public inherit<space_object, object>
+class space_object: public inherit_multiple<space_object, virtualize<object>>
 {
 public:
     //Type definitions
@@ -41,8 +41,8 @@ protected:
     // ===========================================
     // Functions
     // ===========================================
-    virtual void init(int d);                                       // init default properties
-    // virtual void copy_properties(const space_object & input);    // copy only properties
+    virtual void init(int d);                               // init default properties
+    virtual void copy_space(const space_object & input);    // copy spacing properties
     virtual std::string info(std::string msg);
 
 public:
@@ -69,6 +69,7 @@ public:
     std::vector<double> get_spacing() const;
     std::vector<double> get_origin() const;
     std::vector<double> get_direction() const;
+    std::vector<double> get_sod_parameters() const;
 
     // ===========================================
     // Set Functions
@@ -103,6 +104,7 @@ space_object::space_object(int d)
 //! Constructor to clone
 space_object::space_object(const space_object & input)
 {
+    this->class_name = "space_object";
     clone_(input);                // call the virtual
     // copy_properties(input);    // in object class everything is copied with this method)
 };
@@ -131,29 +133,28 @@ void space_object::init(int d)
     for(int i=0; i < dim*dim; i++){ if((i%den)==0) { direction[i] = 1.0; }; };
 };
 
-// template <typename type>
-// void space_object::copy_properties(const space_object & input)
-// {
-
-// };
-
-void space_object::clone_(const space_object & input)
-{
-    mimic_(input);
-};
-
-void space_object::copy_(const space_object & input)
-{
-    mimic_(input);
-};
-
-void space_object::mimic_(const space_object & input)
+void space_object::copy_space(const space_object & input)
 {
     dim = input.get_dimension();
     size = input.get_size();
     spacing = input.get_spacing();
     origin = input.get_origin();
     direction = input.get_direction();
+};
+
+void space_object::clone_(const space_object & input)
+{
+    copy_space(input);
+};
+
+void space_object::copy_(const space_object & input)
+{
+    copy_space(input);
+};
+
+void space_object::mimic_(const space_object & input)
+{
+    copy_space(input);
 };
 
 // ===========================================
@@ -182,6 +183,15 @@ std::vector<double> space_object::get_origin() const
 std::vector<double> space_object::get_direction() const
 {
     return direction;
+};
+
+std::vector<double> space_object::get_sod_parameters() const
+{
+    std::vector<double> sod(spacing.size()+origin.size()+direction.size());
+    std::copy(spacing.begin(), spacing.end(), sod.begin());
+    std::copy(origin.begin(), origin.end(), sod.begin()+spacing.size());
+    std::copy(direction.begin(), direction.end(), sod.begin()+spacing.size()+origin.size());
+    return sod;
 };
 
 // ===========================================
@@ -215,7 +225,7 @@ std::string space_object::info(std::string msg)
     if (msg != "") { title = msg; };
 
     // Summary of the object information
-    ss << object::info(title);
+    // ss << object::info(title);
     ss << "Dimensions: \t\t" << get_dimension() << std::endl;
     ss << "Size: \t\t\t[ ";
     for(int i = 0; i < this->size.size(); i++) { ss << this->size[i] << " "; };

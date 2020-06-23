@@ -9,6 +9,7 @@
 #define __INHERIT_H__
 
 // std libs
+#include <iostream>     // std::cout
 #include <memory>       // std::shared_ptr
 
 namespace imart
@@ -74,6 +75,9 @@ public:
     {
         return std::make_shared<self>(args...);
     };
+
+protected:
+    virtual std::string info(std::string msg){ return msg;}; // defined to avoid multiple versions
 
 private:
     virtual inherit_multiple * clone_method() const override

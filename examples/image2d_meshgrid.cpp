@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-03-19 19:01:38
+* @Last Modified time: 2020-06-18 14:04:03
 */
 
 
@@ -13,6 +13,8 @@
 // local libs
 #include "../src/image.h"
 #include "../src/grid.h"
+
+using namespace imart;
 
 int main()
 {

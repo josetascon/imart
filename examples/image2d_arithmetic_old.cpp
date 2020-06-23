@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-07 10:13:08
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-02-06 11:45:58
+* @Last Modified time: 2020-06-15 21:24:00
 */
 
 
@@ -52,7 +52,7 @@ int main()
     std::cout << "image2 ptr count: " << image2.get_ptr_count() << std::endl;
     std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;
 
-
+    /*
     std::cout << std::endl;
     std::cout << "===================== ";
     std::cout << "Test class image, scalar operations";
@@ -132,8 +132,7 @@ int main()
     matrix5.print_data("matrix5:");
     matrix6.print_data("matrix6 = matrix4 x matrix5:");
     // std::cout << "ptr: " << matrix5.get_data() << std::endl;
-
-
+    */
 
     return 0;
 }

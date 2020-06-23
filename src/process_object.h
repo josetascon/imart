@@ -221,7 +221,7 @@ std::string process_object::info(std::string msg)
     if (msg != "") { title = msg; };
 
     // Summary of the object information
-    ss << object::info(title);
+    // ss << object::info(title);
     ss << "Inputs #: \t\t\t" << num_inputs << std::endl;
     for(int i = 0; i < vinput.size(); i++) 
     {

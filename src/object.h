@@ -94,6 +94,7 @@ object::object()
 //! Constructor to clone
 object::object(const object & input)
 {
+    class_name = "object";
     clone_(input);                // call the virtual function clone_
 };
 
