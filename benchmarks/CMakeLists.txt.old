@@ -1,0 +1,51 @@
+# cmake_minimum_required(VERSION 3.8)
+# project(benchmark_imart)
+
+# # ===========================================
+# #               Find Libraries
+# # ===========================================
+# # Find benchmark
+# find_package( benchmark REQUIRED )
+
+# # Find OpenCL
+# find_package( OpenCL REQUIRED )
+
+# # Find ITK
+# find_package( ITK REQUIRED )
+# include(${ITK_USE_FILE})
+
+# set(link_targets benchmark::benchmark OpenCL::OpenCL ${ITK_LIBRARIES})
+
+# # ===========================================
+# #               Compiler Flags
+# # ===========================================
+# set (CMAKE_CXX_STANDARD 11)
+
+
+include_directories(${CMAKE_INCLUDE_DIRECTORIES_BEFORE})
+
+# # ===========================================
+# #               Find Libraries
+# # ===========================================
+# # Find benchmark
+find_package( benchmark REQUIRED )
+
+set(bench_targets ${link_targets} benchmark::benchmark)
+
+# ===========================================
+#                  Build
+# ===========================================
+add_executable( memory_cpu2gpu memory_cpu2gpu.cpp )
+target_link_libraries( memory_cpu2gpu ${bench_targets} )
+
+add_executable( memory_gpu2cpu memory_gpu2cpu.cpp )
+target_link_libraries( memory_gpu2cpu ${bench_targets} )
+
+add_executable( viennacl_vs_vector_gpu viennacl_vs_vector_gpu.cpp )
+target_link_libraries( viennacl_vs_vector_gpu ${bench_targets} )
+
+add_executable( vector_gpu_scalar vector_gpu_scalar.cpp )
+target_link_libraries( vector_gpu_scalar ${bench_targets} )
+
+add_executable( grid_cpu_vs_gpu grid_cpu_vs_gpu.cpp )
+target_link_libraries( grid_cpu_vs_gpu ${bench_targets} )

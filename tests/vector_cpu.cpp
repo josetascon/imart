@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-06 00:00:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-13 11:26:08
+* @Last Modified time: 2020-06-15 18:45:39
 */
 
 // std libs
@@ -116,6 +116,45 @@ TYPED_TEST(test_vector_cpu, clones)
     EXPECT_FLOAT_EQ( 0.0, vec3->operator[](7) );
     EXPECT_FLOAT_EQ( 0.0, vec4->operator[](0) );
     EXPECT_FLOAT_EQ( 0.0, vec4->operator[](7) );
+}
+
+// ============================================
+//          Testing Initialization Methods
+// ============================================
+TYPED_TEST(test_vector_cpu, initialization)
+{
+    int size = 50;
+    using vcpu_pointer = typename vector_cpu<TypeParam>::pointer;
+    vcpu_pointer vec1 = vector_cpu<TypeParam>::new_pointer(size);
+    vcpu_pointer vec2 = vec1->mimic();
+    vcpu_pointer vec3 = vec1->mimic();
+
+    vec1->ones();
+    vec2->assign(TypeParam(3.0));
+    vec3->random();
+
+    ASSERT_FLOAT_EQ( 1.0, vec1->operator[](0) );
+    ASSERT_FLOAT_EQ( 1.0, vec1->operator[](int(size/2)) );
+    ASSERT_FLOAT_EQ( 1.0, vec1->operator[](size-4) );
+    ASSERT_FLOAT_EQ( 3.0, vec2->operator[](0) );
+    ASSERT_FLOAT_EQ( 3.0, vec2->operator[](int(size/2)) );
+    ASSERT_FLOAT_EQ( 3.0, vec2->operator[](size-4) );
+    ASSERT_FALSE( vec3->operator[](0) == vec3->operator[](1) );
+    ASSERT_FALSE( vec3->operator[](0) == vec3->operator[](int(size/2)) );
+    ASSERT_FALSE( vec3->operator[](int(size/2)) == vec3->operator[](size-4) );
+
+    vec1->zeros();
+    vec2->assign(TypeParam(-2.431));
+
+    ASSERT_FLOAT_EQ( 0.0, vec1->operator[](0) );
+    ASSERT_FLOAT_EQ( 0.0, vec1->operator[](int(size/2)) );
+    ASSERT_FLOAT_EQ( 0.0, vec1->operator[](size-4) );
+    ASSERT_FLOAT_EQ( -2.431, vec2->operator[](0) );
+    ASSERT_FLOAT_EQ( -2.431, vec2->operator[](int(size/2)) );
+    ASSERT_FLOAT_EQ( -2.431, vec2->operator[](size-4) );
+    ASSERT_FALSE( vec3->operator[](0) == vec3->operator[](1) );
+    ASSERT_FALSE( vec3->operator[](0) == vec3->operator[](int(size/2)) );
+    ASSERT_FALSE( vec3->operator[](int(size/2)) == vec3->operator[](size-4) );
 }
 
 // ============================================

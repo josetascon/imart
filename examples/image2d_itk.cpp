@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-07 10:12:34
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-03-06 11:50:42
+* @Last Modified time: 2020-06-23 05:42:11
 */
 
 // std libs
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     // ===========================================
 
     // Create image object
-    image<unsigned short> image1;
+    imart::image_cpu<unsigned short> image1;
 
     // Read the image with image interface of itk
     timer tt2("ms");
@@ -91,8 +91,8 @@ int main(int argc, char *argv[])
     image1.read(argv[1]);
     tt2.finish();
 
-    image1.print("Our Image");
     image1.print_data("Pixel values:");
+    image1.print("Our Image");
     std::cout << "Image ptr count: " << image1.get_ptr_count() << std::endl;
     
     tt1.print("Reading image time itk: ");

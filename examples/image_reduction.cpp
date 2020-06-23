@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-01-28 09:41:41
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-01-28 11:50:20
+* @Last Modified time: 2020-06-16 13:13:48
 */
 
 // std libs
@@ -11,8 +11,10 @@
 
 // local libs
 #include "../src/image.h"
+#include "../src/vector_cpu.h"
 #include "../src/utils/timer.h"
 
+using namespace imart;
 using type = double;
 
 int main()
@@ -26,7 +28,7 @@ int main()
 
     // Image 1
     type min1, max1, sum1, prod1;
-    image<type> image1(811,604);
+    image_cpu<type> image1(811,604);
     image1.ones();
     
     t1.start();
@@ -53,7 +55,7 @@ int main()
 
     // Image 2
     type min2, max2, sum2, prod2;
-    image<type> image2(201,125,153);
+    image_cpu<type> image2(201,125,153);
     image2.ones();
     // std::cout << image2(0,0,0);
     // std::cout << image2(200,200,100);
@@ -85,11 +87,11 @@ int main()
     std::cout << " =====================";
     std::cout << std::endl;
 
-    image<type> image3(5,1);
+    image_cpu<type> image3(5,1);
     *image3.get_data() = {1.0, 2.0, 3.0, 1.0, 4.0};
     
     type x;
-    image<type> result = image3*image3;
+    image_cpu<type> result = image3*image3;
     x = result.sum();
 
     type dot;

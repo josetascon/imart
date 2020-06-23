@@ -23,7 +23,7 @@ include(${ITK_USE_FILE})
 find_package( OpenCL REQUIRED )
 
 
-set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL fftw3  gtest)
+set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL fftw3)
 # set(link_targets OpenMP::OpenMP_CXX )
 
 # ===========================================
@@ -42,6 +42,15 @@ if(BUILD_TESTS)
    add_subdirectory(tests)
 endif()
 
+option(BUILD_EXAMPLES "Build the examples" ON)
+if(BUILD_EXAMPLES)
+   add_subdirectory(examples)
+endif()
+
+option(BUILD_BENCHMARKS "Build the benchmarks" OFF)
+if(BUILD_BENCHMARKS)
+   add_subdirectory(benchmarks)
+endif()
 
 # ===========================================
 #                  Build

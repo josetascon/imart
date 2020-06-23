@@ -11,8 +11,9 @@
 // std libs
 #include <iostream>     // std::cout
 #include <vector>       // std::vector
+#include <random>       // std::random
 #include <cassert>      // assert
-#include <cmath>      // math functions
+#include <cmath>        // math functions
 
 // local libs
 #include "inherit.h"
@@ -54,6 +55,7 @@ public:
     vector_cpu(): std::vector<type>() { class_name = "vector_cpu"; };          // constructor empty
     vector_cpu(int s): std::vector<type>(s) { class_name = "vector_cpu"; };    // constructor
     vector_cpu(int s, type value): std::vector<type>(s, value) { class_name = "vector_cpu"; };
+    vector_cpu(std::initializer_list<type> list): std::vector<type>(list) { class_name = "vector_cpu"; };
     vector_cpu(const vector_cpu & input);       // constructor clone
     ~vector_cpu();                              // destructor empty
 
@@ -67,12 +69,19 @@ public:
     // ===========================================
     // Get Functions
     // ===========================================
+    std::vector<type> std_vector();
+
+    // ===========================================
+    // Memory Functions
+    // ===========================================
+    void read_ram(type * p, int size);
+    void write_ram(type * p, int size);
 
     // ===========================================
     // Print Functions
     // ===========================================
-    std::string info(std::string msg);
-    std::string info_data(std::string msg);
+    virtual std::string info(std::string msg);
+    virtual std::string info_data(std::string msg);
 
     // ===========================================
     // Functions
@@ -82,11 +91,10 @@ public:
     // ===========================================
     // Initialize Functions
     // ===========================================
-    // TODO
-    // void zeros();
-    // void ones();
-    // void fill(type value);
-    // void random(float min=0.0, float max=1.0);
+    void zeros();
+    void ones();
+    void assign(type value);
+    void random(float min=0.0, float max=1.0);
     
     // ===========================================
     // Overloading operators
@@ -132,6 +140,9 @@ public:
 
     template<typename type_cast>
     typename vector_cpu<type_cast>::pointer cast();
+
+    static std::vector<typename vector_cpu<type>::pointer> grid_2d(int w, int h, std::vector<double> & sod);
+    static std::vector<typename vector_cpu<type>::pointer> grid_3d(int w, int h, int l, std::vector<double> & sod);
 };
 
 // ===========================================
@@ -194,6 +205,34 @@ void vector_cpu<type>::mimic_(const vector_cpu<type> & input)
 // ===========================================
 // Get Functions
 // ===========================================
+template <typename type>
+std::vector<type> vector_cpu<type>::std_vector()
+{
+    return static_cast<std::vector<type>>(*this);
+};
+
+// ===========================================
+// Memory Functions
+// ===========================================
+template <typename type>
+void vector_cpu<type>::read_ram(type * p, int s)
+{
+    type * d = this->data();
+    for(int k=0; k<s; k++)
+    {
+        *(d+k) = *(p+k);
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::write_ram(type * p, int s)
+{
+    type * d = this->data();
+    for(int k=0; k<s; k++)
+    {
+        *(p+k) = *(d+k);
+    };
+};
 
 // ===========================================
 // Print Functions
@@ -232,6 +271,58 @@ template <typename type>
 void vector_cpu<type>::assert_size(const vector_cpu<type> & input)
 {
     assert(this->size() == input.size());
+};
+
+// ===========================================
+// Initialization Functions
+// ===========================================
+template <typename type>
+void vector_cpu<type>::zeros()
+{
+    int size = this->size();
+    type * p = this->data();
+    for(int k=0; k<size; k++)
+    {
+        p[k] = (type)0; // casting to pixel_type
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::ones()
+{
+    int size = this->size();
+    type * p = this->data();
+    for(int k=0; k<size; k++)
+    {
+        p[k] = (type)1.0; // casting to pixel_type
+    };
+};
+
+// Set all pixel to a fixed value
+template <typename type>
+void vector_cpu<type>::assign(type value)
+{
+    int size = this->size();
+    type * p = this->data();
+    for(int k=0; k<size; k++)
+    {
+        p[k] = value;
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::random(float min, float max)
+{
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    // std::default_random_engine gen(rd()); //Standard random generator()
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> uniform(min, max);
+    int size = this->size();
+    type * p = this->data();
+    for(int k=0; k<size; k++)
+    {
+        p[k] = (type)uniform(gen); // casting to pixel_type
+    };
 };
 
 // ===========================================
@@ -554,7 +645,7 @@ template <typename type> template <typename type_cast>
 typename vector_cpu<type_cast>::pointer vector_cpu<type>::cast()
 {
     int size = this->size();
-    typename vector_cpu<type_cast>::pointer output = vector_cpu<type_cast>::new_pointer(size);
+    auto output = vector_cpu<type_cast>::new_pointer(size);
     
     type * p1 = this->data();
     type_cast * p2 = output->data();
@@ -565,6 +656,86 @@ typename vector_cpu<type_cast>::pointer vector_cpu<type>::cast()
     };
     return output;
 };
+
+template <typename type>
+std::vector<typename vector_cpu<type>::pointer> vector_cpu<type>::grid_2d(int w, int h, std::vector<double> & sod)
+{
+    int size = w*h;
+    auto x = vector_cpu<type>::new_pointer(size);
+    auto y = vector_cpu<type>::new_pointer(size);
+
+    type * px = x->data();
+    type * py = y->data();
+
+    double s0 = sod[0]; double s1 = sod[1];
+    double o0 = sod[2]; double o1 = sod[3];
+    double d0 = sod[4]; double d1 = sod[5];
+    double d2 = sod[6]; double d3 = sod[7];
+
+    // #pragma omp parallel for
+    for(int j = 0; j < h; j++)
+    {
+        for(int i = 0; i < w; i++)
+        {
+            // without direction
+            // px[i+j*w] = s0*i + o0;
+            // py[i+j*w] = s1*j + o1;
+            // with direction
+            px[i+j*w] = d0*s0*i + d1*s1*j + o0;
+            py[i+j*w] = d2*s0*i + d3*s1*j + o1;
+        }
+    }
+       
+    std::vector<typename vector_cpu<type>::pointer> xy(2);
+    xy[0] = x;
+    xy[1] = y;
+    return xy;
+};
+
+template <typename type>
+std::vector<typename vector_cpu<type>::pointer> vector_cpu<type>::grid_3d(int w, int h, int l, std::vector<double> & sod)
+{
+    int size = w*h*l;
+    auto x = vector_cpu<type>::new_pointer(size);
+    auto y = vector_cpu<type>::new_pointer(size);
+    auto z = vector_cpu<type>::new_pointer(size);
+
+    type * px = x->data();
+    type * py = y->data();
+    type * pz = z->data();
+
+    double s0 = sod[0]; double s1 = sod[1]; double s2 = sod[2];
+    double o0 = sod[3]; double o1 = sod[4]; double o2 = sod[5];
+    double d0 = sod[6]; double d1 = sod[7]; double d2 = sod[8];
+    double d3 = sod[9]; double d4 = sod[10]; double d5 = sod[11];
+    double d6 = sod[12]; double d7 = sod[13]; double d8 = sod[14];
+
+    // #pragma omp parallel for
+    for(int k = 0; k < l; k++)
+    {
+        for(int j = 0; j < h; j++)
+        {
+            for(int i = 0; i < w; i++)
+            {
+                // without direction
+                // px[i + j*w + k*w*h] = s0*i + o0;
+                // py[i + j*w + k*w*h] = s1*j + o1;
+                // pz[i + j*w + k*w*h] = s2*k + o2;
+                // with direction
+                px[i + j*w + k*w*h] = d0*s0*i + d1*s1*j + d2*s2*k + o0;
+                py[i + j*w + k*w*h] = d3*s0*i + d4*s1*j + d5*s2*k + o1;
+                pz[i + j*w + k*w*h] = d6*s0*i + d7*s1*j + d8*s2*k + o2;
+            };
+        };
+    };
+       
+    std::vector<typename vector_cpu<type>::pointer> xyz(3);
+    xyz[0] = x;
+    xyz[1] = y;
+    xyz[2] = z;
+    return xyz;
+};
+
 
 }; //end namespace
 

@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-06 00:00:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-13 11:34:50
+* @Last Modified time: 2020-06-22 11:48:30
 */
 
 // std libs
@@ -10,7 +10,7 @@
 #include <memory>
 
 // local libs
-#include "../src/vector_gpu.h"
+#include "../src/vector_vcl.h"
 
 using namespace imart;
 
@@ -21,12 +21,12 @@ int main()
     // ============================================
     //          Testing 
     // ============================================
-    vector_gpu<type>::pointer vec1 = vector_gpu<type>::new_pointer();
-    vector_gpu<type>::pointer vec2 = vector_gpu<type>::new_pointer(3);
-    vector_gpu<type>::pointer vec3 = vector_gpu<type>::new_pointer(10, 2.1);
-    vector_gpu<type>::pointer vec4 = vector_gpu<type>::new_pointer(*vec3);
-    vector_gpu<type>::pointer vec5 = vec4->clone();
-    vector_gpu<type>::pointer vec6 = vector_gpu<type>::new_pointer();
+    vector_vcl<type>::pointer vec1 = vector_vcl<type>::new_pointer();
+    vector_vcl<type>::pointer vec2 = vector_vcl<type>::new_pointer(3);
+    vector_vcl<type>::pointer vec3 = vector_vcl<type>::new_pointer(10, 2.1);
+    vector_vcl<type>::pointer vec4 = vector_vcl<type>::new_pointer(*vec3);
+    vector_vcl<type>::pointer vec5 = vec4->clone();
+    vector_vcl<type>::pointer vec6 = vector_vcl<type>::new_pointer();
 
     vec1->print();
     vec1->print_data("vec1:");
@@ -40,10 +40,10 @@ int main()
     vec6->print_data("vec6");
     std::cout << std::endl;
 
-    vector_gpu<type>::pointer vec11 = vector_gpu<type>::new_pointer(10,3.1);
-    vector_gpu<type>::pointer vec12 = vector_gpu<type>::new_pointer(10,-0.2);
+    vector_vcl<type>::pointer vec11 = vector_vcl<type>::new_pointer(10,3.1);
+    vector_vcl<type>::pointer vec12 = vector_vcl<type>::new_pointer(10,-0.2);
 
-    vector_gpu<type>::pointer vec13 = vector_gpu<type>::new_pointer();
+    vector_vcl<type>::pointer vec13 = vector_vcl<type>::new_pointer();
     vec13 = *vec11 + *vec12;
 
     vec11->print();
@@ -52,12 +52,12 @@ int main()
     vec13->print_data();
 
     int s = 20;
-    vector_gpu<type>::pointer vec21 = vector_gpu<type>::new_pointer(s,1.0);
-    vector_gpu<type>::pointer vec22 = vector_gpu<type>::new_pointer(s,1.0);
-    vector_gpu<type>::pointer vec25 = vector_gpu<type>::new_pointer(s,1.0);
-    vector_gpu<type>::pointer vec23 = vector_gpu<type>::new_pointer();
-    vector_gpu<type>::pointer vec24 = vector_gpu<type>::new_pointer();
-    vector_gpu<type>::pointer vec26 = vector_gpu<type>::new_pointer();
+    vector_vcl<type>::pointer vec21 = vector_vcl<type>::new_pointer(s,1.0);
+    vector_vcl<type>::pointer vec22 = vector_vcl<type>::new_pointer(s,1.0);
+    vector_vcl<type>::pointer vec25 = vector_vcl<type>::new_pointer(s,1.0);
+    vector_vcl<type>::pointer vec23 = vector_vcl<type>::new_pointer();
+    vector_vcl<type>::pointer vec24 = vector_vcl<type>::new_pointer();
+    vector_vcl<type>::pointer vec26 = vector_vcl<type>::new_pointer();
 
     std::vector<type> a(s); 
     std::vector<type> b(s);
