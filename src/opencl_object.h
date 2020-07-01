@@ -14,9 +14,12 @@
 #include <vector>       // std::vector
 #include <cassert>      // assert
 
-// gpu libs
+// opencl libs
 #include <CL/cl.hpp>
+
+// local libs
 #include "object.h"
+#include "utils/opencl.h"
 
 namespace imart
 {
@@ -30,7 +33,7 @@ protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    cl_int _err_;
+    cl_int _error_;
     cl::Device _device_;
     cl::Platform _platform_;
     cl::Context _context_;
@@ -95,6 +98,8 @@ public:
     template<typename ...Args>
     void arguments(Args&&... args);
     void execute(int max_size);
+    void execute(int global_range, int local_range);
+    void execute(std::vector<int> & dims);
 };
 
 // ===========================================
@@ -117,17 +122,19 @@ void opencl_object::init()
     status_init = false;
     status_program = false;
     status_kernel = false;
-    _err_ = 0;
+    _error_ = 0;
 
     // Get the platform
     std::vector<cl::Platform> platforms;
-    _err_ = cl::Platform::get(&platforms);
+    _error_ = cl::Platform::get(&platforms);
+    imart_assert_cl(_error_, "Error getting the platform");
     assert(platforms.size() > 0);
     _platform_ = platforms.front();
 
     // Get the devices in the computer
     std::vector<cl::Device> devices;
-    _err_ = _platform_.getDevices(CL_DEVICE_TYPE_GPU, &devices);
+    _error_ = _platform_.getDevices(CL_DEVICE_TYPE_GPU, &devices);
+    imart_assert_cl(_error_, "Error getting devices");
     assert(devices.size() > 0);
     _device_ = devices.front();
 
@@ -189,15 +196,16 @@ cl_int opencl_object::get_work_group_size() const
 void opencl_object::set_program(std::string code)
 {
     // Reset error value
-    _err_ = 0;
+    _error_ = 0;
 
     // Read the kernel in a external file    
     cl::Program::Sources sources(1, std::make_pair(code.c_str(), code.length() + 1));
 
     // Create the program
     _program_ = cl::Program(_context_, sources);
-    _err_ = _program_.build("-cl-std=CL1.2");
-    assert(_err_ == 0);
+    _error_ = _program_.build("-cl-std=CL1.2");
+    imart_assert_cl(_error_, "Error building the program. Verify your kernel code");
+    // assert(_error_ == 0);
 
     // Created program
     status_program = true;
@@ -206,16 +214,18 @@ void opencl_object::set_program(std::string code)
 void opencl_object::set_kernel(std::string kernel_name)
 {
     // Reset error value
-    _err_ = 0;
+    _error_ = 0;
 
     // Add kernel
-    _kernel_ = cl::Kernel(_program_, kernel_name.c_str(), &_err_);
-    assert(_err_ == 0);
+    _kernel_ = cl::Kernel(_program_, kernel_name.c_str(), &_error_);
+    imart_assert_cl(_error_, "Error creating the kernel. Verify your kernel name");
+    // assert(_error_ == 0);
 
     // Read work group size
-    work_group_size = _kernel_.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(_device_, &_err_);
+    work_group_size = _kernel_.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(_device_, &_error_);
     // work_group_size = 32;
-    assert(_err_ == 0);
+    imart_assert_cl(_error_, "Error getting kernel work group size");
+    // assert(_error_ == 0);
 
     // Created program
     status_kernel = true;
@@ -248,12 +258,37 @@ void opencl_object::arguments(Args&&... args)
 
 void opencl_object::execute(int max_size)
 {
-    if (max_size < work_group_size) work_group_size = max_size;
+    // if (max_size < work_group_size) work_group_size = max_size;
     // std::cout << "Run Kernel" << std::endl;
-    // _err_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(max_size), cl::NDRange(work_group_size));
-    _err_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(max_size));
-    // std::cout << "Kernel error" << _err_ << std::endl;
-    assert(_err_ == 0);
+    _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(max_size));
+    // std::cout << "Kernel error" << _error_ << std::endl;
+    imart_assert_cl(_error_, "Error while running the kernel.");
+    // assert(_error_ == 0);
+};
+
+void opencl_object::execute(int global_range, int local_range)
+{
+    if (global_range < local_range) global_range = local_range;
+    // std::cout << "Run Kernel" << std::endl;
+    _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(global_range), cl::NDRange(local_range));
+    // std::cout << "Kernel error" << _error_ << std::endl;
+    imart_assert_cl(_error_, "Error while running the kernel.");
+    // assert(_error_ == 0);
+};
+
+void opencl_object::execute(std::vector<int> & dims)
+{
+    assert(dims.size() > 0 && dims.size() < 4);
+    // std::cout << "Run Kernel" << std::endl;
+    if (dims.size() == 1)
+        _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(dims[0]));
+    else if (dims.size() == 2)
+        _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(dims[0],dims[1]));
+    else
+        _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(dims[0],dims[1],dims[2]));
+    // std::cout << "Kernel error" << _error_ << std::endl;
+    imart_assert_cl(_error_, "Error while running the kernel.");
+    // assert(_error_ == 0);
 };
 
 std::string opencl_object::info(std::string msg)

@@ -153,8 +153,25 @@ public:
     template<typename type_cast>
     typename vector_ocl<type_cast>::pointer cast();
 
-    static std::vector<typename vector_ocl<type>::pointer> grid_2d(int w, int h, std::vector<double> & sod);
-    static std::vector<typename vector_ocl<type>::pointer> grid_3d(int w, int h, int l, std::vector<double> & sod);
+    static void pad(typename vector_ocl<type>::pointer input, typename vector_ocl<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post);
+    static void unpad(typename vector_ocl<type>::pointer input, typename vector_ocl<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post);
+
+    static std::vector<typename vector_ocl<type>::pointer> grid2(int w, int h, std::vector<double> & sod);
+    static std::vector<typename vector_ocl<type>::pointer> grid3(int w, int h, int l, std::vector<double> & sod);
+
+    static void nearest2( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo,
+                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
+    static void nearest3( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo,
+                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
+
+    static void linear2( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo,
+                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
+    static void linear3( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo,
+                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
 };
 
 
@@ -186,7 +203,6 @@ vector_ocl<type>::vector_ocl(int s, type value)
     init(s);
     assign(value);
 };
-
 
 template <typename type>
 vector_ocl<type>::vector_ocl(std::initializer_list<type> list)
@@ -599,7 +615,7 @@ type vector_ocl<type>::min()
     cl_manager.get_kernel().setArg(2, sizeof(type)*workGroupSize, nullptr);
     cl_manager.get_kernel().setArg(3, *(output->get_buffer()));
 
-    cl_manager.get_queue().enqueueNDRangeKernel(cl_manager.get_kernel(), cl::NullRange, cl::NDRange(numWorkGroups*workGroupSize), cl::NDRange(workGroupSize));
+    cl_manager.execute(numWorkGroups*workGroupSize, workGroupSize);
 
     std::vector<type> out = output->std_vector();
 
@@ -633,7 +649,7 @@ type vector_ocl<type>::max()
     cl_manager.get_kernel().setArg(2, sizeof(type)*workGroupSize, nullptr);
     cl_manager.get_kernel().setArg(3, *(output->get_buffer()));
 
-    cl_manager.get_queue().enqueueNDRangeKernel(cl_manager.get_kernel(), cl::NullRange, cl::NDRange(numWorkGroups*workGroupSize), cl::NDRange(workGroupSize));
+    cl_manager.execute(numWorkGroups*workGroupSize, workGroupSize);
 
     std::vector<type> out = output->std_vector();
 
@@ -656,7 +672,7 @@ type vector_ocl<type>::sum()
     cl_manager.program(str_kernel, "kernel_sum");
     
     auto workGroupSize = cl_manager.get_work_group_size();
-    auto numWorkGroups = 1 + ((size_ - 1)/workGroupSize);
+    auto numWorkGroups = 1 + ((size_ - 1)/workGroupSize);   // round up num work groups
     // std::cout << "\nwork group size =" << workGroupSize << std::endl;
     // std::cout << "num groups =" << numWorkGroups << std::endl;
 
@@ -666,7 +682,7 @@ type vector_ocl<type>::sum()
     cl_manager.get_kernel().setArg(1, sizeof(type)*workGroupSize, nullptr);
     cl_manager.get_kernel().setArg(2, *(output->get_buffer()));
 
-    cl_manager.get_queue().enqueueNDRangeKernel(cl_manager.get_kernel(), cl::NullRange, cl::NDRange(numWorkGroups*workGroupSize), cl::NDRange(workGroupSize));
+    cl_manager.execute(numWorkGroups*workGroupSize, workGroupSize);
 
     std::vector<type> out = output->std_vector();
 
@@ -713,18 +729,61 @@ typename vector_ocl<type_cast>::pointer vector_ocl<type>::cast()
 {
     int size = this->size();
     auto output = vector_ocl<type_cast>::new_pointer(size);
-    // viennacl::linalg::convert(*output,*this);
     std::string str_kernel = kernel_cast( string_type<type>(), string_type<type_cast>());
+    // std::cout << str_kernel << std::endl;
     cl_manager.program(str_kernel, "kernel_cast");
     cl_manager.arguments(*buffer, *(output->get_buffer()));
     cl_manager.execute(size);
     return output;
 };
 
-// template <typename type>
-// std::vector<typename vector_ocl<type>::pointer> grid_2d(int w, int h)
 template <typename type>
-std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid_2d(int w, int h, std::vector<double> & sod)
+void vector_ocl<type>::pad(typename vector_ocl<type>::pointer input, typename vector_ocl<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post)
+{
+    if(sz.size() == 2)
+    {
+        std::string str_kernel = kernel_pad_2d( string_type<type>(), true );
+        cl_manager.program(str_kernel, "kernel_pad_2d");
+        cl_manager.arguments(*(input->get_buffer()), *(output->get_buffer()),
+                                pre[0], pre[1], post[0], post[1] );
+        cl_manager.execute(sz);
+    }
+    else if (sz.size() == 3)
+    {
+        std::string str_kernel = kernel_pad_3d( string_type<type>(), true );
+        cl_manager.program(str_kernel, "kernel_pad_3d");
+        cl_manager.arguments(*(input->get_buffer()), *(output->get_buffer()),
+                                pre[0], pre[1], pre[2], post[0], post[1], post[2] );
+        cl_manager.execute(sz);
+    }
+    else ;
+};
+
+template <typename type>
+void vector_ocl<type>::unpad(typename vector_ocl<type>::pointer input, typename vector_ocl<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post)
+{
+    if(sz.size() == 2)
+    {
+        std::string str_kernel = kernel_pad_2d( string_type<type>(), false );
+        cl_manager.program(str_kernel, "kernel_pad_2d");
+        cl_manager.arguments(*(input->get_buffer()), *(output->get_buffer()),
+                                pre[0], pre[1], post[0], post[1] );
+        cl_manager.execute(sz);
+    }
+    else if (sz.size() == 3)
+    {
+        std::string str_kernel = kernel_pad_3d( string_type<type>(), false );
+        cl_manager.program(str_kernel, "kernel_pad_3d");
+        cl_manager.arguments(*(input->get_buffer()), *(output->get_buffer()),
+                                pre[0], pre[1], pre[2], post[0], post[1], post[2] );
+        cl_manager.execute(sz);
+    }
+    else ;
+};
+
+
+template <typename type>
+std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid2(int w, int h, std::vector<double> & sod)
 {
     int size = w*h;
     auto x = vector_ocl<type>::new_pointer(size);
@@ -738,7 +797,9 @@ std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid_2d(int w,
     cl_manager.program(str_kernel, "kernel_grid_2d");
     cl_manager.arguments(*(x->get_buffer()), *(y->get_buffer()), 
                         *(p->get_buffer()), w, h);
-    cl_manager.execute(size);
+    std::vector<int> ss({w,h});
+    cl_manager.execute(ss); // multidimensional NDRange
+    // cl_manager.execute(w);// single dim NDRange
     
     std::vector<typename vector_ocl<type>::pointer> xy(2);
     xy[0] = x;
@@ -747,7 +808,7 @@ std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid_2d(int w,
 };
 
 template <typename type>
-std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid_3d(int w, int h, int l, std::vector<double> & sod)
+std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid3(int w, int h, int l, std::vector<double> & sod)
 {
     int size = w*h*l;
     auto x = vector_ocl<type>::new_pointer(size);
@@ -763,14 +824,82 @@ std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid_3d(int w,
     cl_manager.arguments(*(x->get_buffer()), *(y->get_buffer()), 
                         *(z->get_buffer()), *(p->get_buffer()),
                          w, h, l);
-    cl_manager.execute(size);
-    
+    std::vector<int> ss({w,h,l});
+    cl_manager.execute(ss); // multidimensional NDRange
+    // cl_manager.execute(w);// single dim NDRange
+
     std::vector<typename vector_ocl<type>::pointer> xyz(3);
     xyz[0] = x;
     xyz[1] = y;
     xyz[2] = z;
 
     return xyz;
+};
+
+template <typename type>
+void vector_ocl<type>::nearest2( typename vector_ocl<type>::pointer xo, 
+                                typename vector_ocl<type>::pointer yo,
+                                typename vector_ocl<type>::pointer imgr,
+                                typename vector_ocl<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    std::string str_kernel = kernel_nearest_interpolation_2d( string_type<type>() );
+    // std::cout << str_kernel << std::endl;
+    cl_manager.program(str_kernel, "kernel_nearest_interpolation_2d");
+    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), 
+                        *(imgr->get_buffer()), *(imgo->get_buffer()),
+                        ref_size[0], ref_size[1]);
+    cl_manager.execute(out_size); // multidimensional NDRange
+};
+
+template <typename type>
+void vector_ocl<type>::nearest3( typename vector_ocl<type>::pointer xo, 
+                                typename vector_ocl<type>::pointer yo,
+                                typename vector_ocl<type>::pointer zo,
+                                typename vector_ocl<type>::pointer imgr,
+                                typename vector_ocl<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    std::string str_kernel = kernel_nearest_interpolation_3d( string_type<type>() );
+    // std::cout << str_kernel << std::endl;
+    cl_manager.program(str_kernel, "kernel_nearest_interpolation_3d");
+    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), *(zo->get_buffer()),
+                        *(imgr->get_buffer()), *(imgo->get_buffer()),
+                        ref_size[0], ref_size[1], ref_size[2]);
+    cl_manager.execute(out_size); // multidimensional NDRange
+};
+
+template <typename type>
+void vector_ocl<type>::linear2( typename vector_ocl<type>::pointer xo, 
+                                typename vector_ocl<type>::pointer yo,
+                                typename vector_ocl<type>::pointer imgr,
+                                typename vector_ocl<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    std::string str_kernel = kernel_linear_interpolation_2d( string_type<type>() );
+    // std::cout << str_kernel << std::endl;
+    cl_manager.program(str_kernel, "kernel_linear_interpolation_2d");
+    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), 
+                        *(imgr->get_buffer()), *(imgo->get_buffer()),
+                        ref_size[0], ref_size[1]);
+    cl_manager.execute(out_size); // multidimensional NDRange
+};
+
+template <typename type>
+void vector_ocl<type>::linear3( typename vector_ocl<type>::pointer xo, 
+                                typename vector_ocl<type>::pointer yo,
+                                typename vector_ocl<type>::pointer zo,
+                                typename vector_ocl<type>::pointer imgr,
+                                typename vector_ocl<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    std::string str_kernel = kernel_linear_interpolation_3d( string_type<type>() );
+    // std::cout << str_kernel << std::endl;
+    cl_manager.program(str_kernel, "kernel_linear_interpolation_3d");
+    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), *(zo->get_buffer()),
+                        *(imgr->get_buffer()), *(imgo->get_buffer()),
+                        ref_size[0], ref_size[1], ref_size[2]);
+    cl_manager.execute(out_size); // multidimensional NDRange
 };
 
 }; //end namespace

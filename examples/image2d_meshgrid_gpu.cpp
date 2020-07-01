@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-18 06:34:35
+* @Last Modified time: 2020-06-24 09:46:26
 */
 
 
@@ -24,7 +24,7 @@ int main()
     // Create small imame
     image_gpu<double> image0(10,5);
     
-    grid<double,vector_gpu<double>> x0(image0);
+    grid_gpu<double> x0(image0);
     std::cout << "a\n" ;
     x0.print();
     

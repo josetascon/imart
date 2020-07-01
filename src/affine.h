@@ -38,9 +38,9 @@ protected:
     std::vector<type> transform_2d(std::vector<type> & point);
     std::vector<type> transform_3d(std::vector<type> & point);
     template <typename gcontainer>
-    grid<type,gcontainer> transform_2d(const grid<type,gcontainer> & input);
+    typename grid<type,gcontainer>::pointer transform_2d(const typename grid<type,gcontainer>::pointer input);
     template <typename gcontainer>
-    grid<type,gcontainer> transform_3d(const grid<type,gcontainer> & input);
+    typename grid<type,gcontainer>::pointer transform_3d(const typename grid<type,gcontainer>::pointer input);
 
 public:
     // ===========================================
@@ -54,8 +54,9 @@ public:
     // Functions
     // ===========================================
     std::vector<type> apply(std::vector<type> & point);
+    
     template <typename gcontainer>
-    grid<type,gcontainer> apply(const grid<type,gcontainer> & input);
+    typename grid<type,gcontainer>::pointer apply(const typename grid<type,gcontainer>::pointer input);
     // void transform(image<type,container> & image); // not going to implement this
 };
 
@@ -163,10 +164,10 @@ std::vector<type> affine<type,container>::apply(std::vector<type> & point)
 //Transform grid
 template <typename type, typename container>
 template <typename gcontainer>
-grid<type,gcontainer> affine<type,container>::apply(const grid<type,gcontainer> & input)
+typename grid<type,gcontainer>::pointer affine<type,container>::apply(typename grid<type,gcontainer>::pointer input)
 {
-    if (this->dim == 2){ return transform_2d(input); };
-    if (this->dim == 3){ return transform_3d(input); };
+    if (this->dim == 2){ return transform_2d<gcontainer>(input); };
+    if (this->dim == 3){ return transform_3d<gcontainer>(input); };
     return input;
 };
 
@@ -178,8 +179,7 @@ template <typename type, typename container>
 std::vector<type> affine<type,container>::transform_2d(std::vector<type> & point)
 {
     // TODO: assert*****
-    // TODO: consider if the point uses 
-    // the inverse or the direct transform. I think direct.
+    // TODO: consider if the point uses the inverse or the direct transform. I think direct.
     std::vector<type> out(point.size());
     type * a = this->parameters->ptr();
 
@@ -192,53 +192,19 @@ std::vector<type> affine<type,container>::transform_2d(std::vector<type> & point
 //Transform grid
 template <typename type, typename container>
 template <typename gcontainer>
-grid<type,gcontainer> affine<type,container>::transform_2d(const grid<type,gcontainer> & input)
+typename grid<type,gcontainer>::pointer affine<type,container>::transform_2d(typename grid<type,gcontainer>::pointer input)
 {
     // TODO: assert*****
-    // input.print_data("***inside1***");
-    auto output = grid<type,gcontainer>::new_pointer(input.get_dimension());
-    output->mimic_(input);
+    auto output = grid<type,gcontainer>::new_pointer(input->get_dimension());
+    output->mimic_(*input);
 
     type * a = this->parameters->ptr();
-    typename image<type,gcontainer>::pointer * xin = input.ptr();
+    typename image<type,gcontainer>::pointer * xin = input->ptr();
     typename image<type,gcontainer>::pointer * xout = output->ptr();
-    
-    // output->print_data("***inside2***");
-    // input.print_data("***inside2***");
-    // image<type,gcontainer> xx = (*xin[0])*a[0] + a[1]*(*xin[1]) + a[4];
-    // image<type,gcontainer> yy = (*xin[0])*a[2] + a[3]*(*xin[1]) + a[5];
-    // xx.print_data("***insidex***");
-    // yy.print_data("***insidey***");
-
-    // (*xout[0]) = tmp;
-    // xout[0]->print();
-    // xout[0]->print_data();
-    // type a0 = a[0]; type a1 = a[0]; type a2 = a[2];
-    // type a3 = a[0]; type a4 = a[0]; type a5 = a[0];
-    // *(xout[0]) = (*xin[0])*a0 + (*xin[1])*a1 + a4;
-    // *(xout[1]) = (*xin[0])*a2 + (*xin[1])*a3 + a5;
-
-    // auto xx = image<type,gcontainer>::new_pointer();
-    // auto yy = image<type,gcontainer>::new_pointer();
-    // *xx = (*xin[0])*a[0] + (*xin[1])*a[1] + a[4];
-    // *yy = (*xin[0])*a[2] + (*xin[1])*a[3] + a[5];
-    // xx->print_data("xx");
-    // yy->print_data("yy");
-
-    // xout[0] = xx->clone();
-    // xout[1] = yy->clone();
-    // xout[0] = xx->copy();
-    // xout[1] = yy->copy();
 
     *(xout[0]) = (*xin[0])*a[0] + (*xin[1])*a[1] + a[4];
     *(xout[1]) = (*xin[0])*a[2] + (*xin[1])*a[3] + a[5];
-
-
-    // input.print_data();
-    // output->print_data();
-    // // xout[0].print_data();
-    // // xout[1].print_data();
-    return *output;
+    return output;
 };
 
 // ===========================================
@@ -249,8 +215,7 @@ template <typename type, typename container>
 std::vector<type> affine<type,container>::transform_3d(std::vector<type> & point)
 {
     // TODO: assert*****
-    // TODO: consider if the point uses 
-    // the inverse or the direct transform. I think direct.
+    // TODO: consider if the point uses the inverse or the direct transform. I think direct.
     std::vector<type> out(point.size());
     type * a = this->parameters->ptr();
     out[0] = a[0]*point[0] + a[1]*point[1] + a[2]*point[2] + a[9];
@@ -262,19 +227,19 @@ std::vector<type> affine<type,container>::transform_3d(std::vector<type> & point
 //Transform grid
 template <typename type, typename container>
 template <typename gcontainer>
-grid<type,gcontainer> affine<type,container>::transform_3d(const grid<type,gcontainer> & input)
+typename grid<type,gcontainer>::pointer affine<type,container>::transform_3d(typename grid<type,gcontainer>::pointer input)
 {
     // TODO: assert*****
     // typename grid<type,gcontainer>::pointer output;
-    auto output = grid<type,gcontainer>::new_pointer(input.get_dimension());
-    output->mimic_(input);
+    auto output = grid<type,gcontainer>::new_pointer(input->get_dimension());
+    output->mimic_(*input);
     type * a = this->parameters->ptr();
-    typename image<type,gcontainer>::pointer * xin = input.ptr();
+    typename image<type,gcontainer>::pointer * xin = input->ptr();
     typename image<type,gcontainer>::pointer * xout = output->ptr();
     (*xout[0]) = (*xin[0])*a[0] + (*xin[1])*a[1] + (*xin[2])*a[2] + a[9];
     (*xout[1]) = (*xin[0])*a[3] + (*xin[1])*a[4] + (*xin[2])*a[5] + a[10];
     (*xout[2]) = (*xin[0])*a[6] + (*xin[1])*a[7] + (*xin[2])*a[8] + a[11];
-    return *output;
+    return output;
 };
 
 }; //end namespace

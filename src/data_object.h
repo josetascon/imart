@@ -186,6 +186,7 @@ type * data_object<type,container>::ptr() const
 template <typename type, typename container>
 void data_object<type,container>::set_data(std::shared_ptr<container> d)
 {
+    data.reset();
     data = d;
 };
 

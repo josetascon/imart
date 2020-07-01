@@ -34,7 +34,8 @@ protected:
     // ===========================================
     int num_inputs;                         // number of inputs
     int num_outputs;                        // number of outputs
-    bool ready;                             // ready to run
+    bool ready_in;                          // ready to run
+    bool ready_out;                         // ready to run
     std::vector<object::pointer> vinput;    // vector with pointers of inputs
     std::vector<object::pointer> voutput;   // vector with pointers of outputs
 
@@ -52,6 +53,8 @@ protected:
     void set_total_outputs(int num);
     template<typename ... Args> void setup_input(Args... args);
     template<typename ... Args> void setup_output(Args... args);
+    void set_input(unsigned int id, object::pointer ptr);    // update pointer
+    void set_output(unsigned int id, object::pointer ptr);   // update pointer
 
 public:
     // ===========================================
@@ -76,17 +79,14 @@ public:
     int get_total_outputs() const;
     std::vector<object::pointer> get_input() const;
     std::vector<object::pointer> get_output() const;
-
-    // ===========================================
-    // Set Functions
-    // ===========================================
-    virtual void set_input();                       // to be defined 
-    virtual void set_output();                      // to be defined
+    object::pointer get_input(unsigned int id) const;
+    object::pointer get_output(unsigned int id) const;
 
     // ===========================================
     // Functions
     // ===========================================
-    void execute();
+    void execute();             // execute algorithm
+    void reset();               // reset all pointers to free memory
 };
 
 
@@ -130,8 +130,8 @@ process_object::~process_object()
 void process_object::init(int inputs, int outputs)
 {
     // Attributes initialization
-    set_total_inputs(inputs);
-    set_total_inputs(outputs);
+    this->set_total_inputs(inputs);
+    this->set_total_inputs(outputs);
 };
 
 // template <typename type>
@@ -156,7 +156,8 @@ void process_object::mimic_(const process_object & input)
 {
     num_inputs = input.get_total_inputs();
     num_outputs = input.get_total_outputs();
-    ready = false;
+    ready_in = false;
+    ready_out = false;
 };
 
 // ===========================================
@@ -182,6 +183,18 @@ std::vector<object::pointer> process_object::get_output() const
     return voutput;
 };
 
+object::pointer process_object::get_input(unsigned int id) const
+{
+    assert(id < vinput.size());
+    return vinput[id];
+};
+
+object::pointer process_object::get_output(unsigned int id) const
+{
+    assert(id < voutput.size());
+    return voutput[id];
+};
+
 // ===========================================
 // Set Functions
 // ===========================================
@@ -201,6 +214,7 @@ void process_object::setup_input(Args... args)
     std::vector<object::pointer> in({args ...});
     assert(num_inputs == in.size());
     vinput = in;
+    ready_in = true;
 };
 
 template<typename ... Args>
@@ -209,6 +223,19 @@ void process_object::setup_output(Args... args)
     std::vector<object::pointer> out({args ...});
     assert(num_outputs == out.size());
     voutput = out;
+    ready_out = true;
+};
+
+void process_object::set_input(unsigned int id, object::pointer ptr)
+{
+    assert(id < vinput.size());
+    vinput[id] = ptr;
+};
+
+void process_object::set_output(unsigned int id, object::pointer ptr)
+{
+    assert(id < voutput.size());
+    voutput[id] = ptr;
 };
 
 // ===========================================
@@ -222,16 +249,16 @@ std::string process_object::info(std::string msg)
 
     // Summary of the object information
     // ss << object::info(title);
-    ss << "Inputs #: \t\t\t" << num_inputs << std::endl;
+    ss << "Inputs #: \t\t" << num_inputs << std::endl;
     for(int i = 0; i < vinput.size(); i++) 
     {
-        ss << "\tInput " << i+1 << ":\t\t";
+        ss << "    ->Input " << i+1 << ":\t\t";
         ss << vinput[i]->get_name() << "\n";
     };
-    ss << "Outputs #: \t\t\t" << num_outputs << std::endl;
+    ss << "Outputs #: \t\t" << num_outputs << std::endl;
     for(int i = 0; i < voutput.size(); i++) 
     {
-        ss << "\tOutput " << i+1 << ":\t\t";
+        ss << "    ->Output " << i+1 << ":\t\t";
         ss << voutput[i]->get_name() << "\n";
     };
     return ss.str();
@@ -244,6 +271,19 @@ void process_object::execute()
 {
     execute_();
 }
+
+void process_object::execute_()
+{
+    ;
+}
+
+void process_object::reset()
+{
+    if(ready_in)
+        for(int i = 0; i < vinput.size(); i++) vinput[i].reset();
+    if(ready_out)
+        for(int i = 0; i < voutput.size(); i++) voutput[i].reset();
+};
 
 }; //end namespace
 

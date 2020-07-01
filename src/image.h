@@ -36,7 +36,7 @@
 #include "data_object.h"
 #include "vector_cpu.h"
 #include "vector_ocl.h"
-// #include "vector_vcl.h"
+#include "vector_vcl.h"
 
 namespace imart
 {
@@ -61,10 +61,9 @@ public:
 
 protected:
     // Type definitions
-    using iterator    = typename std::vector<type>::iterator;
-    using ptr_vector  = std::shared_ptr<std::vector<type>>;
-    using ptr_pixels4 = std::unique_ptr<std::array<type,4>>;
-    using ptr_pixels8 = std::unique_ptr<std::array<type,8>>;
+    // using iterator    = typename std::vector<type>::iterator;
+    using pixels4 = std::unique_ptr<std::array<type,4>>;
+    using pixels8 = std::unique_ptr<std::array<type,8>>;
     using container_pointer = typename data_object<type,container>::container_pointer;
 
     // ===========================================
@@ -79,9 +78,6 @@ protected:
     // std::vector<type> spacing;
     // std::vector<type> origin;
     // std::vector<type> direction; //not supported with interpolation
-
-    // Image data
-    // ptr_vector data;
 
     // Initialization methods as protected
     virtual void init(int w, int h, int channel);           // Initialize 2d
@@ -108,7 +104,7 @@ public:
     //! Constructor empty. Default a 2d image
     image();
     //! Constructor empty with dimension
-    // image(int d);
+    image(int d);
     //! Constructor using width and height.
     image(int w, int h);                           // Only 2d
     //! Constructor using width, height and length.
@@ -160,10 +156,10 @@ public:
     container_pointer get_data() const;
     //! Get raw pointer to image data
     type * ptr() const;
-    //! Get the iterator begin
-    iterator begin() const;
-    //! Get the iterator end
-    iterator end() const;
+    // //! Get the iterator begin
+    // iterator begin() const;
+    // //! Get the iterator end
+    // iterator end() const;
     //! Assert function to process input image
     void assert_size(const image & input);
 
@@ -189,6 +185,11 @@ public:
     type & operator [] (int e);
     // type & operator () (int w, int h); //ONLY 2d***
     // type & operator () (int w, int h, int l); //ONLY 3d***
+
+    // Access
+    // pixels2 neighbors(int e);
+    pixels4 neighbors4(int e);
+    pixels8 neighbors8(int e);
     
     // Equal
     image<type,container> & operator = (const image & input);
@@ -235,13 +236,12 @@ public:
 
     template<typename type_out, typename container_, typename type_in>
     friend image<type_out,container_> cast(const image<type_in,container_> & input);
-    
-    /*
 
     // image utils functions
-    template<typename pixel_t>
-    friend image<pixel_t> pad(const image<pixel_t> & input, std::vector<int> pre, std::vector<int> post);
-    
+    template<typename type_, typename container_>
+    friend image<type_,container_> pad(const image<type_,container_> & input, std::vector<int> pre, std::vector<int> post);
+
+    /*
     template<typename pixel_t>
     friend image<pixel_t> unpad(const image<pixel_t> & input, std::vector<int> pre, std::vector<int> post);
     
@@ -272,11 +272,6 @@ public:
     // template <type_itk>
     // void read_itk(itk::Image< type_itk, 2 > image_itk);
     // void write_itk();
-
-    // Access
-    // virtual ptr_pixels2 neighbors(int e);
-    // virtual ptr_pixels4 neighbors4(int e);
-    // virtual ptr_pixels8 neighbors8(int e);
 
     // TODO
     // create operator << to print info of image as image_info function [DONE] (inherited object)
@@ -309,6 +304,17 @@ image<type,container>::image()
 {
     this->class_name = "image";
     init(0, 0, 1);
+    data.reset();
+};
+
+// Constructor
+template <typename type, typename container>
+image<type,container>::image(int d)
+{
+    assert(d > 1 && d < 4);
+    this->class_name = "image";
+    if (d == 2) init(0, 0, 1);
+    if (d == 3) init(0, 0, 0, 1);
     data.reset();
 };
 
@@ -512,17 +518,17 @@ type * image<type,container>::ptr() const
     // return (*data).data();
 };
 
-template <typename type, typename container>
-typename image<type,container>::iterator image<type,container>::begin() const
-{
-    return data->begin();
-};
+// template <typename type, typename container>
+// typename image<type,container>::iterator image<type,container>::begin() const
+// {
+//     return data->begin();
+// };
 
-template <typename type, typename container>
-typename image<type,container>::iterator image<type,container>::end() const
-{
-    return data->end();
-};
+// template <typename type, typename container>
+// typename image<type,container>::iterator image<type,container>::end() const
+// {
+//     return data->end();
+// };
 
 // template <typename type, typename container>
 // std::shared_ptr<std::vector<image<type>>> image<type,container>::get_grid()
@@ -862,113 +868,46 @@ template<typename type_out, typename container_out, typename type_in, typename c
 image<type_out,container_out> cast(const image<type_in,container_in> & input)
 {
     typename image<type_out,container_out>::pointer output = image<type_out,container_out>::new_pointer(input.get_size(),1);
-    output->set_spacing(input.get_spacing());
-    output->set_origin(input.get_origin());
-    output->set_direction(input.get_direction());
     output->set_data(input.get_data()->template cast<type_out>());
+    output->set_sod_parameters(input.get_spacing(), input.get_origin(), input.get_direction());
     return *output;
 };
 
-/*
 
-
-template<typename type>
-image<type> pad(const image<type> & input, std::vector<int> pre, std::vector<int> post)
+template<typename type, typename container>
+image<type,container> pad(const image<type,container> & input, std::vector<int> pre, std::vector<int> post)
 {
     int w = input.get_width();
     int h = input.get_height();
     int l = input.get_length();
-    int N = input.get_total_elements();
-    type * p1 = input.ptr();
-
     std::vector<int> extra(pre.size(),0);
     for (int i = 0; i < extra.size(); i++){ extra[i] = pre[i]+post[i]; };
     
-    image<type> result;
-    if (input.get_dimension() == 2){ result = image<type>(w+extra[0], h+extra[1]); };
-    if (input.get_dimension() == 3){ result = image<type>(w+extra[0], h+extra[1], l+extra[2]); };
-    result.zeros();
-    type * p2 = result.ptr();
+    typename image<type,container>::pointer output;
+    if (input.get_dimension() == 2){ output = image<type,container>::new_pointer(w+extra[0], h+extra[1]); };
+    if (input.get_dimension() == 3){ output = image<type,container>::new_pointer(w+extra[0], h+extra[1], l+extra[2]); };
 
-    int ww = result.get_width();
-    int hh = result.get_height();
-    int ll = result.get_length();
-    int c = 0;
-    if (input.get_dimension() == 2)
-    {
-        for(int i = pre[1]; i < hh-post[1]; i++)
-        {
-            for(int j = pre[0]; j < ww-post[0]; j++)
-            {
-                p2[j + i*ww] = p1[c];
-                c++;
-            };
-        };
-    };
-    if (input.get_dimension() == 3)
-    {
-        for (int k = pre[2]; k < ll-post[2]; k++)
-        {
-            for(int i = pre[1]; i < hh-post[1]; i++)
-            {
-                for(int j = pre[0]; j < ww-post[0]; j++)
-                {
-                    p2[j + i*ww + k*ww*hh] = p1[c];
-                    c++;
-                };
-            };
-        };
-    };
-    
-    return result;
+    container::pad(input.get_data(), output->get_data(), input.get_size(), pre, post);
+    output->set_sod_parameters(input.get_spacing(), input.get_origin(), input.get_direction());
+    return *output;
 };
 
-template<typename type>
-image<type> unpad(const image<type> & input, std::vector<int> pre, std::vector<int> post)
+template<typename type, typename container>
+image<type,container> unpad(const image<type,container> & input, std::vector<int> pre, std::vector<int> post)
 {
     int w = input.get_width();
     int h = input.get_height();
     int l = input.get_length();
-    int N = input.get_total_elements();
-    type * p1 = input.ptr();
-
     std::vector<int> extra(pre.size(),0);
     for (int i = 0; i < extra.size(); i++){ extra[i] = pre[i]+post[i]; };
     
-    image<type> result;
-    if (input.get_dimension() == 2){ result = image<type>(w-extra[0], h-extra[1]); };
-    if (input.get_dimension() == 3){ result = image<type>(w-extra[0], h-extra[1], l-extra[2]); };
-    result.zeros();
-    type * p2 = result.ptr();
-
-    int c = 0;
-    if (input.get_dimension() == 2)
-    {
-        for(int i = pre[1]; i < h-post[1]; i++)
-        {
-            for(int j = pre[0]; j < w-post[0]; j++)
-            {
-                p2[c] = p1[j + i*w];
-                c++;
-            };
-        };
-    };
-    if (input.get_dimension() == 3)
-    {
-        for (int k = pre[2]; k < l-post[2]; k++)
-        {
-            for(int i = pre[1]; i < h-post[1]; i++)
-            {
-                for(int j = pre[0]; j < w-post[0]; j++)
-                {
-                    p2[c] = p1[j + i*w + k*w*h];
-                    c++;
-                };
-            };
-        };
-    };
+    typename image<type,container>::pointer output;
+    if (input.get_dimension() == 2){ output = image<type,container>::new_pointer(w-extra[0], h-extra[1]); };
+    if (input.get_dimension() == 3){ output = image<type,container>::new_pointer(w-extra[0], h-extra[1], l-extra[2]); };
     
-    return result;
+    container::unpad(input.get_data(), output->get_data(), output->get_size(), pre, post);
+    output->set_sod_parameters(input.get_spacing(), input.get_origin(), input.get_direction());
+    return *output;
 };
 
 /*
@@ -1418,23 +1357,40 @@ void image<type,container>::write_3d(std::string file_name)
     }
 };
 
-
-/*
 template <typename type, typename container>
-typename image<type,container>::ptr_pixels4 image<type,container>::neighbors4(int e)
+typename image<type,container>::pixels4 image<type,container>::neighbors4(int e)
 {
-    ptr_pixels4 arr = std::make_unique<std::array<type,4>>();
-    // std::cout << "image";
-    return arr;
+    auto vv = std::make_unique<std::array<type,4>>();
+    // type * p = this->ptr();
+    int w = this->width;
+    (*vv)[0] = data->operator[](e);
+    (*vv)[1] = data->operator[](e+1);
+    (*vv)[2] = data->operator[](e+w);
+    (*vv)[3] = data->operator[](e+w+1);
+    // std::cout << "px:" << p[e] << " ";
+    return vv;
 };
 
 template <typename type, typename container>
-typename image<type,container>::ptr_pixels8 image<type,container>::neighbors8(int e)
+typename image<type,container>::pixels8 image<type,container>::neighbors8(int e)
 {
-    ptr_pixels8 arr = std::make_unique<std::array<type,8>>();
-    return arr;
+    auto vv = std::make_unique<std::array<type,8>>();
+    // type * p = this->ptr();
+    int w = this->width;
+    int h = this->height;
+
+    (*vv)[0] = data->operator[](e);
+    (*vv)[1] = data->operator[](e+1);
+    (*vv)[2] = data->operator[](e+w);
+    (*vv)[3] = data->operator[](e+w+1);
+    
+    (*vv)[4] = data->operator[](e+w*h);
+    (*vv)[5] = data->operator[](e+1+w*h);
+    (*vv)[6] = data->operator[](e+w+w*h);
+    (*vv)[7] = data->operator[](e+w+1+w*h);
+    // std::cout << "px:" << p[e] << " ";
+    return vv;
 };
-*/
 
 }; //end namespace
 

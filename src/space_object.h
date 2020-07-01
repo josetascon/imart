@@ -74,9 +74,12 @@ public:
     // ===========================================
     // Set Functions
     // ===========================================
+    void set_size(std::vector<int> sz);
     void set_spacing(std::vector<double> s);
     void set_origin(std::vector<double> o);
     void set_direction(std::vector<double> d);
+    void set_sod_parameters(std::vector<double> s, std::vector<double> o, std::vector<double> d);
+    // void set_sod_parameters(std::vector<double> sod);
 };
 
 
@@ -197,6 +200,12 @@ std::vector<double> space_object::get_sod_parameters() const
 // ===========================================
 // Set Functions
 // ===========================================
+void space_object::set_size(std::vector<int> sz)
+{
+    assert(dim == sz.size());
+    size = sz;
+};
+
 void space_object::set_spacing(std::vector<double> s)
 {
     assert(dim == s.size());
@@ -213,6 +222,20 @@ void space_object::set_direction(std::vector<double> d)
 {
     assert(dim*dim == d.size());
     direction = d;
+};
+
+// void space_object::set_sod_parameters(std::vector<double> sod)
+// {
+//     std::copy(sod.begin(), sod.begin() + dim - 1, spacing.begin());
+//     std::copy(sod.begin() + dim, sod.begin() + 2*dim - 1, origin.begin());
+//     std::copy(sod.begin() + 2*dim, sod.end(), direction.begin());
+// };
+
+void space_object::set_sod_parameters(std::vector<double> s, std::vector<double> o, std::vector<double> d)
+{
+    set_spacing(s);
+    set_origin(o);
+    set_direction(d);
 };
 
 // ===========================================
