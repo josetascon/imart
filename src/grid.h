@@ -47,8 +47,8 @@ protected:
     void copy_properties(const grid<type,container> & input);
     void copy_properties(const image<type,container> & input);
     
-    void meshgrid_2d();
-    void meshgrid_3d();
+    void meshgrid2();
+    void meshgrid3();
 
 public:
     // ===========================================
@@ -58,6 +58,8 @@ public:
     grid(int dim);
     grid(const grid<type,container> & input);
     grid(const image<type,container> & input);
+    grid(const typename grid<type,container>::pointer input);
+    grid(const typename image<type,container>::pointer input);
     // ~grid();
 
     // ===========================================
@@ -133,6 +135,23 @@ grid<type,container>::grid(const image<type,container> & input)
     this->class_name = "grid";
     allocate(input.get_dimension());
     copy_properties(input);
+    meshgrid();
+};
+
+template <typename type, typename container>
+grid<type,container>::grid(const typename grid<type,container>::pointer input)
+{
+    this->class_name = "grid";
+    allocate(input->get_dimension());
+    clone_(*input);
+}
+
+template <typename type, typename container>
+grid<type,container>::grid(const typename image<type,container>::pointer input)
+{
+    this->class_name = "grid";
+    allocate(input->get_dimension());
+    copy_properties(*input);
     meshgrid();
 };
 
@@ -233,7 +252,13 @@ std::string grid<type,container>::info(std::string msg)
     std::string title = "Grid Information";
     if (msg != "") { title = msg; };
 
+    ss << object::info(title);
     ss << space_object::info(title);
+    ss << "Total elements: \t" << this->get_dimension()*(xyz->data()[0]->get_total_elements()) << std::endl;    //Get the total number of pixels
+    ss << "Data type: \t\t" << xyz->data()[0]->get_type() << std::endl;
+    if (xyz != nullptr) ss << "Container type: \tvector<" << xyz->data()[0]->get_name() << ">" << std::endl;
+    else ss << "Container type: \t" << "-" << std::endl;
+    ss << "Container pointer: \t" << xyz << std::endl;         //Print the pointer of container
     return ss.str();
 };
 
@@ -258,8 +283,8 @@ std::string grid<type,container>::info_data(std::string msg)
 template <typename type, typename container>
 void grid<type,container>::meshgrid()
 {   
-    if (this->dim == 2) { meshgrid_2d(); };
-    if (this->dim == 3) { meshgrid_3d(); };
+    if (this->dim == 2) { meshgrid2(); };
+    if (this->dim == 3) { meshgrid3(); };
 };
 
 template <typename type, typename container>
@@ -271,7 +296,7 @@ void grid<type,container>::meshgrid(image<type,container> & input)
 };
 
 template <typename type, typename container>
-void grid<type,container>::meshgrid_2d()
+void grid<type,container>::meshgrid2()
 {
     int w = this->get_size()[0];
     int h = this->get_size()[1];
@@ -282,7 +307,7 @@ void grid<type,container>::meshgrid_2d()
     auto imgy = image<type,container>::new_pointer(w,h);
 
     std::vector<typename container::pointer> gxy;
-    gxy = container::grid_2d(w,h,p);    // grid computation
+    gxy = container::grid2(w,h,p);    // grid computation
 
     imgx->set_data(gxy[0]);
     imgy->set_data(gxy[1]);
@@ -292,7 +317,7 @@ void grid<type,container>::meshgrid_2d()
 };
 
 template <typename type, typename container>
-void grid<type,container>::meshgrid_3d()
+void grid<type,container>::meshgrid3()
 {
     int w = this->get_size()[0];
     int h = this->get_size()[1];
@@ -305,7 +330,7 @@ void grid<type,container>::meshgrid_3d()
     auto imgz = image<type,container>::new_pointer(w,h,l);
     
     std::vector<typename container::pointer> gxyz;
-    gxyz = container::grid_3d(w,h,l,p); // grid computation
+    gxyz = container::grid3(w,h,l,p); // grid computation
 
     imgx->set_data(gxyz[0]);
     imgy->set_data(gxyz[1]);

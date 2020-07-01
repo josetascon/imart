@@ -97,10 +97,12 @@ public:
     // Functions
     // ===========================================
     virtual std::vector<type> apply(std::vector<type> & point);
-    virtual grid<type> apply(const grid<type> & input);
+    // virtual grid<type,container> apply(const grid<type,container> & input);
+    virtual typename grid<type,container>::pointer apply(typename grid<type,container>::pointer input);
 
     std::vector<type> operator () (std::vector<type> & point);
-    grid<type> operator () (const grid<type> & input);
+    // grid<type,container> operator () (const grid<type,container> & input);
+    typename grid<type,container>::pointer operator () (typename grid<type,container>::pointer input);
 };
 
 
@@ -341,8 +343,14 @@ std::vector<type> transform<type,container>::apply(std::vector<type> & point)
     return point;
 };
 
+// template <typename type, typename container>
+// grid<type,container> transform<type,container>::apply(const grid<type,container> & input)
+// {
+//     return input;
+// };
+
 template <typename type, typename container>
-grid<type> transform<type,container>::apply(const grid<type> & input)
+typename grid<type,container>::pointer transform<type,container>::apply(typename grid<type,container>::pointer input)
 {
     return input;
 };
@@ -350,16 +358,20 @@ grid<type> transform<type,container>::apply(const grid<type> & input)
 template <typename type, typename container>
 std::vector<type> transform<type,container>::operator() (std::vector<type> & point)
 {
-    return this->apply(point);
+    return apply(point);
 };
+
+// template <typename type, typename container>
+// grid<type,container> transform<type,container>::operator() (const grid<type,container> & input)
+// {
+//     return apply(input);
+// };
 
 template <typename type, typename container>
-grid<type> transform<type,container>::operator() (const grid<type> & input)
+typename grid<type,container>::pointer transform<type,container>::operator() (typename grid<type,container>::pointer input)
 {
-    return this->apply(input);
+    return apply(input);
 };
-
-
 
 }; //end namespace
 

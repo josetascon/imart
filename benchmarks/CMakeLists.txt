@@ -27,3 +27,9 @@ target_link_libraries( vector_vcl_scalar ${bench_targets} )
 
 add_executable( grid_cpu_vs_gpu grid_cpu_vs_gpu.cpp )
 target_link_libraries( grid_cpu_vs_gpu ${bench_targets} )
+
+add_executable( affine_cpu_vs_gpu affine_cpu_vs_gpu.cpp )
+target_link_libraries( affine_cpu_vs_gpu ${bench_targets} )
+
+add_executable( interpolator_nearest_cpu_vs_gpu interpolator_nearest_cpu_vs_gpu.cpp )
+target_link_libraries( interpolator_nearest_cpu_vs_gpu ${bench_targets} )

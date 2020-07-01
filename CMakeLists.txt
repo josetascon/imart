@@ -47,7 +47,7 @@ if(BUILD_EXAMPLES)
    add_subdirectory(examples)
 endif()
 
-option(BUILD_BENCHMARKS "Build the benchmarks" OFF)
+option(BUILD_BENCHMARKS "Build the benchmarks" ON)
 if(BUILD_BENCHMARKS)
    add_subdirectory(benchmarks)
 endif()
