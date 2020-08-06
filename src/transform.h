@@ -81,11 +81,11 @@ public:
     // ===========================================
     // Overloading Functions
     // ===========================================
-    transform<type,container> & operator = (const transform<type,container> & input);
-    transform<type,container> operator + (const transform<type,container> & input);
-    transform<type,container> operator - (const transform<type,container> & input);
-    transform<type,container> operator * (const image<type,container> & input);
-    transform<type,container> operator * (type scalar);
+    // transform<type,container> & operator = (const transform<type,container> & input);
+    // transform<type,container> operator + (const transform<type,container> & input);
+    // transform<type,container> operator - (const transform<type,container> & input);
+    // transform<type,container> operator * (const image<type,container> & input);
+    // transform<type,container> operator * (type scalar);
 
     // ===========================================
     // Initialization Functions
@@ -151,10 +151,10 @@ void transform<type,container>::init(int d)
     // parameters = param;
     // inverse_parameters = inv;
 
-    parameters = image<type,container>::new_pointer();
-    inverse_parameters = image<type,container>::new_pointer();
-    
+    parameters = image<type,container>::new_pointer();          // parameters are 2d
+    inverse_parameters = image<type,container>::new_pointer();  // parameters are 2d
     space_object::init(d);
+    // identity();
 };
 
 // Full copy
@@ -162,8 +162,8 @@ template <typename type, typename container>
 void transform<type,container>::clone_(const transform<type,container> & input)
 {
     space_object::mimic_(input);
-    parameters->clone_(*input.get_parameters());
-    inverse_parameters->clone_(*input.get_inverse_parameters());
+    parameters->clone_(*(input.get_parameters()));
+    inverse_parameters->clone_(*(input.get_inverse_parameters()));
 };
 
 template <typename type, typename container>
@@ -178,17 +178,8 @@ template <typename type, typename container>
 void transform<type,container>::mimic_(const transform<type,container> & input)
 {
     space_object::mimic_(input);
-    parameters->mimic_(*input.get_parameters());
-    inverse_parameters->mimic_(*input.get_inverse_parameters());
-};
-
-// Equal
-template <typename type, typename container>
-transform<type,container> & transform<type,container>::operator = (const transform<type,container> & input)
-{
-    // delete &data;
-    copy_(input);
-    return *this;
+    parameters->mimic_(*(input.get_parameters()));
+    inverse_parameters->mimic_(*(input.get_inverse_parameters()));
 };
 
 // ===========================================
@@ -289,6 +280,16 @@ transform<type,container> transform<type,container>::inverse()
 // ===========================================
 // Overloading Functions
 // ===========================================
+/*
+// Equal
+template <typename type, typename container>
+transform<type,container> & transform<type,container>::operator = (const transform<type,container> & input)
+{
+    // delete &data;
+    copy_(input);
+    return *this;
+};
+
 // Transform to Transform
 template <typename type, typename container>
 transform<type,container> transform<type,container>::operator + (const transform<type,container> & input)
@@ -299,6 +300,10 @@ transform<type,container> transform<type,container>::operator + (const transform
     pointer output = this->mimic();
     output->set_parameters( pp );
     return *output;
+    // transform<type,container> output;
+    // output.mimic_(input);
+    // output.set_parameters( pp );
+    // return output;
 };
 
 template <typename type, typename container>
@@ -332,7 +337,7 @@ transform<type,container> transform<type,container>::operator * (type scalar)
     pointer output = this->mimic();
     output->set_parameters( pp );
     return *output;
-};
+};*/
 
 // ===========================================
 // Functions

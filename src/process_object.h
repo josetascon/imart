@@ -253,13 +253,15 @@ std::string process_object::info(std::string msg)
     for(int i = 0; i < vinput.size(); i++) 
     {
         ss << "    ->Input " << i+1 << ":\t\t";
-        ss << vinput[i]->get_name() << "\n";
+        ss << vinput[i]->get_name() << " [" << vinput[i] << "]\n";
+        // ss << vinput[i]->get_name() << "\n";
     };
     ss << "Outputs #: \t\t" << num_outputs << std::endl;
     for(int i = 0; i < voutput.size(); i++) 
     {
         ss << "    ->Output " << i+1 << ":\t\t";
-        ss << voutput[i]->get_name() << "\n";
+        ss << voutput[i]->get_name() << " [" << voutput[i] << "]\n";
+        // ss << voutput[i]->get_name() << "\n";
     };
     return ss.str();
 };

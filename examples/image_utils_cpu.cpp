@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-26 16:09:05
+* @Last Modified time: 2020-07-02 17:51:45
 */
 
 // File to test utilities such as: pad, unpad, normalize
@@ -84,23 +84,18 @@ int main()
     std::cout << "Test function cast";
     std::cout << " =====================";
     std::cout << std::endl;
-    image<int> img30;
-    image<float> img31(4,3);
+    image<float> img30(4,3);
+    image<int> img31;
     image<double> img32;
-    // int v1;
-    // double v2;
+    img30.random(0.0, 100.0);
 
-    img31.random(0.0, 100.0);
-
-    // img30 = cast<int,vector_cpu<float>,float>(img31);
-    img30 = cast<int,vector_cpu<int>,float,vector_cpu<float>>(img31);
-    img32 = cast<double,vector_cpu<double>,float,vector_cpu<float>>(img31);
+    // cast
+    cast(img30, img31);
+    cast(img30, img32);
     
-    img31.print_data("float");
-    img30.print_data("cast to int");
+    img30.print_data("float");
+    img31.print_data("cast to int");
     img32.print_data("cast to double");
-
-
 
     return 0;
 };

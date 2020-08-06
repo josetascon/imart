@@ -84,6 +84,7 @@ public:
     // ===========================================
     // Overloading Operators
     // ===========================================
+    typename image<type,container>::pointer operator [] (int e);
     grid<type,container> & operator = (const grid<type,container> & input);
 
     // ===========================================
@@ -234,6 +235,14 @@ typename image<type,container>::pointer * grid<type,container>::ptr() const
 // ===========================================
 // Overloading Functions
 // ===========================================
+template <typename type, typename container>
+typename image<type,container>::pointer grid<type,container>::operator [] (int e)
+{
+    return xyz->data()[e];
+};
+
+
+
 // Equal
 template <typename type, typename container>
 grid<type,container> & grid<type,container>::operator = (const grid<type,container> & input)

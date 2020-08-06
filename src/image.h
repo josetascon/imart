@@ -13,13 +13,6 @@
 #include <sstream>      // stringstream
 #include <memory>       // smart pointers
 #include <vector>       // std::vector
-#include <random>       // random
-#include <cassert>      // assert
-#include <cmath>        // math (pow)
-#include <algorithm>    // std::max std::min
-#include <complex>      // std::complex
-
-#include <fftw3.h>      // fft library
 
 // itk headers
 #include <itkPoint.h>
@@ -58,12 +51,11 @@ public:
     using space_object::direction;
     using data_object<type,container>::data;
     using data_object<type,container>::num_elements;
+    using data_object<type,container>::get_data;
 
 protected:
     // Type definitions
     // using iterator    = typename std::vector<type>::iterator;
-    using pixels4 = std::unique_ptr<std::array<type,4>>;
-    using pixels8 = std::unique_ptr<std::array<type,8>>;
     using container_pointer = typename data_object<type,container>::container_pointer;
 
     // ===========================================
@@ -73,11 +65,6 @@ protected:
     int height;
     int length;
     int channels;       // for now will only support one channel
-
-    // std::vector<int> size;
-    // std::vector<type> spacing;
-    // std::vector<type> origin;
-    // std::vector<type> direction; //not supported with interpolation
 
     // Initialization methods as protected
     virtual void init(int w, int h, int channel);           // Initialize 2d
@@ -110,6 +97,8 @@ public:
     //! Constructor using width, height and length.
     image(int w, int h, int l);                    // Only 3d
     //! Constructor with vector size
+    image(std::vector<int> size);
+    //! Constructor with vector size and channel
     image(std::vector<int> size, int channel);
     // //! Constructor with existing data.
     image(container_pointer buffer, int w, int h);        // Only 2d
@@ -117,7 +106,6 @@ public:
     image(container_pointer buffer, int w, int h, int l); // Only 3d
     // //! Constructor with list
     image(std::initializer_list<type> list);
-
     //! Constructor copy
     image(const image & input);
     //! Constructor with file_name (call read()).
@@ -134,8 +122,6 @@ public:
     virtual void copy_(const image & input);
     //! Imitate other image with a property copy
     virtual void mimic_(const image & input);
-
-    // typename image<type,container>::pointer new_pointer();
 
     // ===========================================
     // Get Functions
@@ -176,7 +162,7 @@ public:
     void ones();
     void assign(type value);
     void random(float min=0.0, float max=1.0);
-    void identity(); //TODO
+    // void identity(); //TODO
 
     // ===========================================
     // Overloading Operators
@@ -185,11 +171,6 @@ public:
     type & operator [] (int e);
     // type & operator () (int w, int h); //ONLY 2d***
     // type & operator () (int w, int h, int l); //ONLY 3d***
-
-    // Access
-    // pixels2 neighbors(int e);
-    pixels4 neighbors4(int e);
-    pixels8 neighbors8(int e);
     
     // Equal
     image<type,container> & operator = (const image & input);
@@ -231,36 +212,34 @@ public:
     // type prod();
     type dot(const image & input);
 
-    template<typename type_, typename container_>
-    friend image<type_,container_> normalize(const image<type_,container_> & input, type_ min, type_ max);
-
-    template<typename type_out, typename container_, typename type_in>
-    friend image<type_out,container_> cast(const image<type_in,container_> & input);
-
     // image utils functions
     template<typename type_, typename container_>
-    friend image<type_,container_> pad(const image<type_,container_> & input, std::vector<int> pre, std::vector<int> post);
-
-    /*
-    template<typename pixel_t>
-    friend image<pixel_t> unpad(const image<pixel_t> & input, std::vector<int> pre, std::vector<int> post);
+    friend image<type_,container_> normalize(const image<type_,container_> & input, type_ min, type_ max);
     
+    template<typename type_in, typename container_in, typename type_out, typename container_out>
+    friend void cast(const image<type_in,container_in> & input, const image<type_out,container_out> & output);
+    
+    template<typename type_, typename container_>
+    friend image<type_,container_> pad(const image<type_,container_> & input, std::vector<int> pre, std::vector<int> post);
+    
+    template<typename type_, typename container_>
+    friend image<type_,container_> unpad(const image<type_,container_> & input, std::vector<int> pre, std::vector<int> post);
+    
+    // fft
+    template<typename type_, typename container_>
+    friend typename image<type_,container_>::vector fft(const image<type_,container_> & input);
+    template<typename type_, typename container_>
+    friend typename image<type_,container_>::vector ifft(const image<type_,container_> & input);
+    template<typename type_, typename container_>
+    friend typename image<type_,container_>::vector gradient_fft(const image<type_,container_> & input);
+    template<typename type_, typename container_>
+    friend typename image<type_,container_>::vector gradient(std::shared_ptr<image<type_,container_>> input);
     // friend functions
     // template<typename pixel_t>
     // friend image<std::complex<pixel_t>> real2complex(const image<pixel_t> & input);
-    template<typename pixel_t>
-    friend image<pixel_t> complex2real(const image<std::complex<pixel_t>> & input);
+    // template<typename pixel_t>
+    // friend image<pixel_t> complex2real(const image<std::complex<pixel_t>> & input);
     
-    // fft in 2d only now
-    template<typename pixel_t>
-    friend image<std::complex<pixel_t>> fft(const image<pixel_t> & input);
-    template<typename pixel_t>
-    friend image<std::complex<pixel_t>> ifft(const image<std::complex<pixel_t>> & input);
-    
-    template<typename pixel_t>
-    friend typename image<pixel_t>::vector gradient(const image<pixel_t> & input);
-    // std::vector<image<type>> gradient();
-    */
     // ===========================================
     // Interface Functions
     // ===========================================
@@ -268,7 +247,7 @@ public:
     void read(std::string file_name);
     void write(std::string file_name);
 
-    //ITK interface, VTK? eigen?
+    //ITK interface, VTK?
     // template <type_itk>
     // void read_itk(itk::Image< type_itk, 2 > image_itk);
     // void write_itk();
@@ -281,7 +260,6 @@ public:
     // scalar operations: scalar*Image [DONE]
     // functions in_place: transpose, add, substract, multiply, divide, pow
     // extra functions: copy, cast [DONE]
-
 };
 
 template<typename type>
@@ -304,7 +282,7 @@ image<type,container>::image()
 {
     this->class_name = "image";
     init(0, 0, 1);
-    data.reset();
+    // data.reset();
 };
 
 // Constructor
@@ -314,8 +292,8 @@ image<type,container>::image(int d)
     assert(d > 1 && d < 4);
     this->class_name = "image";
     if (d == 2) init(0, 0, 1);
-    if (d == 3) init(0, 0, 0, 1);
-    data.reset();
+    else if (d == 3) init(0, 0, 0, 1);
+    // data.reset();
 };
 
 // Constructor
@@ -332,6 +310,16 @@ image<type,container>::image(int w, int h, int l)
 {
     this->class_name = "image";
     init(w, h, l, 1);
+};
+
+// Constructor
+template <typename type, typename container>
+image<type,container>::image(std::vector<int> size)
+{
+    this->class_name = "image";
+    if (size.size() == 2) init(size[0], size[1], 1);
+    else if (size.size() == 3) init(size[0], size[1], size[2], 1);
+    else ; // undefined for other dimensions
 };
 
 // Constructor
@@ -864,15 +852,13 @@ image<type,container> normalize(const image<type,container> & input, type min = 
     return *output;
 };
 
-template<typename type_out, typename container_out, typename type_in, typename container_in>
-image<type_out,container_out> cast(const image<type_in,container_in> & input)
+template<typename type_in, typename container_in, typename type_out, typename container_out>
+void cast(const image<type_in,container_in> & input, image<type_out,container_out> & output)
 {
-    typename image<type_out,container_out>::pointer output = image<type_out,container_out>::new_pointer(input.get_size(),1);
-    output->set_data(input.get_data()->template cast<type_out>());
-    output->set_sod_parameters(input.get_spacing(), input.get_origin(), input.get_direction());
-    return *output;
+    output = image<type_out,container_out>(input.get_size());
+    output.set_data(input.get_data()->template cast<type_out>());
+    output.set_sod_parameters(input.get_spacing(), input.get_origin(), input.get_direction());
 };
-
 
 template<typename type, typename container>
 image<type,container> pad(const image<type,container> & input, std::vector<int> pre, std::vector<int> post)
@@ -886,10 +872,32 @@ image<type,container> pad(const image<type,container> & input, std::vector<int> 
     typename image<type,container>::pointer output;
     if (input.get_dimension() == 2){ output = image<type,container>::new_pointer(w+extra[0], h+extra[1]); };
     if (input.get_dimension() == 3){ output = image<type,container>::new_pointer(w+extra[0], h+extra[1], l+extra[2]); };
+    output->zeros();
+    // output->print();
 
     container::pad(input.get_data(), output->get_data(), input.get_size(), pre, post);
     output->set_sod_parameters(input.get_spacing(), input.get_origin(), input.get_direction());
     return *output;
+};
+
+template<typename type, typename container>
+std::shared_ptr<image<type,container>> pad(std::shared_ptr<image<type,container>> input, std::vector<int> pre, std::vector<int> post)
+{
+    int w = input->get_width();
+    int h = input->get_height();
+    int l = input->get_length();
+    std::vector<int> extra(pre.size(),0);
+    for (int i = 0; i < extra.size(); i++){ extra[i] = pre[i]+post[i]; };
+    
+    typename image<type,container>::pointer output;
+    if (input->get_dimension() == 2){ output = image<type,container>::new_pointer(w+extra[0], h+extra[1]); };
+    if (input->get_dimension() == 3){ output = image<type,container>::new_pointer(w+extra[0], h+extra[1], l+extra[2]); };
+    output->zeros();
+    // output->print();
+
+    container::pad(input->get_data(), output->get_data(), input->get_size(), pre, post);
+    output->set_sod_parameters(input->get_spacing(), input->get_origin(), input->get_direction());
+    return output;
 };
 
 template<typename type, typename container>
@@ -910,134 +918,208 @@ image<type,container> unpad(const image<type,container> & input, std::vector<int
     return *output;
 };
 
-/*
-template<typename type>
-image<type> complex2real(const image<std::complex<type>> & input)
-{
-    int d = input.get_dimension();
-    int N = input.get_total_elements();
-    std::complex<type> * p1 = input.ptr();
+// template<typename type>
+// image<type> complex2real(const image<std::complex<type>> & input)
+// {
+//     int d = input.get_dimension();
+//     int N = input.get_total_elements();
+//     std::complex<type> * p1 = input.ptr();
 
-    image<type> result(input.get_size());
+//     image<type> result(input.get_size());
     
-    type * p2 = result.ptr();
+//     type * p2 = result.ptr();
 
-    for (int i = 0; i < N; i++)
-    {
-        p2[i] = std::real(p1[i]);
-    };
-    return result;
+//     for (int i = 0; i < N; i++)
+//     {
+//         p2[i] = std::real(p1[i]);
+//     };
+//     return result;
+// };
+
+template<typename type, typename container>
+typename image<type,container>::vector fft(const image<type,container> & input)
+{
+    // auto in_real = input.copy();
+    auto in_img = input.mimic();
+    in_img->zeros();
+    // input.get_data()->print_data("in fft");
+    // in_img->print();
+
+    auto out_real = input.mimic();
+    auto out_img = input.mimic();
+
+    typename container::vector vin = {input.get_data(), in_img->get_data()};
+    typename container::vector vout = {out_real->get_data(), out_img->get_data()};
+
+    // vin[0]->print_data("vin0"); vin[1]->print_data("vin1");
+    container::fft(vin, vout, input.get_size(), true);
+    // vout[0]->print_data("vout0"); vout[1]->print_data("vout1");
+    
+    typename image<type,container>::vector output = {out_real, out_img};
+    return output;
 };
 
-template <typename type, typename container>
-image<std::complex<type>> fft(const image<type> & input)
+template<typename type, typename container>
+typename image<type,container>::vector fft(std::shared_ptr<image<type,container>> input)
 {
-    int w = input.get_width();
-    int h = input.get_height();
-    int N = input.get_total_elements();
-    fftw_complex in[N], out[N];
-    type * p1 = input.ptr();
+    // auto in_real = input.copy();
+    // std::cout << "data ";
+    auto in_img = input->mimic();
+    in_img->zeros();
 
-    for (int i = 0; i < N; i++)
-    {
-        in[i][0] = p1[i];
-        in[i][1] = 0;
-    };
+    auto out_real = input->mimic();
+    auto out_img = input->mimic();
 
-    fftw_plan p_fft;
-    p_fft = fftw_plan_dft_2d(h, w, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_execute(p_fft);
-    fftw_destroy_plan(p_fft);
+    typename container::vector vin = {input->get_data(), in_img->get_data()};
+    typename container::vector vout = {out_real->get_data(), out_img->get_data()};
 
-    image<std::complex<type>> result(w,h);
-    std::complex<type> * p2 = result.ptr();    
-    for (int i = 0; i < N; i++)
-    {
-        p2[i] = std::complex(out[i][0],out[i][1]);
-    };
-
-    return result;
+    // vin[0]->print_data("vin0"); vin[1]->print_data("vin1");
+    // std::cout << "vin 0:" << (*(vin[0]->get_buffer()))() << std::endl;
+    // std::cout << "vin 1:" << (*(vin[1]->get_buffer()))() << std::endl;
+    // std::cout << "vin and vout set ";
+    container::fft(vin, vout, input->get_size(), true);
+    // vout[0]->print_data("vout0"); vout[1]->print_data("vout1");
+    // std::cout << "vout 0:" << (*(vout[0]->get_buffer()))() << std::endl;
+    // std::cout << "vout 1:" << (*(vout[1]->get_buffer()))() << std::endl;
+    
+    typename image<type,container>::vector output = {out_real, out_img};
+    return output;
 };
 
-template <typename type, typename container>
-image<std::complex<type>> ifft(const image<std::complex<type>> & input)
+template<typename type, typename container>
+image<type,container> ifft(const std::vector<std::shared_ptr<image<type,container>>> & input)
 {
-    int w = input.get_width();
-    int h = input.get_height();
-    int N = input.get_total_elements();
-    fftw_complex in[N], out[N];
-    std::complex<type> * p1 = input.ptr();
+    const typename image<type,container>::pointer * p = input.data();
+    auto out_real = p[0]->mimic();
+    auto out_img = p[1]->mimic();
 
-    std::complex<type> v;
-    for (int i = 0; i < N; i++)
-    {
-        v = p1[i];
-        in[i][0] = v.real();
-        in[i][1] = v.imag();
-    };
+    typename container::vector vin = {p[0]->get_data(), p[1]->get_data()};
+    typename container::vector vout = {out_real->get_data(), out_img->get_data()};
 
-    fftw_plan p_fft;
-    p_fft = fftw_plan_dft_2d(h, w, in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
-    fftw_execute(p_fft);
-    fftw_destroy_plan(p_fft);
-
-    image<std::complex<type>> result(w,h);
-    std::complex<type> * p2 = result.ptr();    
-    for (int i = 0; i < N; i++)
-    {
-        p2[i] = std::complex(out[i][0]/N,out[i][1]/N);
-    };
-
-    return result;
+    // vin[0]->print_data("vin0"); vin[1]->print_data("vin1");
+    container::fft(vin, vout, p[0]->get_size(), false);
+    // vout[0]->print_data("vout0"); vout[1]->print_data("vout1");
+    
+    // typename image<type,container>::vector output = {out_real, out_img};
+    // return output;
+    return *out_real;
 };
 
-template<typename type>
-typename image<type,container>::vector gradient(const image<type> & input)
+template<typename type, typename container>
+typename image<type,container>::vector complex_product(typename image<type,container>::vector a, typename image<type,container>::vector b)
 {
-    std::vector<int> none{0,0};    
-    std::vector<int> extra{1,1};
-    image<type> input_pad = pad(input, none, extra);
+    auto real = image<type,container>::new_pointer();
+    auto img = image<type,container>::new_pointer();
+    *real = (*a[0])*(*b[0]) - (*a[1])*(*b[1]);
+    *img = (*a[0])*(*b[1]) + (*a[1])*(*b[0]);
+    typename image<type,container>::vector output = {real, img};
+    return output;
+}
+
+
+template<typename type, typename container>
+typename image<type,container>::vector gradient_fft(const image<type,container> & input)
+{
+    // padding
+    int d = input.get_dimension();
+    std::vector<int> none(d);
+    std::vector<int> extra(d);
+    int a = 0;
+    for(int i = 0; i < d; i++)
+    {
+        none[i] = 0;
+        extra[i] = a;
+    };
+    image<type,container> input_pad = pad(input, none, extra);
     // input_pad.print_data();
+
+    // input fft
     int w = input_pad.get_width();
     int h = input_pad.get_height();
+    int l = input_pad.get_length();
+    auto fin = fft(input_pad);
+    // fin[0]->print_data("fin");
+    // fin[1]->print_data("fin");
+    input_pad.clear();                      // free memory
 
-    // derivative x
-    image<type> dx(w,h);
-    type * pdx = dx.ptr();
-    pdx[0] = 0.5;
-    pdx[1] = 0;
-    pdx[2] = -0.5;
-    // dx.print_data();
+    type der[3] = {0.5, 0.0, -0.5};
+    typename image<type,container>::vector output(d);
+    for(int i = 0; i < d; i++) output[i] = image<type,container>::new_pointer();
 
-    // derivative y
-    image<type> dy(w,h);
-    type * pdy = dy.ptr();
-    pdy[0] = 0.5;
-    pdy[w] = 0.0;
-    pdy[2*w] = -0.5;
-    // dy.print_data();
+    // didx
+    auto dx = input_pad.mimic();
+    dx->zeros();
+    dx->get_data()->read_ram(der, 3, 0);
+    // dx->print_data();
+    auto didx = ifft(complex_product<type,container>(fin, fft(*dx)));
+    dx->clear();
+    if(d == 2)          *output[0] = unpad(didx, std::vector<int>{a,0}, std::vector<int>{0,a});
+    else if (d == 3)    *output[0] = unpad(didx, std::vector<int>{a,0,0}, std::vector<int>{0,a,a});
+    // *output[0] = didx;
 
-    typename image<type,container>::vector grad(2);
-    typename image<type,container>::pointer didx(new image<type>(w,h));
-    typename image<type,container>::pointer didy(new image<type>(w,h));
-    grad[0] = didx;
-    grad[1] = didy;
+    // didy
+    auto dy = input_pad.mimic();
+    dy->zeros();
+    dy->get_data()->read_ram(der, 1, 0);
+    dy->get_data()->read_ram(der+1, 1, w);
+    dy->get_data()->read_ram(der+2, 1, 2*w);
+    auto didy = ifft(complex_product<type,container>(fin, fft(*dy)));
+    dy->clear();
+    if(d == 2)          *output[1] = unpad(didy, std::vector<int>{0,a}, std::vector<int>{a,0});
+    else if (d == 3)    *output[1] = unpad(didy, std::vector<int>{0,a,0}, std::vector<int>{a,0,a});
+    // *output[1] = didy;
 
-    // image<type> didx(w,h);
-    image<type> didx_ = complex2real(ifft(fft(input_pad)*fft(dx)));
-    *grad[0] = unpad(didx_, std::vector<int>{1,0}, std::vector<int>{0,1});
-    // image<type> didx = unpad(didx_, std::vector<int>{1,0}, std::vector<int>{0,1});
-
-    // image<type> didy(w,h);
-    image<type> didy_ = complex2real(ifft(fft(input_pad)*fft(dy)));
-    *grad[1] = unpad(didy_, std::vector<int>{0,1}, std::vector<int>{1,0});
-    // image<type> didy = unpad(didy_, std::vector<int>{0,1}, std::vector<int>{1,0});
-
-    // return didx;
-    // return didy;
-    return grad;
+    if(d == 3)
+    {
+        auto dz = input_pad.mimic();
+        dz->zeros();
+        dz->get_data()->read_ram(der, 1, 0);
+        dz->get_data()->read_ram(der+1, 1, w*h);
+        dz->get_data()->read_ram(der+2, 1, 2*w*h);
+        auto didz = ifft(complex_product<type,container>(fin, fft(*dz)));
+        dz->clear();
+        *output[2] = unpad(didz, std::vector<int>{0,0,2}, std::vector<int>{2,2,0});
+        // *output[2] = didz;
+    };
+    return output;
 };
-*/
+
+template<typename type, typename container>
+std::shared_ptr<image<type,container>> gradientx(std::shared_ptr<image<type,container>> input)
+{
+    auto output = input->mimic();
+    container::gradientx(input->get_data(), output->get_data(), input->get_size() );
+    return output;
+}
+
+template<typename type, typename container>
+std::shared_ptr<image<type,container>> gradienty(std::shared_ptr<image<type,container>> input)
+{
+    auto output = input->mimic();
+    container::gradienty(input->get_data(), output->get_data(), input->get_size() );
+    return output;
+}
+
+template<typename type, typename container>
+std::shared_ptr<image<type,container>> gradientz(std::shared_ptr<image<type,container>> input)
+{
+    auto output = input->mimic();
+    container::gradientz(input->get_data(), output->get_data(), input->get_size() );
+    return output;
+}
+
+template<typename type, typename container>
+typename image<type,container>::vector gradient(std::shared_ptr<image<type,container>> input)
+{
+    int d = input->get_dimension();
+    typename image<type,container>::vector output(d);
+    output[0] = gradientx(input);
+    output[1] = gradienty(input);
+    if (d == 3) output[2] = gradientz(input);
+    return output;
+}
+
+
 
 // ===========================================
 // Interface Functions
@@ -1045,8 +1127,8 @@ typename image<type,container>::vector gradient(const image<type> & input)
 template <typename type, typename container>
 void image<type,container>::read(std::string file_name)
 {
-    if (this->get_dimension() == 2) { read_2d(file_name); };
-    if (this->get_dimension() == 3) { read_3d(file_name); };
+    if (this->get_dimension() == 2) { read_2d(file_name); }
+    else if (this->get_dimension() == 3) { read_3d(file_name); };
 };
 
 template <typename type, typename container>
@@ -1199,8 +1281,8 @@ void image<type,container>::read_3d(std::string file_name)
 template <typename type, typename container>
 void image<type,container>::write(std::string file_name)
 {
-    if (this->get_dimension() == 2) { write_2d(file_name); };
-    if (this->get_dimension() == 3) { write_3d(file_name); };
+    if (this->get_dimension() == 2) { write_2d(file_name); }
+    else if (this->get_dimension() == 3) { write_3d(file_name); };
 };
 
 template <typename type, typename container>
@@ -1355,41 +1437,6 @@ void image<type,container>::write_3d(std::string file_name)
     {
         std::cerr << "Error: " << error << std::endl;
     }
-};
-
-template <typename type, typename container>
-typename image<type,container>::pixels4 image<type,container>::neighbors4(int e)
-{
-    auto vv = std::make_unique<std::array<type,4>>();
-    // type * p = this->ptr();
-    int w = this->width;
-    (*vv)[0] = data->operator[](e);
-    (*vv)[1] = data->operator[](e+1);
-    (*vv)[2] = data->operator[](e+w);
-    (*vv)[3] = data->operator[](e+w+1);
-    // std::cout << "px:" << p[e] << " ";
-    return vv;
-};
-
-template <typename type, typename container>
-typename image<type,container>::pixels8 image<type,container>::neighbors8(int e)
-{
-    auto vv = std::make_unique<std::array<type,8>>();
-    // type * p = this->ptr();
-    int w = this->width;
-    int h = this->height;
-
-    (*vv)[0] = data->operator[](e);
-    (*vv)[1] = data->operator[](e+1);
-    (*vv)[2] = data->operator[](e+w);
-    (*vv)[3] = data->operator[](e+w+1);
-    
-    (*vv)[4] = data->operator[](e+w*h);
-    (*vv)[5] = data->operator[](e+1+w*h);
-    (*vv)[6] = data->operator[](e+w+w*h);
-    (*vv)[7] = data->operator[](e+w+1+w*h);
-    // std::cout << "px:" << p[e] << " ";
-    return vv;
 };
 
 }; //end namespace

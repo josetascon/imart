@@ -75,6 +75,12 @@ public:
     // Set Functions
     // ===========================================
     void set_data(container_pointer d);
+
+    // ===========================================
+    // Functions
+    // ===========================================
+    // Free memory. Use when temporary data objects are created and want to force memory cleaning before destruction
+    void clear();
 };
 
 
@@ -130,6 +136,13 @@ void data_object<type,container>::allocate(int total_elements)
 {
     data.reset();
     data = std::make_shared<container>(total_elements);
+};
+
+// Free memory
+template <typename type, typename container>
+void data_object<type,container>::clear()
+{
+    data.reset();
 };
 
 template <typename type, typename container>

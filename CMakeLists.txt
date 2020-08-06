@@ -23,7 +23,7 @@ include(${ITK_USE_FILE})
 find_package( OpenCL REQUIRED )
 
 
-set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL fftw3)
+set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL fftw3 clFFT)
 # set(link_targets OpenMP::OpenMP_CXX )
 
 # ===========================================
@@ -36,7 +36,7 @@ set (CMAKE_CXX_STANDARD 17)
 # ===========================================
 #                  Options
 # ===========================================
-option(BUILD_TESTS "Build the tests" ON)
+option(BUILD_TESTS "Build the tests" OFF)
 
 if(BUILD_TESTS)
    add_subdirectory(tests)

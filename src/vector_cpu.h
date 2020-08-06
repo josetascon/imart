@@ -14,6 +14,11 @@
 #include <random>       // std::random
 #include <cassert>      // assert
 #include <cmath>        // math functions
+#include <algorithm>    // std::max std::min
+// #include <complex>      // std::complex
+
+// fftw
+#include <fftw3.h>      // fft library
 
 // local libs
 #include "inherit.h"
@@ -74,8 +79,8 @@ public:
     // ===========================================
     // Memory Functions
     // ===========================================
-    void read_ram(type * p, int size);
-    void write_ram(type * p, int size);
+    void read_ram(type * p, int size, int offset = 0);
+    void write_ram(type * p, int size, int offset = 0);
 
     // ===========================================
     // Print Functions
@@ -144,6 +149,29 @@ public:
     static void pad(typename vector_cpu<type>::pointer input, typename vector_cpu<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post);
     static void unpad(typename vector_cpu<type>::pointer input, typename vector_cpu<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post);
 
+    static void affine_2d(typename vector_cpu<type>::pointer xi, typename vector_cpu<type>::pointer yi,
+                          typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo,
+                          typename vector_cpu<type>::pointer p);
+
+    static void affine_3d(typename vector_cpu<type>::pointer xi, typename vector_cpu<type>::pointer yi, typename vector_cpu<type>::pointer zi,
+                          typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo, typename vector_cpu<type>::pointer zo,
+                          typename vector_cpu<type>::pointer p);
+
+    static void affine_sod_2d(typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo,
+                              typename vector_cpu<type>::pointer xr, typename vector_cpu<type>::pointer yr,
+                              std::vector<double> & sod);
+    static void affine_sod_3d(typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo, typename vector_cpu<type>::pointer zo,
+                              typename vector_cpu<type>::pointer xr, typename vector_cpu<type>::pointer yr, typename vector_cpu<type>::pointer zr,
+                              std::vector<double> & sod);
+
+    static void  dfield_2d(typename vector_cpu<type>::pointer xi, typename vector_cpu<type>::pointer yi,
+                           typename vector_cpu<type>::pointer x, typename vector_cpu<type>::pointer y,
+                           typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo);
+
+    static void  dfield_3d(typename vector_cpu<type>::pointer xi, typename vector_cpu<type>::pointer yi, typename vector_cpu<type>::pointer zi,
+                           typename vector_cpu<type>::pointer x, typename vector_cpu<type>::pointer y, typename vector_cpu<type>::pointer z,
+                           typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo, typename vector_cpu<type>::pointer zo);
+
     static std::vector<typename vector_cpu<type>::pointer> grid2(int w, int h, std::vector<double> & sod);
     static std::vector<typename vector_cpu<type>::pointer> grid3(int w, int h, int l, std::vector<double> & sod);
 
@@ -160,6 +188,20 @@ public:
     static void linear3( typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo, typename vector_cpu<type>::pointer zo,
                    typename vector_cpu<type>::pointer imgr, typename vector_cpu<type>::pointer imgo,
                    std::vector<int> ref_size, std::vector<int> out_size);
+
+    static void fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward);
+
+    static void gradientx( typename vector_cpu<type>::pointer imgr,
+                           typename vector_cpu<type>::pointer imgo,
+                           std::vector<int> ref_size);
+
+    static void gradienty( typename vector_cpu<type>::pointer imgr,
+                           typename vector_cpu<type>::pointer imgo,
+                           std::vector<int> ref_size);
+
+    static void gradientz( typename vector_cpu<type>::pointer imgr,
+                           typename vector_cpu<type>::pointer imgo,
+                           std::vector<int> ref_size);
 
 };
 
@@ -233,9 +275,9 @@ std::vector<type> vector_cpu<type>::std_vector()
 // Memory Functions
 // ===========================================
 template <typename type>
-void vector_cpu<type>::read_ram(type * p, int s)
+void vector_cpu<type>::read_ram(type * p, int s, int offset)
 {
-    type * d = this->data();
+    type * d = this->data() + offset;
     for(int k=0; k<s; k++)
     {
         *(d+k) = *(p+k);
@@ -243,9 +285,9 @@ void vector_cpu<type>::read_ram(type * p, int s)
 };
 
 template <typename type>
-void vector_cpu<type>::write_ram(type * p, int s)
+void vector_cpu<type>::write_ram(type * p, int s, int offset)
 {
-    type * d = this->data();
+    type * d = this->data() + offset;
     for(int k=0; k<s; k++)
     {
         *(p+k) = *(d+k);
@@ -759,6 +801,180 @@ void vector_cpu<type>::unpad(typename vector_cpu<type>::pointer input, typename 
 };
 
 template <typename type>
+void vector_cpu<type>::affine_2d(typename vector_cpu<type>::pointer xi,
+                                 typename vector_cpu<type>::pointer yi,
+                                 typename vector_cpu<type>::pointer xo,
+                                 typename vector_cpu<type>::pointer yo,
+                                 typename vector_cpu<type>::pointer p)
+{
+    // raw pointers
+    type * px = xi->data();
+    type * py = yi->data();
+    type * pxo = xo->data();
+    type * pyo = yo->data();
+    type * pp = p->data();
+
+    type a0 = pp[0]; type a1 = pp[1];
+    type a2 = pp[2]; type a3 = pp[3];
+    type t0 = pp[4]; type t1 = pp[5];
+
+    // #pragma omp parallel for
+    int sz = xo->size();
+    for(int i = 0; i < sz; i++)
+    {
+        pxo[i] = a0*px[i] + a1*py[i] + t0;
+        pyo[i] = a2*px[i] + a3*py[i] + t1;
+    }
+};
+
+template <typename type>
+void vector_cpu<type>::affine_3d(typename vector_cpu<type>::pointer xi,
+                                 typename vector_cpu<type>::pointer yi,
+                                 typename vector_cpu<type>::pointer zi,
+                                 typename vector_cpu<type>::pointer xo,
+                                 typename vector_cpu<type>::pointer yo,
+                                 typename vector_cpu<type>::pointer zo,
+                                 typename vector_cpu<type>::pointer p)
+{
+    // raw pointers
+    type * px = xi->data();
+    type * py = yi->data();
+    type * pz = zi->data();
+
+    type * pxo = xo->data();
+    type * pyo = yo->data();
+    type * pzo = zo->data();
+
+    type * pp = p->data();
+    type a0 = pp[0]; type a1 = pp[1]; type a2 = pp[2];
+    type a3 = pp[3]; type a4 = pp[4]; type a5 = pp[5];
+    type a6 = pp[6]; type a7 = pp[7]; type a8 = pp[8];
+    type t0 = pp[9]; type t1 = pp[10]; type t2 = pp[11];
+
+    // #pragma omp parallel for
+    int sz = xo->size();
+    for(int i = 0; i < sz; i++)
+    {
+        pxo[i] = a0*px[i] + a1*py[i] + a2*pz[i] + t0;
+        pyo[i] = a3*px[i] + a4*py[i] + a5*pz[i] + t1;
+        pzo[i] = a6*px[i] + a7*py[i] + a8*pz[i] + t2;
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::affine_sod_2d(typename vector_cpu<type>::pointer xo,
+                                     typename vector_cpu<type>::pointer yo,
+                                     typename vector_cpu<type>::pointer xr,
+                                     typename vector_cpu<type>::pointer yr,
+                                     std::vector<double> & sod)
+{
+    // raw pointers
+    type * px = xo->data();
+    type * py = yo->data();
+    type * pxo = xr->data();
+    type * pyo = yr->data();
+
+    double s0 = sod[0]; double s1 = sod[1];
+    double o0 = sod[2]; double o1 = sod[3];
+    double d0 = sod[4]; double d1 = sod[5];
+    double d2 = sod[6]; double d3 = sod[7];
+
+    // #pragma omp parallel for
+    int sz = xo->size();
+    for(int i = 0; i < sz; i++)
+    {
+        pxo[i] = d0*s0*px[i] + d1*s1*py[i] + o0;
+        pyo[i] = d2*s0*px[i] + d3*s1*py[i] + o1;
+    }
+};
+
+template <typename type>
+void vector_cpu<type>::affine_sod_3d(typename vector_cpu<type>::pointer xo,
+                                     typename vector_cpu<type>::pointer yo,
+                                     typename vector_cpu<type>::pointer zo,
+                                     typename vector_cpu<type>::pointer xr,
+                                     typename vector_cpu<type>::pointer yr,
+                                     typename vector_cpu<type>::pointer zr,
+                                     std::vector<double> & sod)
+{
+    // raw pointers
+    type * px = xo->data();
+    type * py = yo->data();
+    type * pz = zo->data();
+
+    type * pxo = xr->data();
+    type * pyo = yr->data();
+    type * pzo = zr->data();
+
+    double s0 = sod[0]; double s1 = sod[1]; double s2 = sod[2];
+    double o0 = sod[3]; double o1 = sod[4]; double o2 = sod[5];
+    double d0 = sod[6]; double d1 = sod[7]; double d2 = sod[8];
+    double d3 = sod[9]; double d4 = sod[10]; double d5 = sod[11];
+    double d6 = sod[12]; double d7 = sod[13]; double d8 = sod[14];
+
+    // #pragma omp parallel for
+    int sz = xo->size();
+    for(int i = 0; i < sz; i++)
+    {
+        pxo[i] = d0*s0*px[i] + d1*s1*py[i] + d2*s2*pz[i] + o0;
+        pyo[i] = d3*s0*px[i] + d4*s1*py[i] + d5*s2*pz[i] + o1;
+        pzo[i] = d6*s0*px[i] + d7*s1*py[i] + d8*s2*pz[i] + o2;
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::dfield_2d(typename vector_cpu<type>::pointer xi, typename vector_cpu<type>::pointer yi,
+                                 typename vector_cpu<type>::pointer x, typename vector_cpu<type>::pointer y, 
+                                 typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo)
+{
+    // raw pointers
+    type * pxi = xi->data();
+    type * pyi = yi->data();
+
+    type * px = x->data();
+    type * py = y->data();
+
+    type * pxo = xo->data();
+    type * pyo = yo->data();
+
+    int sz = xo->size();
+    // #pragma omp parallel for
+    for(int i = 0; i < sz; i++)
+    {
+        pxo[i] = pxi[i] + px[i];
+        pyo[i] = pyi[i] + py[i];
+    }
+};
+
+template <typename type>
+void vector_cpu<type>::dfield_3d(typename vector_cpu<type>::pointer xi, typename vector_cpu<type>::pointer yi, typename vector_cpu<type>::pointer zi,
+                                 typename vector_cpu<type>::pointer x, typename vector_cpu<type>::pointer y, typename vector_cpu<type>::pointer z,
+                                 typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo, typename vector_cpu<type>::pointer zo)
+{
+    // raw pointers
+    type * pxi = xi->data();
+    type * pyi = yi->data();
+    type * pzi = zi->data();
+
+    type * px = x->data();
+    type * py = y->data();
+    type * pz = z->data();
+
+    type * pxo = xo->data();
+    type * pyo = yo->data();
+    type * pzo = zo->data();
+
+    int sz = xi->size();
+    // #pragma omp parallel for
+    for(int i = 0; i < sz; i++)
+    {
+        pxo[i] = pxi[i] + px[i];
+        pyo[i] = pyi[i] + py[i];
+        pzo[i] = pzi[i] + pz[i];
+    };
+};
+
+template <typename type>
 std::vector<typename vector_cpu<type>::pointer> vector_cpu<type>::grid2(int w, int h, std::vector<double> & sod)
 {
     int size = w*h;
@@ -858,7 +1074,7 @@ void vector_cpu<type>::nearest2( typename vector_cpu<type>::pointer xo,
         {
             int x = round(pxo[i + j*n0]);
             int y = round(pyo[i + j*n0]);
-            if(x > 0 && x < w && y > 0 && y < h)
+            if(x >= 0 && x < w && y >= 0 && y < h)
             {
                 pimgo[i + j*n0] = pimgr[x + y*w];
             };
@@ -892,7 +1108,7 @@ void vector_cpu<type>::nearest3( typename vector_cpu<type>::pointer xo,
                 int x = round(pxo[i + j*n0 + k*n0*n1]);
                 int y = round(pyo[i + j*n0 + k*n0*n1]);
                 int z = round(pzo[i + j*n0 + k*n0*n1]);
-                if(x > 0 && x < w && y > 0 && y < h && z > 0 && z < l)
+                if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l)
                 {
                     pimgo[i + j*n0 + k*n0*n1] = pimgr[x + y*w + z*w*h];
                 };
@@ -925,12 +1141,18 @@ void vector_cpu<type>::linear2( typename vector_cpu<type>::pointer xo,
             int x = floor(xt);
             int y = floor(yt);
 
-            if(x > 0 && x < w && y > 0 && y < h)
+            if(x >= 0 && x < w && y >= 0 && y < h - 1)
             {
                 type dx = xt - (type)x;
                 type dy = yt - (type)y;
                 type dxdy = dx*dy;
                 type r = pimgr[x+y*w]*(1-dx-dy+dxdy) + pimgr[x+1+y*w]*(dx-dxdy) + pimgr[x+(y+1)*w]*(dy-dxdy) + pimgr[x+1+(y+1)*w]*dxdy;
+                pimgo[i + j*n0] = r;
+            }
+            else if(x >= 0 && x < w && y == h - 1) // border case
+            {
+                type dx = xt - (type)x;
+                type r = pimgr[x+y*w]*(1-dx) + pimgr[x+1+y*w]*(dx);
                 pimgo[i + j*n0] = r;
             };
         };
@@ -945,8 +1167,8 @@ void vector_cpu<type>::linear3( typename vector_cpu<type>::pointer xo,
                                 typename vector_cpu<type>::pointer imgo,
                                 std::vector<int> ref_size, std::vector<int> out_size)
 {
-    int n0 = out_size[0]; int n1 = out_size[1]; int n2 = out_size[1];
-    int w = ref_size[0]; int h = ref_size[1]; int l = ref_size[1];
+    int n0 = out_size[0]; int n1 = out_size[1]; int n2 = out_size[2];
+    int w = ref_size[0]; int h = ref_size[1]; int l = ref_size[2];
 
     type * pxo = xo->data();
     type * pyo = yo->data();
@@ -966,8 +1188,7 @@ void vector_cpu<type>::linear3( typename vector_cpu<type>::pointer xo,
                 int x = floor(xt);
                 int y = floor(yt);
                 int z = floor(zt);
-
-                if(x > 0 && x < w && y > 0 && y < h && z > 0 && z < l)
+                if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l - 1)
                 {
                     type dx = xt - (type)x;
                     type dy = yt - (type)y;
@@ -977,12 +1198,175 @@ void vector_cpu<type>::linear3( typename vector_cpu<type>::pointer xo,
                     type dz = zt - (type)z;
                     type r = rv*(1-dz) + rw*dz;
                     pimgo[i + j*n0 + k*n0*n1] = r;
+                }
+                else if(x >= 0 && x < w && y >= 0 && y < h && z == l - 1) // border case
+                {
+                    type dx = xt - (type)x;
+                    type dy = yt - (type)y;
+                    type dxdy = dx*dy;
+                    type rv = pimgr[x+y*w+z*w*h]*(1-dx-dy+dxdy) + pimgr[x+1+y*w+z*w*h]*(dx-dxdy) + pimgr[x+(y+1)*w+z*w*h]*(dy-dxdy) + pimgr[x+1+(y+1)*w+z*w*h]*dxdy;
+                    pimgo[i + j*n0 + k*n0*n1] = rv;
                 };
             };
         };
     };
 };
 
+template <typename type>
+void vector_cpu<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward)
+{
+    // fftw have limitations in size
+    // fftw max 2d size 511*511
+    int method;
+    if (forward) method = FFTW_FORWARD;
+    else method = FFTW_BACKWARD;
+
+    // std::cout << "fft ";
+    int dim = size.size();
+    int N = 1;
+    for(int i = 0; i < dim; i++) N *= size[i];
+    
+    fftw_complex in[N], out[N];
+    type * p1 = input[0]->data();
+    type * p2 = input[1]->data();
+
+    for (int i = 0; i < N; i++)
+    {
+        in[i][0] = p1[i];
+        in[i][1] = p2[i];
+    };
+
+    fftw_plan p_fft;
+    // std::cout << "plan ";
+    if (dim == 2) p_fft = fftw_plan_dft_2d(size[1], size[0], in, out, method, FFTW_ESTIMATE);
+    if (dim == 3) p_fft = fftw_plan_dft_3d(size[2], size[1], size[0], in, out, method, FFTW_ESTIMATE);
+    // std::cout << "plan ok ";
+    fftw_execute(p_fft);
+    fftw_destroy_plan(p_fft);
+
+    type * pre = output[0]->data();
+    type * pim = output[1]->data();
+    if (forward)
+    {
+        for (int i = 0; i < N; i++)
+        {
+            pre[i] = out[i][0];
+            pim[i] = out[i][1];
+        };
+    }
+    else // if ifft divide by N
+    {
+        for (int i = 0; i < N; i++)
+        {
+            pre[i] = out[i][0]/N;
+            pim[i] = out[i][1]/N;
+        };
+    }
+};
+
+template <typename type>
+void vector_cpu<type>::gradientx(typename vector_cpu<type>::pointer imgr,
+                                 typename vector_cpu<type>::pointer imgo,
+                                 std::vector<int> ref_size)
+{
+    type * pimgr = imgr->data();
+    type * pimgo = imgo->data();
+
+    if (ref_size.size() == 2)
+    {
+        int n0 = ref_size[0]; int n1 = ref_size[1];
+        for(int j = 0; j < n1; j++)
+        {
+            for(int i = 0; i < n0; i++)
+            {
+                if(i == 0)          pimgo[i + j*n0] = pimgr[i+1 + j*n0] - pimgr[i + j*n0];
+                else if (i == n0-1) pimgo[i + j*n0] = pimgr[i + j*n0] - pimgr[i-1 + j*n0];
+                else      pimgo[i + j*n0] = 0.5*pimgr[i+1 + j*n0] - 0.5*pimgr[i-1 + j*n0];
+            };
+        };
+    }
+    else if (ref_size.size() == 3)
+    {
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[1];
+        for(int k = 0; k < n2; k++)
+        {
+            for(int j = 0; j < n1; j++)
+            {
+                for(int i = 0; i < n0; i++)
+                {
+                    if(i == 0)          pimgo[i + j*n0 + k*n0*n1] = pimgr[i+1 + j*n0 + k*n0*n1] - pimgr[i + j*n0 + k*n0*n1];
+                    else if (i == n0-1) pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + k*n0*n1] - pimgr[i-1 + j*n0 + k*n0*n1];
+                    else      pimgo[i + j*n0 + k*n0*n1] = 0.5*pimgr[i+1 + j*n0 + k*n0*n1] - 0.5*pimgr[i-1 + j*n0 + k*n0*n1];
+                };
+            };
+        };
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::gradienty(typename vector_cpu<type>::pointer imgr,
+                                 typename vector_cpu<type>::pointer imgo,
+                                 std::vector<int> ref_size)
+{
+    type * pimgr = imgr->data();
+    type * pimgo = imgo->data();
+
+    if (ref_size.size() == 2)
+    {
+        int n0 = ref_size[0]; int n1 = ref_size[1];
+        for(int j = 0; j < n1; j++)
+        {
+            for(int i = 0; i < n0; i++)
+            {
+                if(j == 0)          pimgo[i + j*n0] = pimgr[i + (j+1)*n0] - pimgr[i + j*n0];
+                    else if (j == n1-1) pimgo[i + j*n0] = pimgr[i + j*n0] - pimgr[i + (j-1)*n0];
+                    else    pimgo[i + j*n0] = 0.5*pimgr[i + (j+1)*n0] - 0.5*pimgr[i + (j-1)*n0];
+            };
+        };
+    }
+    else if (ref_size.size() == 3)
+    {
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[1];
+        for(int k = 0; k < n2; k++)
+        {
+            for(int j = 0; j < n1; j++)
+            {
+                for(int i = 0; i < n0; i++)
+                {
+                    if(j == 0)          pimgo[i + j*n0 + k*n0*n1] = pimgr[i + (j+1)*n0 + k*n0*n1] - pimgr[i + j*n0 + k*n0*n1];
+                    else if (j == n1-1) pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + k*n0*n1] - pimgr[i + (j-1)*n0 + k*n0*n1];
+                    else    pimgo[i + j*n0 + k*n0*n1] = 0.5*pimgr[i + (j+1)*n0 + k*n0*n1] - 0.5*pimgr[i + (j-1)*n0 + k*n0*n1];
+                };
+            };
+        };
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::gradientz(typename vector_cpu<type>::pointer imgr,
+                                 typename vector_cpu<type>::pointer imgo,
+                                 std::vector<int> ref_size)
+{
+    type * pimgr = imgr->data();
+    type * pimgo = imgo->data();
+
+    if (ref_size.size() == 3)
+    {
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[1];
+        for(int k = 0; k < n2; k++)
+        {
+            for(int j = 0; j < n1; j++)
+            {
+                for(int i = 0; i < n0; i++)
+                {
+                    if(k == 0)          pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + (k+1)*n0*n1] - pimgr[i + j*n0 + k*n0*n1];
+                    else if (k == n2-1) pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + k*n0*n1] - pimgr[i + j*n0 + (k-1)*n0*n1];
+                    else    pimgo[i + j*n0 + k*n0*n1] = 0.5*pimgr[i + j*n0 + (k+1)*n0*n1] - 0.5*pimgr[i + j*n0 + (k-1)*n0*n1];
+                };
+            };
+        };
+    };
+};
 
 }; //end namespace
 

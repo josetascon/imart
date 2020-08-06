@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-01-28 09:41:41
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-16 13:13:48
+* @Last Modified time: 2020-07-20 15:17:12
 */
 
 // std libs
@@ -11,7 +11,6 @@
 
 // local libs
 #include "../src/image.h"
-#include "../src/vector_cpu.h"
 #include "../src/utils/timer.h"
 
 using namespace imart;
