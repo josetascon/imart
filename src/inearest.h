@@ -20,7 +20,7 @@ namespace imart
 {
 
 // Class linear interpolator
-template <typename type, typename container>
+template <typename type, typename container=vector_cpu<type>>
 class inearest: public inherit<inearest<type,container>, interpolator<type,container>>
 {
 public:
@@ -29,12 +29,11 @@ public:
     using pointer = std::shared_ptr<self>;
     using vector  = std::vector<self::pointer>;
 
-    using interpolator<type,container>::_default_;
-    using interpolator<type,container>::region;
+    // Inherited variables
     using interpolator<type,container>::image_reference;
     using interpolator<type,container>::image_output;
-    using interpolator<type,container>::x_reference;
     using interpolator<type,container>::x_output;
+    using interpolator<type,container>::_default_;
 
     using inherit<inearest<type,container>, 
                   interpolator<type,container>>::inherit;
@@ -44,11 +43,6 @@ protected:
     // ===========================================
     // Functions
     // ===========================================
-    void boundaries2();
-    void boundaries3();
-    int search_(type x, type y);
-    int search_(type x, type y, type z);
-
     typename image<type,container>::pointer nearest2(const typename grid<type,container>::pointer xout);
     typename image<type,container>::pointer nearest3(const typename grid<type,container>::pointer xout);
 
@@ -56,7 +50,11 @@ public:
     // ===========================================
     // Create Functions
     // ===========================================
-    inearest(typename image<type,container>::pointer imgref, typename grid<type,container>::pointer xref);
+    inearest() : inherit<inearest<type,container>, interpolator<type,container>>()
+                 { this->class_name = "nearest interpolator"; };
+    inearest(int d) : inherit<inearest<type,container>, interpolator<type,container>>(d)
+                 { this->class_name = "linear interpolator"; };
+    inearest(typename image<type,container>::pointer imgref);
 
     // ===========================================
     // Functions
@@ -78,16 +76,17 @@ using inearest_gpu = inearest<type,vector_ocl<type>>;
 // ===========================================
 // Constructor
 // ===========================================
+// template <typename type, typename container>
+// inearest<type,container>::inearest(typename image<type,container>::pointer imgref, typename grid<type,container>::pointer xref)
 template <typename type, typename container>
-inearest<type,container>::inearest(typename image<type,container>::pointer imgref, typename grid<type,container>::pointer xref)
+inearest<type,container>::inearest(typename image<type,container>::pointer imgref)
 {
-    assert(imgref->get_dimension() == xref->get_dimension());
-    
+    // assert(imgref->get_dimension() == xref->get_dimension());
     this->class_name = "nearest interpolator";
     int d = imgref->get_dimension();
-    init(d);
+    this->init(d);
     image_reference = imgref;
-    x_reference = xref;
+    // x_reference = xref;
 };
 
 // ===========================================
@@ -99,6 +98,10 @@ typename image<type,container>::pointer inearest<type,container>::apply(const ty
     auto a = image<type,container>::new_pointer(xout->get_dimension());
     if(xout->get_dimension() == 2){ a = nearest2(xout); };
     if(xout->get_dimension() == 3){ a = nearest3(xout); };
+
+    // update process variables
+    // x_output = xout; // update x_output
+    // image_out = a;  // update image_out
     return a;
 };
 
@@ -118,10 +121,13 @@ typename image<type,container>::pointer inearest<type,container>::nearest2(const
     typename image<type,container>::pointer xo = (xout->ptr()[0]);   // raw pointer to
     typename image<type,container>::pointer yo = (xout->ptr()[1]);   // input grid coordinates
 
-    // Future step
-    // convert xout to x_reference
+    // convert xout to x_reference (world to image coordinates)
+    std::vector<double> sod = image_reference->get_sod_inverse();
+    auto xro = image<type,container>::new_pointer(xo->get_size());
+    auto yro = image<type,container>::new_pointer(yo->get_size());
+    container::affine_sod_2d(xo->get_data(), yo->get_data(), xro->get_data(), yro->get_data(), sod);
 
-    container::nearest2(xo->get_data(),yo->get_data(),image_reference->get_data(),
+    container::nearest2(xro->get_data(),yro->get_data(),image_reference->get_data(),
                 image_out->get_data(), image_reference->get_size(), xout->get_size() );
     // image_out->set_data(imgo);
 
@@ -145,10 +151,15 @@ typename image<type,container>::pointer inearest<type,container>::nearest3(const
     typename image<type,container>::pointer yo = (xout->ptr()[1]);   // input grid coordinates
     typename image<type,container>::pointer zo = (xout->ptr()[2]);
 
-    // Future step
-    // convert xout to x_reference
+    // convert xout to x_reference (world to image coordinates)
+    std::vector<double> sod = image_reference->get_sod_inverse();
+    auto xro = image<type,container>::new_pointer(xo->get_size());
+    auto yro = image<type,container>::new_pointer(yo->get_size());
+    auto zro = image<type,container>::new_pointer(zo->get_size());
+    container::affine_sod_3d(xo->get_data(), yo->get_data(), zo->get_data(),
+                             xro->get_data(), yro->get_data(), zro->get_data(), sod);
 
-    container::nearest3(xo->get_data(),yo->get_data(), zo->get_data(), image_reference->get_data(),
+    container::nearest3(xro->get_data(),yro->get_data(), zro->get_data(), image_reference->get_data(),
                 image_out->get_data(), image_reference->get_size(), xout->get_size() );
     // image_out->set_data(imgo);
 

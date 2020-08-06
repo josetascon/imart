@@ -70,6 +70,7 @@ public:
     std::vector<double> get_origin() const;
     std::vector<double> get_direction() const;
     std::vector<double> get_sod_parameters() const;
+    std::vector<double> get_sod_inverse() const;
 
     // ===========================================
     // Set Functions
@@ -197,6 +198,46 @@ std::vector<double> space_object::get_sod_parameters() const
     return sod;
 };
 
+std::vector<double> space_object::get_sod_inverse() const
+{
+    std::vector<double> sod(spacing.size()+origin.size()+direction.size());
+    const double * s = spacing.data();
+    const double * o = origin.data();
+    const double * d = direction.data();
+    double * p = sod.data();
+    
+    if (dim == 2)
+    {
+        p[0] = 1/s[0];
+        p[1] = 1/s[1];
+        p[2] = (d[1]*o[1] - d[3]*o[0])/(d[0]*d[3]*s[0] - d[1]*d[2]*s[0]);
+        p[3] = -(d[0]*o[1] - d[2]*o[0])/(d[0]*d[3]*s[1] - d[1]*d[2]*s[1]);
+        p[4] = d[3]/(d[0]*d[3] - d[1]*d[2]);
+        p[5] = -d[1]/(d[0]*d[3] - d[1]*d[2]);
+        p[6] = -d[2]/(d[0]*d[3] - d[1]*d[2]);
+        p[7] = d[0]/(d[0]*d[3] - d[1]*d[2]);
+    }
+    else if (dim == 3)
+    {
+        p[0] = 1/s[0];
+        p[1] = 1/s[1];
+        p[2] = 1/s[2];
+        p[3] = -(d[1]*d[5]*o[2] - d[1]*d[8]*o[1] - d[2]*d[4]*o[2] + d[2]*d[7]*o[1] + d[4]*d[8]*o[0] - d[5]*d[7]*o[0])/(d[0]*d[4]*d[8]*s[0] - d[0]*d[5]*d[7]*s[0] - d[1]*d[3]*d[8]*s[0] + d[1]*d[5]*d[6]*s[0] + d[2]*d[3]*d[7]*s[0] - d[2]*d[4]*d[6]*s[0]);
+        p[4] = (d[0]*d[5]*o[2] - d[0]*d[8]*o[1] - d[2]*d[3]*o[2] + d[2]*d[6]*o[1] + d[3]*d[8]*o[0] - d[5]*d[6]*o[0])/(d[0]*d[4]*d[8]*s[1] - d[0]*d[5]*d[7]*s[1] - d[1]*d[3]*d[8]*s[1] + d[1]*d[5]*d[6]*s[1] + d[2]*d[3]*d[7]*s[1] - d[2]*d[4]*d[6]*s[1]);
+        p[5] = -(d[0]*d[4]*o[2] - d[0]*d[7]*o[1] - d[1]*d[3]*o[2] + d[1]*d[6]*o[1] + d[3]*d[7]*o[0] - d[4]*d[6]*o[0])/(d[0]*d[4]*d[8]*s[2] - d[0]*d[5]*d[7]*s[2] - d[1]*d[3]*d[8]*s[2] + d[1]*d[5]*d[6]*s[2] + d[2]*d[3]*d[7]*s[2] - d[2]*d[4]*d[6]*s[2]);
+        p[6] = (d[4]*d[8] - d[5]*d[7])/(d[0]*d[4]*d[8] - d[0]*d[5]*d[7] - d[1]*d[3]*d[8] + d[1]*d[5]*d[6] + d[2]*d[3]*d[7] - d[2]*d[4]*d[6]);
+        p[7] = -(d[1]*d[8] - d[2]*d[7])/(d[0]*d[4]*d[8] - d[0]*d[5]*d[7] - d[1]*d[3]*d[8] + d[1]*d[5]*d[6] + d[2]*d[3]*d[7] - d[2]*d[4]*d[6]);
+        p[8] = (d[1]*d[5] - d[2]*d[4])/(d[0]*d[4]*d[8] - d[0]*d[5]*d[7] - d[1]*d[3]*d[8] + d[1]*d[5]*d[6] + d[2]*d[3]*d[7] - d[2]*d[4]*d[6]);
+        p[9] = -(d[3]*d[8] - d[5]*d[6])/(d[0]*d[4]*d[8] - d[0]*d[5]*d[7] - d[1]*d[3]*d[8] + d[1]*d[5]*d[6] + d[2]*d[3]*d[7] - d[2]*d[4]*d[6]);
+        p[10] = (d[0]*d[8] - d[2]*d[6])/(d[0]*d[4]*d[8] - d[0]*d[5]*d[7] - d[1]*d[3]*d[8] + d[1]*d[5]*d[6] + d[2]*d[3]*d[7] - d[2]*d[4]*d[6]);
+        p[11] = -(d[0]*d[5] - d[2]*d[3])/(d[0]*d[4]*d[8] - d[0]*d[5]*d[7] - d[1]*d[3]*d[8] + d[1]*d[5]*d[6] + d[2]*d[3]*d[7] - d[2]*d[4]*d[6]);
+        p[12] = (d[3]*d[7] - d[4]*d[6])/(d[0]*d[4]*d[8] - d[0]*d[5]*d[7] - d[1]*d[3]*d[8] + d[1]*d[5]*d[6] + d[2]*d[3]*d[7] - d[2]*d[4]*d[6]);
+        p[13] = -(d[0]*d[7] - d[1]*d[6])/(d[0]*d[4]*d[8] - d[0]*d[5]*d[7] - d[1]*d[3]*d[8] + d[1]*d[5]*d[6] + d[2]*d[3]*d[7] - d[2]*d[4]*d[6]);
+        p[14] = (d[0]*d[4] - d[1]*d[3])/(d[0]*d[4]*d[8] - d[0]*d[5]*d[7] - d[1]*d[3]*d[8] + d[1]*d[5]*d[6] + d[2]*d[3]*d[7] - d[2]*d[4]*d[6]);
+    }
+    return sod;
+};
+
 // ===========================================
 // Set Functions
 // ===========================================
@@ -258,6 +299,9 @@ std::string space_object::info(std::string msg)
     ss << "]" << std::endl;
     ss << "Origin (mm): \t\t[ ";
     for(int i = 0; i < this->origin.size(); i++) { ss << this->origin[i] << " "; };
+    ss << "]" << std::endl;
+    ss << "Direction: \t\t[ ";
+    for(int i = 0; i < this->direction.size(); i++) { ss << this->direction[i] << " "; };
     ss << "]" << std::endl;
     return ss.str();
 };

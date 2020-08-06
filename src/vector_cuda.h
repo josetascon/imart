@@ -5,8 +5,8 @@
 * @Last Modified time: 2019-11-20 00:00:00
 */
 
-#ifndef __VECTOR_OCL_H__
-#define __VECTOR_OCL_H__
+#ifndef __VECTOR_CUDA_H__
+#define __VECTOR_CUDA_H__
 
 // std libs
 #include <iostream>     // std::cout
@@ -15,7 +15,6 @@
 
 // opencl libs
 #include <CL/cl.hpp>
-#include <clFFT.h>
 
 // local libs
 #include "object.h"
@@ -31,11 +30,11 @@ opencl_object cl_manager; // manager of vector ocl;
 
 // Class object
 template <typename type>
-class vector_ocl: public inherit<vector_ocl<type>, object>
+class vector_cuda: public inherit<vector_cuda<type>, object>
 {
 public:
     //Type definitions
-    using self    = vector_ocl;
+    using self    = vector_cuda;
     using pointer = std::shared_ptr<self>;
     using vector  = std::vector<self::pointer>;
 
@@ -67,19 +66,19 @@ public:
     // ===========================================
     // Constructor Functions
     // ===========================================
-    vector_ocl();                               // constructor empty
-    vector_ocl(int s);                          // constructor size
-    vector_ocl(int s, type value);              // constructor assign
-    vector_ocl(std::initializer_list<type> list);
-    vector_ocl(const vector_ocl & input);       // constructor clone
-    ~vector_ocl();                              // destructor empty
+    vector_cuda();                               // constructor empty
+    vector_cuda(int s);                          // constructor size
+    vector_cuda(int s, type value);              // constructor assign
+    vector_cuda(std::initializer_list<type> list);
+    vector_cuda(const vector_cuda & input);       // constructor clone
+    ~vector_cuda();                              // destructor empty
 
     // ===========================================
     // Create Functions
     // ===========================================
-    virtual void clone_(const vector_ocl & input);  // copy everything
-    virtual void copy_ (const vector_ocl & input);  // share data
-    virtual void mimic_(const vector_ocl & input);  // copy meta data
+    virtual void clone_(const vector_cuda & input);  // copy everything
+    virtual void copy_ (const vector_cuda & input);  // share data
+    virtual void mimic_(const vector_cuda & input);  // copy meta data
 
     // ===========================================
     // Get Functions
@@ -103,7 +102,7 @@ public:
     // ===========================================
     // Functions
     // ===========================================
-    void assert_size(const vector_ocl<type> & input);
+    void assert_size(const vector_cuda<type> & input);
 
     // ===========================================
     // Initialize Functions
@@ -120,13 +119,13 @@ public:
     type operator [](int e);
 
     // Vector to vector
-    vector_ocl<type> & operator = (const vector_ocl & input);
-    pointer operator = (const vector_ocl<type>::pointer input);
-    pointer operator + (const vector_ocl<type> & input);
-    pointer operator - (const vector_ocl<type> & input);
-    pointer operator * (const vector_ocl<type> & input);
-    pointer operator / (const vector_ocl<type> & input);
-    pointer operator ^ (const vector_ocl<type> & input);
+    vector_cuda<type> & operator = (const vector_cuda & input);
+    pointer operator = (const vector_cuda<type>::pointer input);
+    pointer operator + (const vector_cuda<type> & input);
+    pointer operator - (const vector_cuda<type> & input);
+    pointer operator * (const vector_cuda<type> & input);
+    pointer operator / (const vector_cuda<type> & input);
+    pointer operator ^ (const vector_cuda<type> & input);
 
     // // Scalar to vector
     pointer operator + (type scalar);
@@ -137,13 +136,13 @@ public:
 
     // Friend classes to support scalar to vector left hand side
     template<typename type_>
-    friend typename vector_ocl<type_>::pointer operator + (type_ scalar, vector_ocl<type_> & input);
+    friend typename vector_cuda<type_>::pointer operator + (type_ scalar, vector_cuda<type_> & input);
     template<typename type_>
-    friend typename vector_ocl<type_>::pointer operator - (type_ scalar, const vector_ocl<type_> & input);
+    friend typename vector_cuda<type_>::pointer operator - (type_ scalar, const vector_cuda<type_> & input);
     template<typename type_>
-    friend typename vector_ocl<type_>::pointer operator * (type_ scalar, vector_ocl<type_> & input);
+    friend typename vector_cuda<type_>::pointer operator * (type_ scalar, vector_cuda<type_> & input);
     template<typename type_>
-    friend typename vector_ocl<type_>::pointer operator / (type_ scalar, const vector_ocl<type_> & input);
+    friend typename vector_cuda<type_>::pointer operator / (type_ scalar, const vector_cuda<type_> & input);
 
     // ===========================================
     // Reduction functions
@@ -151,7 +150,7 @@ public:
     type min();
     type max();
     type sum();
-    type dot(const vector_ocl<type> & input);
+    type dot(const vector_cuda<type> & input);
     // type prod();     // may produce overflow error
 
     // // ===========================================
@@ -160,100 +159,100 @@ public:
     pointer normalize(type min = 0.0, type max = 1.0);
 
     template<typename type_cast>
-    typename vector_ocl<type_cast>::pointer cast();
+    typename vector_cuda<type_cast>::pointer cast();
 
-    static void pad(typename vector_ocl<type>::pointer input, typename vector_ocl<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post);
-    static void unpad(typename vector_ocl<type>::pointer input, typename vector_ocl<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post);
+    static void pad(typename vector_cuda<type>::pointer input, typename vector_cuda<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post);
+    static void unpad(typename vector_cuda<type>::pointer input, typename vector_cuda<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post);
 
-    static void affine_2d(typename vector_ocl<type>::pointer xi, typename vector_ocl<type>::pointer yi,
-                          typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo,
-                          typename vector_ocl<type>::pointer p);
+    static void affine_2d(typename vector_cuda<type>::pointer xi, typename vector_cuda<type>::pointer yi,
+                          typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo,
+                          typename vector_cuda<type>::pointer p);
 
-    static void affine_3d(typename vector_ocl<type>::pointer xi, typename vector_ocl<type>::pointer yi, typename vector_ocl<type>::pointer zi,
-                          typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo,
-                          typename vector_ocl<type>::pointer p);
+    static void affine_3d(typename vector_cuda<type>::pointer xi, typename vector_cuda<type>::pointer yi, typename vector_cuda<type>::pointer zi,
+                          typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo, typename vector_cuda<type>::pointer zo,
+                          typename vector_cuda<type>::pointer p);
 
-    static void affine_sod_2d(typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo,
-                              typename vector_ocl<type>::pointer xr, typename vector_ocl<type>::pointer yr, 
+    static void affine_sod_2d(typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo,
+                              typename vector_cuda<type>::pointer xr, typename vector_cuda<type>::pointer yr, 
                               std::vector<double> & sod);
-    static void affine_sod_3d(typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo,
-                              typename vector_ocl<type>::pointer xr, typename vector_ocl<type>::pointer yr, typename vector_ocl<type>::pointer zr,
+    static void affine_sod_3d(typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo, typename vector_cuda<type>::pointer zo,
+                              typename vector_cuda<type>::pointer xr, typename vector_cuda<type>::pointer yr, typename vector_cuda<type>::pointer zr,
                               std::vector<double> & sod);
 
-    static void dfield_2d(typename vector_ocl<type>::pointer xi, typename vector_ocl<type>::pointer yi,
-                          typename vector_ocl<type>::pointer x, typename vector_ocl<type>::pointer y,
-                          typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo);
+    static void dfield_2d(typename vector_cuda<type>::pointer xi, typename vector_cuda<type>::pointer yi,
+                          typename vector_cuda<type>::pointer x, typename vector_cuda<type>::pointer y,
+                          typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo);
 
-    static void dfield_3d(typename vector_ocl<type>::pointer xi, typename vector_ocl<type>::pointer yi, typename vector_ocl<type>::pointer zi,
-                          typename vector_ocl<type>::pointer x, typename vector_ocl<type>::pointer y, typename vector_ocl<type>::pointer z,
-                          typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo);
+    static void dfield_3d(typename vector_cuda<type>::pointer xi, typename vector_cuda<type>::pointer yi, typename vector_cuda<type>::pointer zi,
+                          typename vector_cuda<type>::pointer x, typename vector_cuda<type>::pointer y, typename vector_cuda<type>::pointer z,
+                          typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo, typename vector_cuda<type>::pointer zo);
 
-    static std::vector<typename vector_ocl<type>::pointer> grid2(int w, int h, std::vector<double> & sod);
-    static std::vector<typename vector_ocl<type>::pointer> grid3(int w, int h, int l, std::vector<double> & sod);
+    static std::vector<typename vector_cuda<type>::pointer> grid2(int w, int h, std::vector<double> & sod);
+    static std::vector<typename vector_cuda<type>::pointer> grid3(int w, int h, int l, std::vector<double> & sod);
 
-    static void nearest2( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo,
-                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+    static void nearest2( typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo,
+                        typename vector_cuda<type>::pointer imgr, typename vector_cuda<type>::pointer imgo,
                         std::vector<int> ref_size, std::vector<int> out_size);
-    static void nearest3( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo,
-                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+    static void nearest3( typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo, typename vector_cuda<type>::pointer zo,
+                        typename vector_cuda<type>::pointer imgr, typename vector_cuda<type>::pointer imgo,
                         std::vector<int> ref_size, std::vector<int> out_size);
 
-    static void linear2( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo,
-                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+    static void linear2( typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo,
+                        typename vector_cuda<type>::pointer imgr, typename vector_cuda<type>::pointer imgo,
                         std::vector<int> ref_size, std::vector<int> out_size);
-    static void linear3( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo,
-                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+    static void linear3( typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo, typename vector_cuda<type>::pointer zo,
+                        typename vector_cuda<type>::pointer imgr, typename vector_cuda<type>::pointer imgo,
                         std::vector<int> ref_size, std::vector<int> out_size);
 
     static void fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward);
 
-    static void gradientx( typename vector_ocl<type>::pointer imgr,
-                           typename vector_ocl<type>::pointer imgo,
+    static void gradientx( typename vector_cuda<type>::pointer imgr,
+                           typename vector_cuda<type>::pointer imgo,
                            std::vector<int> ref_size);
 
-    static void gradienty( typename vector_ocl<type>::pointer imgr,
-                           typename vector_ocl<type>::pointer imgo,
+    static void gradienty( typename vector_cuda<type>::pointer imgr,
+                           typename vector_cuda<type>::pointer imgo,
                            std::vector<int> ref_size);
 
-    static void gradientz( typename vector_ocl<type>::pointer imgr,
-                           typename vector_ocl<type>::pointer imgo,
+    static void gradientz( typename vector_cuda<type>::pointer imgr,
+                           typename vector_cuda<type>::pointer imgo,
                            std::vector<int> ref_size);
 };
 
 
 // ===========================================
-//          Functions of Class vector_ocl
+//          Functions of Class vector_cuda
 // ===========================================
 
 // ===========================================
 // Constructors
 // ===========================================
 template <typename type>
-vector_ocl<type>::vector_ocl()
+vector_cuda<type>::vector_cuda()
 {
-    class_name = "vector_ocl";
+    class_name = "vector_cuda";
     init(0);
 };
 
 template <typename type>
-vector_ocl<type>::vector_ocl(int s)
+vector_cuda<type>::vector_cuda(int s)
 {
-    class_name = "vector_ocl";
+    class_name = "vector_cuda";
     init(s);
 };
 
 template <typename type>
-vector_ocl<type>::vector_ocl(int s, type value)
+vector_cuda<type>::vector_cuda(int s, type value)
 {
-    class_name = "vector_ocl";
+    class_name = "vector_cuda";
     init(s);
     assign(value);
 };
 
 template <typename type>
-vector_ocl<type>::vector_ocl(std::initializer_list<type> list)
+vector_cuda<type>::vector_cuda(std::initializer_list<type> list)
 {
-    class_name = "vector_ocl";
+    class_name = "vector_cuda";
     int s = list.size();
     init(s);
     if (s > 0)
@@ -261,21 +260,21 @@ vector_ocl<type>::vector_ocl(std::initializer_list<type> list)
 };
 
 template <typename type>
-vector_ocl<type>::vector_ocl(const vector_ocl<type> & input)
+vector_cuda<type>::vector_cuda(const vector_cuda<type> & input)
 {
-    class_name = "vector_ocl";
+    class_name = "vector_cuda";
     clone_(input);          // call the virtual
 };
 
 //! Destructor
 template <typename type>
-vector_ocl<type>::~vector_ocl()
+vector_cuda<type>::~vector_cuda()
 {
     ;
 };
 
 template <typename type>
-void vector_ocl<type>::init(int s)
+void vector_cuda<type>::init(int s)
 {
     _size_ = s;
     if(_size_>0) allocate(_size_);
@@ -283,7 +282,7 @@ void vector_ocl<type>::init(int s)
 };
 
 template <typename type>
-void vector_ocl<type>::allocate(int s)
+void vector_cuda<type>::allocate(int s)
 {
     err = 0;
     buffer = std::make_shared<cl::Buffer>(cl_manager.get_context(), CL_MEM_READ_WRITE, sizeof(type)*s, nullptr, &err);
@@ -294,7 +293,7 @@ void vector_ocl<type>::allocate(int s)
 // Create Functions
 // ===========================================
 template <typename type>
-void vector_ocl<type>::clone_(const vector_ocl<type> & input)
+void vector_cuda<type>::clone_(const vector_cuda<type> & input)
 {
     // std::cout << "clone_";
     mimic_(input);
@@ -306,7 +305,7 @@ void vector_ocl<type>::clone_(const vector_ocl<type> & input)
 };
 
 template <typename type>
-void vector_ocl<type>::copy_(const vector_ocl<type> & input)
+void vector_cuda<type>::copy_(const vector_cuda<type> & input)
 {
     // std::cout << "copy_";
     _size_ = input.size();
@@ -315,7 +314,7 @@ void vector_ocl<type>::copy_(const vector_ocl<type> & input)
 };
 
 template <typename type>
-void vector_ocl<type>::mimic_(const vector_ocl<type> & input)
+void vector_cuda<type>::mimic_(const vector_cuda<type> & input)
 {
     // std::cout << "mimic_";
     _size_ = input.size();
@@ -327,19 +326,19 @@ void vector_ocl<type>::mimic_(const vector_ocl<type> & input)
 // Get Functions
 // ===========================================
 template <typename type>
-int vector_ocl<type>::size() const
+int vector_cuda<type>::size() const
 {
     return _size_;
 };
 
 template <typename type>
-std::shared_ptr<cl::Buffer> vector_ocl<type>::get_buffer() const
+std::shared_ptr<cl::Buffer> vector_cuda<type>::get_buffer() const
 {
     return buffer;
 };
 
 template <typename type>
-std::vector<type> vector_ocl<type>::std_vector()
+std::vector<type> vector_cuda<type>::std_vector()
 {
     std::vector<type> tmp(_size_);
     if (_size_ > 0)
@@ -351,14 +350,14 @@ std::vector<type> vector_ocl<type>::std_vector()
 // Memory Functions
 // ===========================================
 template <typename type>
-void vector_ocl<type>::read_ram(type * p, int s, int offset)
+void vector_cuda<type>::read_ram(type * p, int s, int offset)
 {
     if(s > 0)
         cl_manager.get_queue().enqueueWriteBuffer(*buffer, CL_TRUE, sizeof(type)*offset, sizeof(type)*(s), p);
 };
 
 template <typename type>
-void vector_ocl<type>::write_ram(type * p, int s, int offset)
+void vector_cuda<type>::write_ram(type * p, int s, int offset)
 {
     if(s > 0)
         cl_manager.get_queue().enqueueReadBuffer(*buffer, CL_TRUE, sizeof(type)*offset, sizeof(type)*s, p);
@@ -369,7 +368,7 @@ void vector_ocl<type>::write_ram(type * p, int s, int offset)
 // Print Functions
 // ===========================================
 template <typename type>
-std::string vector_ocl<type>::info(std::string msg)
+std::string vector_cuda<type>::info(std::string msg)
 {
     std::stringstream ss;
     std::string title = "Vector GPU Information";
@@ -384,7 +383,7 @@ std::string vector_ocl<type>::info(std::string msg)
 };
 
 template <typename type>
-std::string vector_ocl<type>::info_data(std::string msg)
+std::string vector_cuda<type>::info_data(std::string msg)
 {
     std::stringstream ss;
     if (msg != "") { ss << msg << std::endl; };
@@ -401,7 +400,7 @@ std::string vector_ocl<type>::info_data(std::string msg)
 // Functions
 // ===========================================
 template <typename type>
-void vector_ocl<type>::assert_size(const vector_ocl<type> & input)
+void vector_cuda<type>::assert_size(const vector_cuda<type> & input)
 {
     assert(this->size() == input.size());
 };
@@ -410,20 +409,20 @@ void vector_ocl<type>::assert_size(const vector_ocl<type> & input)
 // Initialization Functions
 // ===========================================
 template <typename type>
-void vector_ocl<type>::zeros()
+void vector_cuda<type>::zeros()
 {
     assign(type(0));
 };
 
 template <typename type>
-void vector_ocl<type>::ones()
+void vector_cuda<type>::ones()
 {
     assign(type(1));
 };
 
 // Set all pixel to a fixed value
 template <typename type>
-void vector_ocl<type>::assign(type value)
+void vector_cuda<type>::assign(type value)
 {
     type v = value;
     std::string str_kernel = kernel_assign(string_type<type>());
@@ -433,7 +432,7 @@ void vector_ocl<type>::assign(type value)
 };
 
 template <typename type>
-void vector_ocl<type>::random(float min, float max)
+void vector_cuda<type>::random(float min, float max)
 {
     std::string str_kernel = kernel_random( string_type<type>(), min, max);
     // // std::cout << str_kernel << std::endl;
@@ -446,7 +445,7 @@ void vector_ocl<type>::random(float min, float max)
 // Overloading operators
 // ===========================================
 template <typename type>
-type vector_ocl<type>::operator [](int e)
+type vector_cuda<type>::operator [](int e)
 {
     std::vector<type> tmp(1);
     if(e >= 0 && e < _size_ && _size_ > 0)
@@ -456,24 +455,24 @@ type vector_ocl<type>::operator [](int e)
 };
 
 template <typename type>
-vector_ocl<type> & vector_ocl<type>::operator = (const vector_ocl & input)
+vector_cuda<type> & vector_cuda<type>::operator = (const vector_cuda & input)
 {
     copy_(input);
     return *this;
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator = (const vector_ocl<type>::pointer input)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator = (const vector_cuda<type>::pointer input)
 {
     return input;
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator + (const vector_ocl<type> & input)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator + (const vector_cuda<type> & input)
 {
     assert_size(input);
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
 
     std::string str_kernel = kernel_vector( string_type<type>(), "+");
     cl_manager.program(str_kernel, "kernel_vector");
@@ -483,11 +482,11 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator + (const vector_oc
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator - (const vector_ocl<type> & input)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator - (const vector_cuda<type> & input)
 {
     assert_size(input);
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
 
     std::string str_kernel = kernel_vector( string_type<type>(), "-");
     cl_manager.program(str_kernel, "kernel_vector");
@@ -497,11 +496,11 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator - (const vector_oc
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator * (const vector_ocl<type> & input)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator * (const vector_cuda<type> & input)
 {
     assert_size(input);
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
 
     std::string str_kernel = kernel_vector( string_type<type>(), "*");
     cl_manager.program(str_kernel, "kernel_vector");
@@ -511,11 +510,11 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator * (const vector_oc
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator / (const vector_ocl<type> & input)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator / (const vector_cuda<type> & input)
 {
     assert_size(input);
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
 
     std::string str_kernel = kernel_vector( string_type<type>(), "/");
     cl_manager.program(str_kernel, "kernel_vector");
@@ -525,11 +524,11 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator / (const vector_oc
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator ^ (const vector_ocl<type> & input)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator ^ (const vector_cuda<type> & input)
 {
     assert_size(input);
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
     
     std::string str_kernel = kernel_vector( string_type<type>(), "pow", true);
     cl_manager.program(str_kernel, "kernel_vector");
@@ -540,10 +539,10 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator ^ (const vector_oc
 
 // Scalar right hand side
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator + (type scalar)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator + (type scalar)
 {
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
 
     std::string str_kernel = kernel_scalar( string_type<type>(), "+");
     cl_manager.program(str_kernel, "kernel_scalar");
@@ -553,10 +552,10 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator + (type scalar)
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator - (type scalar)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator - (type scalar)
 {
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
     
     std::string str_kernel = kernel_scalar( string_type<type>(), "-");
     cl_manager.program(str_kernel, "kernel_scalar");
@@ -566,10 +565,10 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator - (type scalar)
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator * (type scalar)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator * (type scalar)
 {
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
     
     std::string str_kernel = kernel_scalar( string_type<type>(), "*");
     cl_manager.program(str_kernel, "kernel_scalar");
@@ -579,10 +578,10 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator * (type scalar)
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator / (type scalar)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator / (type scalar)
 {
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
     
     std::string str_kernel = kernel_scalar( string_type<type>(), "/");
     cl_manager.program(str_kernel, "kernel_scalar");
@@ -592,10 +591,10 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator / (type scalar)
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::operator ^ (type scalar)
+typename vector_cuda<type>::pointer vector_cuda<type>::operator ^ (type scalar)
 {
     int size = this->size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
     
     std::string str_kernel = kernel_scalar( string_type<type>(), "pow", true);  // function = true
     cl_manager.program(str_kernel, "kernel_scalar");
@@ -606,16 +605,16 @@ typename vector_ocl<type>::pointer vector_ocl<type>::operator ^ (type scalar)
 
 // Scalar left hand side
 template <typename type>
-typename vector_ocl<type>::pointer operator + (type scalar, vector_ocl<type> & input)
+typename vector_cuda<type>::pointer operator + (type scalar, vector_cuda<type> & input)
 {
     return input + scalar;
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer operator - (type scalar, const vector_ocl<type> & input)
+typename vector_cuda<type>::pointer operator - (type scalar, const vector_cuda<type> & input)
 {
     int size = input.size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
     
     std::string str_kernel = kernel_scalar( string_type<type>(), "-", false, true);  // function = true, reverse = true
     cl_manager.program(str_kernel, "kernel_scalar");
@@ -625,16 +624,16 @@ typename vector_ocl<type>::pointer operator - (type scalar, const vector_ocl<typ
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer operator * (type scalar, vector_ocl<type> & input)
+typename vector_cuda<type>::pointer operator * (type scalar, vector_cuda<type> & input)
 {
     return input * scalar;
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer operator / (type scalar, const vector_ocl<type> & input)
+typename vector_cuda<type>::pointer operator / (type scalar, const vector_cuda<type> & input)
 {
     int size = input.size();
-    auto output = vector_ocl<type>::new_pointer(size);
+    auto output = vector_cuda<type>::new_pointer(size);
     
     std::string str_kernel = kernel_scalar( string_type<type>(), "/", false, true);  // function = true, reverse = true
     cl_manager.program(str_kernel, "kernel_scalar");
@@ -647,7 +646,7 @@ typename vector_ocl<type>::pointer operator / (type scalar, const vector_ocl<typ
 // Reduction Functions
 // ===========================================
 template <typename type>
-type vector_ocl<type>::min()
+type vector_cuda<type>::min()
 {
     // Pointer to work
     pointer input = this->copy();
@@ -679,7 +678,7 @@ type vector_ocl<type>::min()
 };
 
 template <typename type>
-type vector_ocl<type>::max()
+type vector_cuda<type>::max()
 {
     // Pointer to work
     pointer input = this->copy();
@@ -711,9 +710,9 @@ type vector_ocl<type>::max()
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::minmax_loop(typename vector_ocl<type>::pointer input, cl_int workGroupSize, cl_int numWorkGroups)
+typename vector_cuda<type>::pointer vector_cuda<type>::minmax_loop(typename vector_cuda<type>::pointer input, cl_int workGroupSize, cl_int numWorkGroups)
 {
-    auto output = vector_ocl<type>::new_pointer(numWorkGroups);
+    auto output = vector_cuda<type>::new_pointer(numWorkGroups);
 
     cl_manager.get_kernel().setArg(0, *(input->get_buffer()));
     cl_manager.get_kernel().setArg(1, input->size());
@@ -725,7 +724,7 @@ typename vector_ocl<type>::pointer vector_ocl<type>::minmax_loop(typename vector
 };
 
 template <typename type>
-type vector_ocl<type>::sum()
+type vector_cuda<type>::sum()
 {
     // Pointer to work
     pointer input = this->copy();
@@ -757,9 +756,9 @@ type vector_ocl<type>::sum()
 };
 
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::sum_loop(typename vector_ocl<type>::pointer input, cl_int workGroupSize, cl_int numWorkGroups)
+typename vector_cuda<type>::pointer vector_cuda<type>::sum_loop(typename vector_cuda<type>::pointer input, cl_int workGroupSize, cl_int numWorkGroups)
 {
-    auto output = vector_ocl<type>::new_pointer(numWorkGroups);
+    auto output = vector_cuda<type>::new_pointer(numWorkGroups);
 
     cl_manager.get_kernel().setArg(0, *(input->get_buffer()));
     cl_manager.get_kernel().setArg(1, sizeof(type)*workGroupSize, nullptr);
@@ -771,7 +770,7 @@ typename vector_ocl<type>::pointer vector_ocl<type>::sum_loop(typename vector_oc
 
 // Vectorial dot product. Verify the same number of elements, then product and reduce
 template <typename type>
-type vector_ocl<type>::dot(const vector_ocl<type> & input)
+type vector_cuda<type>::dot(const vector_cuda<type> & input)
 {
     assert_size(input);
     auto output = (*this)*input;
@@ -783,21 +782,21 @@ type vector_ocl<type>::dot(const vector_ocl<type> & input)
 // Functions
 // ===========================================
 template <typename type>
-typename vector_ocl<type>::pointer vector_ocl<type>::normalize(type min, type max)
+typename vector_cuda<type>::pointer vector_cuda<type>::normalize(type min, type max)
 {
     type minv = this->min();
     type maxv = this->max();
 
-    vector_ocl<type>::pointer output = *this - minv;
+    vector_cuda<type>::pointer output = *this - minv;
     output = *(*output*((max - min)/(maxv - minv))) + min;
     return output;
 };
 
 template <typename type> template <typename type_cast>
-typename vector_ocl<type_cast>::pointer vector_ocl<type>::cast()
+typename vector_cuda<type_cast>::pointer vector_cuda<type>::cast()
 {
     int size = this->size();
-    auto output = vector_ocl<type_cast>::new_pointer(size);
+    auto output = vector_cuda<type_cast>::new_pointer(size);
     std::string str_kernel = kernel_cast( string_type<type>(), string_type<type_cast>());
     // std::cout << str_kernel << std::endl;
     cl_manager.program(str_kernel, "kernel_cast");
@@ -807,7 +806,7 @@ typename vector_ocl<type_cast>::pointer vector_ocl<type>::cast()
 };
 
 template <typename type>
-void vector_ocl<type>::pad(typename vector_ocl<type>::pointer input, typename vector_ocl<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post)
+void vector_cuda<type>::pad(typename vector_cuda<type>::pointer input, typename vector_cuda<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post)
 {
     if(sz.size() == 2)
     {
@@ -829,7 +828,7 @@ void vector_ocl<type>::pad(typename vector_ocl<type>::pointer input, typename ve
 };
 
 template <typename type>
-void vector_ocl<type>::unpad(typename vector_ocl<type>::pointer input, typename vector_ocl<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post)
+void vector_cuda<type>::unpad(typename vector_cuda<type>::pointer input, typename vector_cuda<type>::pointer output, std::vector<int> sz, std::vector<int> & pre, std::vector<int> & post)
 {
     if(sz.size() == 2)
     {
@@ -851,11 +850,11 @@ void vector_ocl<type>::unpad(typename vector_ocl<type>::pointer input, typename 
 };
 
 template <typename type>
-void vector_ocl<type>::affine_2d(typename vector_ocl<type>::pointer xi,
-                                 typename vector_ocl<type>::pointer yi,
-                                 typename vector_ocl<type>::pointer xo,
-                                 typename vector_ocl<type>::pointer yo,
-                                 typename vector_ocl<type>::pointer p)
+void vector_cuda<type>::affine_2d(typename vector_cuda<type>::pointer xi,
+                                 typename vector_cuda<type>::pointer yi,
+                                 typename vector_cuda<type>::pointer xo,
+                                 typename vector_cuda<type>::pointer yo,
+                                 typename vector_cuda<type>::pointer p)
 {
     std::string str_kernel = kernel_affine_2d( string_type<type>() );
     // std::cout << str_kernel << std::endl;
@@ -868,13 +867,13 @@ void vector_ocl<type>::affine_2d(typename vector_ocl<type>::pointer xi,
 };
 
 template <typename type>
-void vector_ocl<type>::affine_3d(typename vector_ocl<type>::pointer xi,
-                                 typename vector_ocl<type>::pointer yi,
-                                 typename vector_ocl<type>::pointer zi,
-                                 typename vector_ocl<type>::pointer xo,
-                                 typename vector_ocl<type>::pointer yo,
-                                 typename vector_ocl<type>::pointer zo,
-                                 typename vector_ocl<type>::pointer p)
+void vector_cuda<type>::affine_3d(typename vector_cuda<type>::pointer xi,
+                                 typename vector_cuda<type>::pointer yi,
+                                 typename vector_cuda<type>::pointer zi,
+                                 typename vector_cuda<type>::pointer xo,
+                                 typename vector_cuda<type>::pointer yo,
+                                 typename vector_cuda<type>::pointer zo,
+                                 typename vector_cuda<type>::pointer p)
 {
     std::string str_kernel = kernel_affine_3d( string_type<type>() );
     // std::cout << str_kernel << std::endl;
@@ -887,13 +886,13 @@ void vector_ocl<type>::affine_3d(typename vector_ocl<type>::pointer xi,
 };
 
 template <typename type>
-void vector_ocl<type>::affine_sod_2d(typename vector_ocl<type>::pointer xo,
-                                     typename vector_ocl<type>::pointer yo,
-                                     typename vector_ocl<type>::pointer xr,
-                                     typename vector_ocl<type>::pointer yr,
+void vector_cuda<type>::affine_sod_2d(typename vector_cuda<type>::pointer xo,
+                                     typename vector_cuda<type>::pointer yo,
+                                     typename vector_cuda<type>::pointer xr,
+                                     typename vector_cuda<type>::pointer yr,
                                      std::vector<double> & sod)
 {
-    auto p = vector_ocl<double>::new_pointer(sod.size());
+    auto p = vector_cuda<double>::new_pointer(sod.size());
     p->read_ram(sod.data(),sod.size());
 
     std::string str_kernel = kernel_affine_sod_2d( string_type<type>() );
@@ -907,15 +906,15 @@ void vector_ocl<type>::affine_sod_2d(typename vector_ocl<type>::pointer xo,
 };
 
 template <typename type>
-void vector_ocl<type>::affine_sod_3d(typename vector_ocl<type>::pointer xo,
-                                     typename vector_ocl<type>::pointer yo,
-                                     typename vector_ocl<type>::pointer zo,
-                                     typename vector_ocl<type>::pointer xr,
-                                     typename vector_ocl<type>::pointer yr,
-                                     typename vector_ocl<type>::pointer zr,
+void vector_cuda<type>::affine_sod_3d(typename vector_cuda<type>::pointer xo,
+                                     typename vector_cuda<type>::pointer yo,
+                                     typename vector_cuda<type>::pointer zo,
+                                     typename vector_cuda<type>::pointer xr,
+                                     typename vector_cuda<type>::pointer yr,
+                                     typename vector_cuda<type>::pointer zr,
                                      std::vector<double> & sod)
 {
-    auto p = vector_ocl<double>::new_pointer(sod.size());
+    auto p = vector_cuda<double>::new_pointer(sod.size());
     p->read_ram(sod.data(),sod.size());
 
     std::string str_kernel = kernel_affine_sod_3d( string_type<type>() );
@@ -929,9 +928,9 @@ void vector_ocl<type>::affine_sod_3d(typename vector_ocl<type>::pointer xo,
 };
 
 template <typename type>
-void vector_ocl<type>::dfield_2d(typename vector_ocl<type>::pointer xi, typename vector_ocl<type>::pointer yi,
-                                 typename vector_ocl<type>::pointer x, typename vector_ocl<type>::pointer y,
-                                 typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo)
+void vector_cuda<type>::dfield_2d(typename vector_cuda<type>::pointer xi, typename vector_cuda<type>::pointer yi,
+                                 typename vector_cuda<type>::pointer x, typename vector_cuda<type>::pointer y,
+                                 typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo)
 {
     std::string str_kernel = kernel_dfield_2d( string_type<type>() );
     // std::cout << str_kernel << std::endl;
@@ -944,9 +943,9 @@ void vector_ocl<type>::dfield_2d(typename vector_ocl<type>::pointer xi, typename
 };
 
 template <typename type>
-void vector_ocl<type>::dfield_3d(typename vector_ocl<type>::pointer xi, typename vector_ocl<type>::pointer yi, typename vector_ocl<type>::pointer zi,
-                                 typename vector_ocl<type>::pointer x, typename vector_ocl<type>::pointer y, typename vector_ocl<type>::pointer z,
-                                 typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo)
+void vector_cuda<type>::dfield_3d(typename vector_cuda<type>::pointer xi, typename vector_cuda<type>::pointer yi, typename vector_cuda<type>::pointer zi,
+                                 typename vector_cuda<type>::pointer x, typename vector_cuda<type>::pointer y, typename vector_cuda<type>::pointer z,
+                                 typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo, typename vector_cuda<type>::pointer zo)
 {
     std::string str_kernel = kernel_dfield_3d( string_type<type>() );
     // std::cout << str_kernel << std::endl;
@@ -959,13 +958,13 @@ void vector_ocl<type>::dfield_3d(typename vector_ocl<type>::pointer xi, typename
 };
 
 template <typename type>
-std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid2(int w, int h, std::vector<double> & sod)
+std::vector<typename vector_cuda<type>::pointer> vector_cuda<type>::grid2(int w, int h, std::vector<double> & sod)
 {
     int size = w*h;
-    auto x = vector_ocl<type>::new_pointer(size);
-    auto y = vector_ocl<type>::new_pointer(size);
+    auto x = vector_cuda<type>::new_pointer(size);
+    auto y = vector_cuda<type>::new_pointer(size);
     
-    auto p = vector_ocl<double>::new_pointer(sod.size());
+    auto p = vector_cuda<double>::new_pointer(sod.size());
     p->read_ram(sod.data(),sod.size());
 
     std::string str_kernel = kernel_grid_2d( string_type<type>() );
@@ -977,21 +976,21 @@ std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid2(int w, i
     cl_manager.execute(ss); // multidimensional NDRange
     // cl_manager.execute(w);// single dim NDRange
     
-    std::vector<typename vector_ocl<type>::pointer> xy(2);
+    std::vector<typename vector_cuda<type>::pointer> xy(2);
     xy[0] = x;
     xy[1] = y;
     return xy;
 };
 
 template <typename type>
-std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid3(int w, int h, int l, std::vector<double> & sod)
+std::vector<typename vector_cuda<type>::pointer> vector_cuda<type>::grid3(int w, int h, int l, std::vector<double> & sod)
 {
     int size = w*h*l;
-    auto x = vector_ocl<type>::new_pointer(size);
-    auto y = vector_ocl<type>::new_pointer(size);
-    auto z = vector_ocl<type>::new_pointer(size);
+    auto x = vector_cuda<type>::new_pointer(size);
+    auto y = vector_cuda<type>::new_pointer(size);
+    auto z = vector_cuda<type>::new_pointer(size);
 
-    auto p = vector_ocl<double>::new_pointer(sod.size());
+    auto p = vector_cuda<double>::new_pointer(sod.size());
     p->read_ram(sod.data(),sod.size());
 
     std::string str_kernel = kernel_grid_3d( string_type<type>() );
@@ -1004,7 +1003,7 @@ std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid3(int w, i
     cl_manager.execute(ss); // multidimensional NDRange
     // cl_manager.execute(w);// single dim NDRange
 
-    std::vector<typename vector_ocl<type>::pointer> xyz(3);
+    std::vector<typename vector_cuda<type>::pointer> xyz(3);
     xyz[0] = x;
     xyz[1] = y;
     xyz[2] = z;
@@ -1013,10 +1012,10 @@ std::vector<typename vector_ocl<type>::pointer> vector_ocl<type>::grid3(int w, i
 };
 
 template <typename type>
-void vector_ocl<type>::nearest2( typename vector_ocl<type>::pointer xo, 
-                                typename vector_ocl<type>::pointer yo,
-                                typename vector_ocl<type>::pointer imgr,
-                                typename vector_ocl<type>::pointer imgo,
+void vector_cuda<type>::nearest2( typename vector_cuda<type>::pointer xo, 
+                                typename vector_cuda<type>::pointer yo,
+                                typename vector_cuda<type>::pointer imgr,
+                                typename vector_cuda<type>::pointer imgo,
                                 std::vector<int> ref_size, std::vector<int> out_size)
 {
     std::string str_kernel = kernel_nearest_interpolation_2d( string_type<type>() );
@@ -1029,11 +1028,11 @@ void vector_ocl<type>::nearest2( typename vector_ocl<type>::pointer xo,
 };
 
 template <typename type>
-void vector_ocl<type>::nearest3( typename vector_ocl<type>::pointer xo, 
-                                typename vector_ocl<type>::pointer yo,
-                                typename vector_ocl<type>::pointer zo,
-                                typename vector_ocl<type>::pointer imgr,
-                                typename vector_ocl<type>::pointer imgo,
+void vector_cuda<type>::nearest3( typename vector_cuda<type>::pointer xo, 
+                                typename vector_cuda<type>::pointer yo,
+                                typename vector_cuda<type>::pointer zo,
+                                typename vector_cuda<type>::pointer imgr,
+                                typename vector_cuda<type>::pointer imgo,
                                 std::vector<int> ref_size, std::vector<int> out_size)
 {
     std::string str_kernel = kernel_nearest_interpolation_3d( string_type<type>() );
@@ -1046,10 +1045,10 @@ void vector_ocl<type>::nearest3( typename vector_ocl<type>::pointer xo,
 };
 
 template <typename type>
-void vector_ocl<type>::linear2( typename vector_ocl<type>::pointer xo, 
-                                typename vector_ocl<type>::pointer yo,
-                                typename vector_ocl<type>::pointer imgr,
-                                typename vector_ocl<type>::pointer imgo,
+void vector_cuda<type>::linear2( typename vector_cuda<type>::pointer xo, 
+                                typename vector_cuda<type>::pointer yo,
+                                typename vector_cuda<type>::pointer imgr,
+                                typename vector_cuda<type>::pointer imgo,
                                 std::vector<int> ref_size, std::vector<int> out_size)
 {
     std::string str_kernel = kernel_linear_interpolation_2d( string_type<type>() );
@@ -1062,11 +1061,11 @@ void vector_ocl<type>::linear2( typename vector_ocl<type>::pointer xo,
 };
 
 template <typename type>
-void vector_ocl<type>::linear3( typename vector_ocl<type>::pointer xo, 
-                                typename vector_ocl<type>::pointer yo,
-                                typename vector_ocl<type>::pointer zo,
-                                typename vector_ocl<type>::pointer imgr,
-                                typename vector_ocl<type>::pointer imgo,
+void vector_cuda<type>::linear3( typename vector_cuda<type>::pointer xo, 
+                                typename vector_cuda<type>::pointer yo,
+                                typename vector_cuda<type>::pointer zo,
+                                typename vector_cuda<type>::pointer imgr,
+                                typename vector_cuda<type>::pointer imgo,
                                 std::vector<int> ref_size, std::vector<int> out_size)
 {
     std::string str_kernel = kernel_linear_interpolation_3d( string_type<type>() );
@@ -1079,7 +1078,7 @@ void vector_ocl<type>::linear3( typename vector_ocl<type>::pointer xo,
 };
 
 template <typename type>
-void vector_ocl<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward)
+void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward)
 {
     // timer t("ms");
     // t.start();
@@ -1180,8 +1179,8 @@ void vector_ocl<type>::fft(std::vector<pointer> & input, std::vector<pointer> & 
 };
 
 template <typename type>
-void vector_ocl<type>::gradientx( typename vector_ocl<type>::pointer imgr,
-                                  typename vector_ocl<type>::pointer imgo,
+void vector_cuda<type>::gradientx( typename vector_cuda<type>::pointer imgr,
+                                  typename vector_cuda<type>::pointer imgo,
                                   std::vector<int> ref_size)
 {
     std::string str_kernel = kernel_gradientx( string_type<type>() );
@@ -1192,8 +1191,8 @@ void vector_ocl<type>::gradientx( typename vector_ocl<type>::pointer imgr,
 };
 
 template <typename type>
-void vector_ocl<type>::gradienty( typename vector_ocl<type>::pointer imgr,
-                                  typename vector_ocl<type>::pointer imgo,
+void vector_cuda<type>::gradienty( typename vector_cuda<type>::pointer imgr,
+                                  typename vector_cuda<type>::pointer imgo,
                                   std::vector<int> ref_size)
 {
     std::string str_kernel = kernel_gradienty( string_type<type>() );
@@ -1204,8 +1203,8 @@ void vector_ocl<type>::gradienty( typename vector_ocl<type>::pointer imgr,
 };
 
 template <typename type>
-void vector_ocl<type>::gradientz( typename vector_ocl<type>::pointer imgr,
-                                  typename vector_ocl<type>::pointer imgo,
+void vector_cuda<type>::gradientz( typename vector_cuda<type>::pointer imgr,
+                                  typename vector_cuda<type>::pointer imgo,
                                   std::vector<int> ref_size)
 {
     std::string str_kernel = kernel_gradientz( string_type<type>() );

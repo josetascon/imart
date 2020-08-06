@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-29 18:24:07
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-30 06:30:11
+* @Last Modified time: 2020-07-25 01:00:51
 */
 
 // local libs
@@ -38,16 +38,16 @@ int main(int argc, char *argv[])
     auto image14 = image_cpu<unsigned short>::new_pointer();
     
     image11->read(argv[1]);
-    *image12 = cast<type,vector_cpu<type>,unsigned short, vector_cpu<unsigned short>>(*image11);
+    cast(*image11, *image12);
     auto xcpu = grid_cpu<type>::new_pointer(image12);
 
-    // image_cpu<type>::pointer params( new image_cpu<type>({0.95, -0.1, 0.05, 0.9, 20, 0.0}) );
-    image_cpu<type>::pointer params( new image_cpu<type>({2.0, 0.0, 0.0, 1.0, 0.0, 0.0}) );
-    auto taffine = affine<type>::new_pointer(2, params);
-    auto interp1 = ilinear<type,vector_cpu<type>>::new_pointer(image12, xcpu);
+    // image_cpu<type>::pointer params1( new image_cpu<type>({0.95, -0.1, 0.05, 0.9, 20, 0.0}) );
+    image_cpu<type>::pointer params1( new image_cpu<type>({2.0, 0.0, 0.0, 1.0, 0.0, 0.0}) );
+    auto taffine1 = affine<type>::new_pointer(2, params1);
+    auto interp1 = ilinear<type,vector_cpu<type>>::new_pointer(image12);
 
-    image13 = interp1->apply(taffine->apply<vector_cpu<type>>(xcpu));
-    *image14 = cast<unsigned short, vector_cpu<unsigned short>, type,vector_cpu<type>>(*image13);
+    image13 = interp1->apply(taffine1->apply(xcpu));
+    cast(*image13, *image14);
     image14->write("output_cpu.png");
 
     //GPU
@@ -57,13 +57,16 @@ int main(int argc, char *argv[])
     auto image24 = image_gpu<unsigned short>::new_pointer();
     
     image21->read(argv[1]);
-    *image22 = cast<type,vector_ocl<type>,unsigned short, vector_ocl<unsigned short>>(*image21);
+    cast(*image21, *image22);
     auto xgpu = grid_gpu<type>::new_pointer(image22);
 
-    auto interp2 = ilinear<type,vector_ocl<type>>::new_pointer(image22, xgpu);
+    // image_gpu<type>::pointer params2( new image_gpu<type>({0.95, -0.1, 0.05, 0.9, 20, 0.0}) );
+    image_gpu<type>::pointer params2( new image_gpu<type>({2.0, 0.0, 0.0, 1.0, 0.0, 0.0}) );
+    auto taffine2 = affine<type,vector_ocl<type>>::new_pointer(2, params2);
+    auto interp2 = ilinear<type,vector_ocl<type>>::new_pointer(image22);
 
-    image23 = interp2->apply(taffine->apply<vector_ocl<type>>(xgpu));
-    *image24 = cast<unsigned short, vector_ocl<unsigned short>, type,vector_ocl<type>>(*image23);
+    image23 = interp2->apply(taffine2->apply(xgpu));
+    cast(*image23, *image24);
     image24->write("output_gpu.png");
 
     // ITK

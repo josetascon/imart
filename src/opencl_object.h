@@ -65,6 +65,8 @@ public:
     // ===========================================
     // Constructors
     opencl_object();
+    // Destructor
+    // ~opencl_object();
 
     // ===========================================
     // Get Functions
@@ -145,6 +147,15 @@ void opencl_object::init()
     // Initialization succeded
     status_init = true;
 };
+
+// Constructor
+// opencl_object::~opencl_object()
+// {   
+//     // Clean and free memory
+//     cl::flush();
+//     _error_ = cl::finish();
+//     imart_assert_cl(_error_, "Error during finish");
+// };
 
 // ===========================================
 // Get Functions

@@ -8,15 +8,21 @@
 #ifndef __METRIC_H__
 #define __METRIC_H__
 
-#include "image_base.h"
-#include "transform_base.h"
+#include "process_object.h"
+#include "image.h"
+#include "grid.h"
+#include "transform.h"
+#include "interpolator.h"
+#include "ilinear.h"
 
 namespace imart
 {
 
-template <typename pixel_type>
-class metric: public object<pixel_type>
+// Class metric
+template <typename type, typename container=vector_cpu<type>>
+class metric: public inherit<metric<type,container>, process_object>
 {
+
 public:
     //Type definitions
     using self    = metric;
@@ -27,55 +33,80 @@ protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    pixel_type cost_value;
-    typename image_base<pixel_type>::pointer fixed;
-    typename image_base<pixel_type>::pointer moving;
-    typename transform_base<pixel_type>::pointer transform;
-    typename grid<pixel_type>::pointer x0;
-    typename grid<pixel_type>::pointer x1;
-    typename interpolate<pixel_type>::pointer interpolator0;
-    typename interpolate<pixel_type>::pointer interpolator1;
+    type cost_value;
+    typename image<type,container>::pointer fixed;
+    typename image<type,container>::pointer moving;
+    typename transform<type,container>::pointer transformation;
+    typename grid<type,container>::pointer x0;
+    typename grid<type,container>::pointer x1;
+    typename interpolator<type,container>::pointer interpolate_fixed;
+    typename interpolator<type,container>::pointer interpolate_moving;
+    typename image<type,container>::pointer fixed_prime;
+    typename image<type,container>::pointer moving_prime;
 
     // ===========================================
     // Functions
     // ===========================================
-    virtual void init( typename image_base<pixel_type>::pointer fixed_image, 
-                       typename image_base<pixel_type>::pointer moving_image,
-                       typename transform_base<pixel_type>::pointer transform_reg );
+    void init(int d);
+    virtual void init( typename image<type,container>::pointer fixed_image, 
+                       typename image<type,container>::pointer moving_image,
+                       typename transform<type,container>::pointer transformd);
 
 public:
     // ===========================================
     // Create Functions
     // ===========================================
     // Constructors
-    metric( typename image_base<pixel_type>::pointer fixed_image, 
-            typename image_base<pixel_type>::pointer moving_image, 
-            typename transform_base<pixel_type>::pointer transform_reg );
-
-    template<typename... ARGS>
-    static pointer new_pointer(const ARGS&... args);
+    metric();
+    metric(int d);
+    metric(typename image<type,container>::pointer fixed_image, 
+           typename image<type,container>::pointer moving_image);
+    metric(typename image<type,container>::pointer fixed_image,
+           typename image<type,container>::pointer moving_image,
+           typename transform<type,container>::pointer transformd);
 
     // ===========================================
     // Get Functions
     // ===========================================
-    pixel_type get_cost() const;
-    typename image_base<pixel_type>::pointer get_fixed() const;
-    typename image_base<pixel_type>::pointer get_moving() const;
-    typename transform_base<pixel_type>::pointer get_transform() const;
+    type get_cost() const;
+    typename image<type,container>::pointer get_fixed() const;
+    typename image<type,container>::pointer get_moving() const;
+    typename transform<type,container>::pointer get_transform() const;
+    typename grid<type,container>::pointer get_grid_fixed() const;
+    typename grid<type,container>::pointer get_grid_moving() const;
+
+    // ===========================================
+    // Set Functions
+    // ===========================================
+    void set_fixed(typename image<type,container>::pointer fixed_image);
+    void set_moving(typename image<type,container>::pointer moving_image);
+    void set_transform(typename transform<type,container>::pointer transformd);
 
     // ===========================================
     // Print Functions
     // ===========================================
     std::string info(std::string msg);
-    std::string info_data(std::string msg);
 
     // ===========================================
     // Functions
     // ===========================================
     // !compute the cost
-    virtual pixel_type cost();
-    // !calculate derivative
-    virtual typename transform_base<pixel_type>::pointer derivative();
+    virtual type cost();
+    // !update transform and compute cost
+    type cost(typename transform<type,container>::pointer transformd);
+    // !update fixed and moving image and compute cost
+    type cost(typename image<type,container>::pointer fixed_image, 
+              typename image<type,container>::pointer moving_image,
+              typename transform<type,container>::pointer transformd);
+
+    // !calculate derivative with regards to transform
+    virtual typename transform<type,container>::pointer derivative();
+
+    typename grid<type,container>::pointer grid_moving();
+    typename grid<type,container>::pointer grid_fixed();
+    typename image<type,container>::pointer warped_moving();
+    typename image<type,container>::pointer warped_fixed();
+    
 };
 
 
@@ -86,117 +117,208 @@ public:
 // ===========================================
 // Create Functions
 // ===========================================
-// Constructor
-template <typename pixel_type>
-metric<pixel_type>::metric( typename image_base<pixel_type>::pointer fixed_image, 
-                            typename image_base<pixel_type>::pointer moving_image, 
-                            typename transform_base<pixel_type>::pointer transform_reg)
+// Constructor empty
+template <typename type, typename container>
+metric<type,container>::metric()
 {
-    // std::cout << "metric\n";
-    init(fixed_image, moving_image, transform_reg);
+    this->class_name = "metric";
+    init(2);
 };
 
-template <typename pixel_type>
-void metric<pixel_type>::init( typename image_base<pixel_type>::pointer fixed_image, 
-                               typename image_base<pixel_type>::pointer moving_image,
-                               typename transform_base<pixel_type>::pointer transform_reg)
+template <typename type, typename container>
+metric<type,container>::metric(int d)
 {
-    assert(fixed_image->get_dimension() == moving_image->get_dimension());
-    // std::cout << "metric init" << std::endl;
     this->class_name = "metric";
-    this->dim = fixed_image->get_dimension();
+    init(d);
+};
 
+template <typename type, typename container>
+metric<type,container>::metric( typename image<type,container>::pointer fixed_image, 
+                                typename image<type,container>::pointer moving_image)
+{
+    this->class_name = "metric";
+    auto transformd = transform<type,container>::new_pointer(fixed_image->get_dimension());
+    init(fixed_image, moving_image, transformd);
+};
+
+template <typename type, typename container>
+metric<type,container>::metric( typename image<type,container>::pointer fixed_image, 
+                                typename image<type,container>::pointer moving_image,
+                                typename transform<type,container>::pointer transformd)
+{
+    this->class_name = "metric";
+    init(fixed_image, moving_image, transformd);
+};
+
+template <typename type, typename container>
+void metric<type,container>::init(int d)
+{
+    auto fixed_image = image<type,container>::new_pointer(d);
+    auto moving_image = image<type,container>::new_pointer(d);
+    auto transformd = transform<type,container>::new_pointer(d);
+    init(fixed_image, moving_image, transformd);
+}
+
+template <typename type, typename container>
+void metric<type,container>::init( typename image<type,container>::pointer fixed_image, 
+                                   typename image<type,container>::pointer moving_image,
+                                   typename transform<type,container>::pointer transformd)
+{
+    // std::cout << "metric init" << std::endl;
+    assert(fixed_image->get_dimension() == moving_image->get_dimension());
     cost_value = 1e40;
     fixed = fixed_image;
     moving = moving_image;
-    transform = transform_reg;
-    x0 = grid<pixel_type>::new_pointer(*fixed);
-    x1 = grid<pixel_type>::new_pointer(*moving);
-    // x0->print_data();
-    // x1->print_data();
-
-    interpolator0 = interpolate<pixel_type>::new_pointer(fixed, x0);
-    interpolator1 = interpolate<pixel_type>::new_pointer(moving, x1);
+    transformation = transformd;
+    grid_fixed(); // x0 = grid<type,container>::new_pointer(fixed);
+    // x1 = grid<type,container>::new_pointer(moving);
+    interpolate_fixed = ilinear<type,container>::new_pointer(fixed);
+    interpolate_moving = ilinear<type,container>::new_pointer(moving);
+    
+    this->set_total_inputs(3);      //process_object::init
+    this->set_total_outputs(0);     //process_object::init
+    this->setup_input(fixed, moving, transformation);
+    this->setup_output();           // output is scalar
     // std::cout << "metric init end" << std::endl;
     return;
-};
-
-template <typename pixel_type>
-template <typename ... ARGS>
-typename metric<pixel_type>::pointer metric<pixel_type>::new_pointer(const ARGS&... args)
-{
-    return std::make_shared< metric<pixel_type> >(args...); // not working for inherited classes
 };
 
 // ===========================================
 // Get Functions
 // ===========================================
-template <typename pixel_type>
-pixel_type metric<pixel_type>::get_cost() const
+template <typename type, typename container>
+type metric<type,container>::get_cost() const
 {
     return cost_value;
 };
 
-template <typename pixel_type>
-typename image_base<pixel_type>::pointer metric<pixel_type>::get_fixed() const
+template <typename type, typename container>
+typename image<type,container>::pointer metric<type,container>::get_fixed() const
 {
     return fixed;
 };
 
-template <typename pixel_type>
-typename image_base<pixel_type>::pointer metric<pixel_type>::get_moving() const
+template <typename type, typename container>
+typename image<type,container>::pointer metric<type,container>::get_moving() const
 {
     return moving;
 };
 
-template <typename pixel_type>
-typename transform_base<pixel_type>::pointer metric<pixel_type>::get_transform() const
+template <typename type, typename container>
+typename transform<type,container>::pointer metric<type,container>::get_transform() const
 {
-    return transform;
+    return transformation;
+};
+
+
+
+template <typename type, typename container>
+typename grid<type,container>::pointer metric<type,container>::get_grid_fixed() const
+{
+    return x0; 
+};
+
+template <typename type, typename container>
+typename grid<type,container>::pointer metric<type,container>::get_grid_moving() const
+{
+    return x1;
+};
+
+// ===========================================
+// Set Functions
+// ===========================================
+template <typename type, typename container>
+void metric<type,container>::set_fixed(typename image<type,container>::pointer fixed_image)
+{
+    fixed = fixed_image;
+    interpolate_fixed = ilinear<type,container>::new_pointer(fixed);
+};
+
+template <typename type, typename container>
+void metric<type,container>::set_moving(typename image<type,container>::pointer moving_image)
+{
+    moving = moving_image;
+    interpolate_moving = ilinear<type,container>::new_pointer(moving);
+};
+
+template <typename type, typename container>
+void metric<type,container>::set_transform(typename transform<type,container>::pointer transformd)
+{
+    transformation = transformd;
 };
 
 // ===========================================
 // Print Functions
 // ===========================================
-template <typename pixel_type>
-std::string metric<pixel_type>::info(std::string msg)
+template <typename type, typename container>
+std::string metric<type,container>::info(std::string msg)
 {
     std::stringstream ss;
     std::string title = "Metric Information";
     if (msg != "") { title = msg; };
-    // Summary of the metric information
-    ss << object<pixel_type>::info(title);
-    ss << std::endl;
 
+    ss << object::info(title);
+    ss << process_object::info("");
     return ss.str();
 };
 
-template <typename pixel_type>
-std::string metric<pixel_type>::info_data(std::string msg)
-{
-    std::stringstream ss;
-    if (msg != "") { ss << msg << std::endl; }
-    else { ss << "Metric parameters:\n"; };
-    ss << "Fixed Image: \t\t";
-    ss << fixed->ptr() << std::endl;
-    ss << "Moving Image: \t\t";
-    ss << moving->ptr() << std::endl;
-    ss << "Transform: \t\t";
-    ss << transform->get_parameters() << std::endl;
-
-    return ss.str();
-};
-
-template <typename pixel_type>
-pixel_type metric<pixel_type>::cost()
+// ===========================================
+// Functions
+// ===========================================
+template <typename type, typename container>
+type metric<type,container>::cost()
 {
     return cost_value;
 };
 
-template <typename pixel_type>
-typename transform_base<pixel_type>::pointer metric<pixel_type>::derivative()
+template <typename type, typename container>
+type metric<type,container>::cost(typename transform<type,container>::pointer transformd)
 {
-    return transform;
+    transformation = transformd;
+    return cost();
+};
+
+template <typename type, typename container>
+type metric<type,container>::cost( typename image<type,container>::pointer fixed_image, 
+                                   typename image<type,container>::pointer moving_image,
+                                   typename transform<type,container>::pointer transformd)
+{
+    init(fixed_image, moving_image, transformd);
+    return cost();
+};
+
+template <typename type, typename container>
+typename transform<type,container>::pointer metric<type,container>::derivative()
+{
+    return transformation->mimic(); // derivate
+};
+
+template <typename type, typename container>
+typename grid<type,container>::pointer metric<type,container>::grid_moving()
+{
+    x1 = grid<type,container>::new_pointer(moving);
+    return x1;
+};
+
+template <typename type, typename container>
+typename grid<type,container>::pointer metric<type,container>::grid_fixed()
+{
+    x0 = grid<type,container>::new_pointer(fixed); // computed during init
+    return x0;
+};
+
+template <typename type, typename container>
+typename image<type,container>::pointer metric<type,container>::warped_moving()
+{
+    moving_prime = interpolate_moving->apply(transformation->apply(x0));
+    return moving_prime;
+};
+
+template <typename type, typename container>
+typename image<type,container>::pointer metric<type,container>::warped_fixed()
+{
+    fixed_prime = interpolate_fixed->apply(transformation->apply(x1));
+    return fixed_prime;
 };
 
 }; //end namespace

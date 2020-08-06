@@ -60,7 +60,7 @@ public:
     // Functions
     // ===========================================
     void start(); // run
-    void lap(bool show=true);
+    void lap(std::string msg="");
     void finish(bool show=false); // reset
 };
 
@@ -152,18 +152,18 @@ void timer::print(std::string msg)
 std::string timer::info(std::string msg)
 {
     std::stringstream ss;
-    std::string title = "[timer]";
+    std::string title = "[Timer]";
     if (msg != "") { title = msg; };
     // more info here
-    ss << title << "\t\t";
+    ss << title;
     
     if (laps)
     {
-        ss << "lap time: " << lap_time;
-        ss <<" [" << units << "]\t||\t";
+        ss << "[Lap time][" << lap_time;
+        ss <<" " << units << "]\t";
     }
-    ss << "total time: " << total_time;
-    ss <<" [" << units << "]";
+    ss << "[Elapsed time][" << total_time;
+    ss <<" " << units << "]";
     ss << std::endl;
     
     return ss.str();
@@ -198,7 +198,7 @@ void timer::start()
     else { timer::warning(); };
 };
 
-void timer::lap(bool show)
+void timer::lap(std::string msg)
 {
     if (state == "running")
     {
@@ -212,7 +212,7 @@ void timer::lap(bool show)
         t3 = taux;
         laps = true;
         
-        if (show){ timer::print(); };
+        if (msg != ""){ timer::print(msg); };
     }
     else { timer::warning(); };
 };
@@ -227,6 +227,8 @@ void timer::finish(bool show)
 
         total_time = ((float)t2)*scale/CLOCKS_PER_SEC;
         lap_time = ((float)t3)*scale/CLOCKS_PER_SEC;
+
+        laps = false;
 
         if (show){ timer::print(); };
 

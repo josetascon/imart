@@ -19,6 +19,8 @@ namespace imart
 template<typename type>
 std::string string_type(){ return typeid(type).name();};
 template<>
+std::string string_type<short>(){ return "short";};
+template<>
 std::string string_type<unsigned short>(){ return "unsigned short";};
 template<>
 std::string string_type<unsigned int>(){ return "unsigned int";};
@@ -328,7 +330,7 @@ std::string kernel_affine_2d(std::string input_type)
     source.append("     __global const " + input_type + " * yin,");
     source.append("     __global " + input_type + " * xout,");
     source.append("     __global " + input_type + " * yout,");
-    source.append("     __global " + input_type + " * param)\n");
+    source.append("     __global const " + input_type + " * param)\n");
     source.append("{\n");
     source.append("     int i = get_global_id(0);\n"); // Set NDRange one dimension, buffer in and out xy equal size
     source.append("     " + input_type + " a0 = param[0]; " + input_type + " a1 = param[1];\n");
@@ -350,7 +352,7 @@ std::string kernel_affine_3d(std::string input_type)
     source.append("     __global " + input_type + " * xout,");
     source.append("     __global " + input_type + " * yout,");
     source.append("     __global " + input_type + " * zout,");
-    source.append("     __global " + input_type + " * param)\n");
+    source.append("     __global const " + input_type + " * param)\n");
     source.append("{\n");
     source.append("     int i = get_global_id(0);\n"); // Set NDRange one dimension, buffer in and out xyz equal size
     source.append("     " + input_type + " a0 = param[0]; " + input_type + " a1 = param[1]; " + input_type + " a2 = param[2];\n");
@@ -372,7 +374,7 @@ std::string kernel_affine_sod_2d(std::string input_type)
     source.append("     __global const " + input_type + " * yin,");
     source.append("     __global " + input_type + " * xout,");
     source.append("     __global " + input_type + " * yout,");
-    source.append("     __global double * sod)\n"); // consider conversion to float to support all gpu
+    source.append("     __global const double * sod)\n"); // consider conversion to float to support all gpu
     source.append("{\n");
     source.append("     int i = get_global_id(0);\n"); // Set NDRange one dimension, buffer in and out xy equal size
     source.append("     double c0 = sod[0]; double c1 = sod[1];\n");
@@ -395,7 +397,7 @@ std::string kernel_affine_sod_3d(std::string input_type)
     source.append("     __global " + input_type + " * xout,");
     source.append("     __global " + input_type + " * yout,");
     source.append("     __global " + input_type + " * zout,");
-    source.append("     __global double * sod)\n"); // consider conversion to float to support all gpu
+    source.append("     __global const double * sod)\n"); // consider conversion to float to support all gpu
     source.append("{\n");
     source.append("     int i = get_global_id(0);\n"); // Set NDRange one dimension, buffer in and out xyz equal size
     source.append("     double c0 = sod[0]; double c1 = sod[1]; double c2 = sod[2];\n");
@@ -406,6 +408,46 @@ std::string kernel_affine_sod_3d(std::string input_type)
     source.append("     xout[i] = (" + input_type + ")(d0*c0*xin[i] + d1*c1*yin[i] + d2*c2*zin[i] + o0);\n");
     source.append("     yout[i] = (" + input_type + ")(d3*c0*xin[i] + d4*c1*yin[i] + d5*c2*zin[i] + o1);\n");
     source.append("     zout[i] = (" + input_type + ")(d6*c0*xin[i] + d7*c1*yin[i] + d8*c2*zin[i] + o2);\n");
+    source.append("};");
+    return source;
+};
+
+std::string kernel_dfield_2d(std::string input_type)
+{
+    std::string source;
+    source.append("__kernel void kernel_dfield_2d(");
+    source.append("     __global const " + input_type + " * xin,");
+    source.append("     __global const " + input_type + " * yin,");
+    source.append("     __global const " + input_type + " * x,");
+    source.append("     __global const " + input_type + " * y,");
+    source.append("     __global " + input_type + " * xout,");
+    source.append("     __global " + input_type + " * yout)\n");
+    source.append("{\n");
+    source.append("     int i = get_global_id(0);\n"); // Set NDRange one dimension, buffer in and out xy equal size
+    source.append("     xout[i] = xin[i] + x[i]);\n");
+    source.append("     yout[i] = yin[i] + y[i]);\n");
+    source.append("};");
+    return source;
+};
+
+std::string kernel_dfield_3d(std::string input_type)
+{
+    std::string source;
+    source.append("__kernel void kernel_dfield_2d(");
+    source.append("     __global const " + input_type + " * xin,"); // grid coordinates
+    source.append("     __global const " + input_type + " * yin,");
+    source.append("     __global const " + input_type + " * zin,");
+    source.append("     __global const " + input_type + " * x,");   // vector field
+    source.append("     __global const " + input_type + " * y,");
+    source.append("     __global const " + input_type + " * z,");
+    source.append("     __global " + input_type + " * xout,");      // output coordinates
+    source.append("     __global " + input_type + " * yout,");
+    source.append("     __global " + input_type + " * zout)\n");
+    source.append("{\n");
+    source.append("     int i = get_global_id(0);\n"); // Set NDRange one dimension, buffer in and out xy equal size
+    source.append("     xout[i] = xin[i] + x[i]);\n");
+    source.append("     yout[i] = yin[i] + y[i]);\n");
+    source.append("     zout[i] = zin[i] + z[i]);\n");
     source.append("};");
     return source;
 };
@@ -428,7 +470,7 @@ std::string kernel_nearest_interpolation_2d(std::string input_type)
 
     source.append("     int x = round(xo[i + j*n0]);\n");
     source.append("     int y = round(yo[i + j*n0]);\n");
-    source.append("     if(x > 0 && x < w && y > 0 && y < h)\n");
+    source.append("     if(x >= 0 && x < w && y >= 0 && y < h)\n");
     source.append("     {\n");
     source.append("         imgo[i + j*n0] = imgr[x + y*w];\n");
     source.append("     };\n");
@@ -459,7 +501,7 @@ std::string kernel_nearest_interpolation_3d(std::string input_type)
     source.append("     int x = round(xo[i + j*n0 + k*n0*n1]);\n");
     source.append("     int y = round(yo[i + j*n0 + k*n0*n1]);\n");
     source.append("     int z = round(yo[i + j*n0 + k*n0*n1]);\n");
-    source.append("     if(x > 0 && x < w && y > 0 && y < h && z > 0 && z < l)\n");
+    source.append("     if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l)\n");
     source.append("     {\n");
     source.append("         imgo[i + j*n0 + k*n0*n1] = imgr[x + y*w + z*w*h];\n");
     source.append("     };\n");
@@ -494,7 +536,7 @@ std::string kernel_linear_interpolation_2d(std::string input_type)
     source.append("     " + input_type + " yt = yo[i + j*n0];\n");
     source.append("     int x = floor(xt);\n");
     source.append("     int y = floor(yt);\n");
-    source.append("     if(x >= 0 && x < w && y >= 0 && y < h)\n");
+    source.append("     if(x >= 0 && x < w && y >= 0 && y < h - 1)\n");
     source.append("     {\n");
     source.append("         " + input_type + "4 iv = {imgr[x+y*w], imgr[x+1+y*w], imgr[x+(y+1)*w], imgr[x+1+(y+1)*w]};\n");
     source.append("         " + input_type + " dx = xt - (" + input_type + ")x;\n");
@@ -502,10 +544,17 @@ std::string kernel_linear_interpolation_2d(std::string input_type)
     source.append("         " + input_type + " dxdy = dx*dy;\n");
     source.append("         " + input_type + " r = iv.s0*(1-dx-dy+dxdy) + iv.s1*(dx-dxdy) + iv.s2*(dy-dxdy) + iv.s3*dxdy;\n");
     source.append("         imgo[i + j*n0] = r;\n");
+    source.append("     }\n");
+    source.append("     else if(x >= 0 && x < w && y == h - 1)\n"); // border case
+    source.append("     {\n");
+    source.append("         " + input_type + "2 iv = {imgr[x+y*w], imgr[x+1+y*w]};\n");
+    source.append("         " + input_type + " dx = xt - (" + input_type + ")x;\n");
+    source.append("         " + input_type + " r = iv.s0*(1-dx) + iv.s1*(dx);\n");
+    source.append("         imgo[i + j*n0] = r;\n");
+    source.append("     };\n");
 
     // source.append("         " + input_type + "4 r = {imgr[x+y*w], imgr[x+1+y*w], imgr[x+(y+1)*w], imgr[x+1+(y+1)*w]};\n");
     // source.append("         imgo[i + j*n0] = bilinear(r,dx,dy);\n");
-    source.append("     };\n");
     source.append("};");
     return source;
 };
@@ -536,7 +585,7 @@ std::string kernel_linear_interpolation_3d(std::string input_type)
     source.append("     int x = floor(xt);\n");
     source.append("     int y = floor(yt);\n");
     source.append("     int z = floor(zt);\n");
-    source.append("     if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l)\n");
+    source.append("     if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l-1)\n");
     source.append("     {\n");
     source.append("         " + input_type + "4 iv = {imgr[x+y*w+z*w*h], imgr[x+1+y*w+z*w*h], imgr[x+(y+1)*w+z*w*h], imgr[x+1+(y+1)*w+z*w*h]};\n");
     source.append("         " + input_type + "4 iw = {imgr[x+y*w+(z+1)*w*h], imgr[x+1+y*w+(z+1)*w*h], imgr[x+(y+1)*w+(z+1)*w*h], imgr[x+1+(y+1)*w+(z+1)*w*h]};\n");
@@ -547,8 +596,113 @@ std::string kernel_linear_interpolation_3d(std::string input_type)
     source.append("         " + input_type + " rw = iw.s0*(1-dx-dy+dxdy) + iw.s1*(dx-dxdy) + iw.s2*(dy-dxdy) + iw.s3*dxdy;\n");
     source.append("         " + input_type + " dz = zt - (" + input_type + ")z;\n");
     source.append("         " + input_type + " r = rv*(1-dz) + rw*dz;\n");
-    source.append("         imgo[i + j*n0] = r;\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = r;\n");
+    source.append("     }\n");
+    source.append("     else if(x >= 0 && x < w && y >= 0 && y < h && z == l-1)\n"); // border case
+    source.append("     {\n");
+    source.append("         " + input_type + "4 iv = {imgr[x+y*w+z*w*h], imgr[x+1+y*w+z*w*h], imgr[x+(y+1)*w+z*w*h], imgr[x+1+(y+1)*w+z*w*h]};\n");
+    source.append("         " + input_type + " dx = xt - (" + input_type + ")x;\n");
+    source.append("         " + input_type + " dy = yt - (" + input_type + ")y;\n");
+    source.append("         " + input_type + " dxdy = dx*dy;\n");
+    source.append("         " + input_type + " rv = iv.s0*(1-dx-dy+dxdy) + iv.s1*(dx-dxdy) + iv.s2*(dy-dxdy) + iv.s3*dxdy;\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = rv;\n");
     source.append("     };\n");
+    source.append("};");
+    return source;
+};
+
+std::string kernel_gradientx(std::string input_type)
+{
+    std::string source;
+    source.append("__kernel void kernel_gradientx(");
+    source.append("     __global const " + input_type + " * imgr,");
+    source.append("     __global " + input_type + " * imgo)\n");
+    // source.append("     int w,");   //img ref width
+    // source.append("     int h)\n"); //img ref height
+    source.append("{\n");
+    source.append("     int i = get_global_id(0);\n");
+    source.append("     int j = get_global_id(1);\n");
+    source.append("     int k = get_global_id(2);\n");
+    source.append("     int n0 = get_global_size(0);\n");
+    source.append("     int n1 = get_global_size(1);\n");
+    source.append("     int n2 = get_global_size(2);\n");
+
+    source.append("     if(i == 0)\n");
+    source.append("     {\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = imgr[i+1 + j*n0 + k*n0*n1] - imgr[i + j*n0 + k*n0*n1];\n");
+    source.append("     }\n");
+    source.append("     else if(i == n0 - 1)\n");
+    source.append("     {\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = imgr[i + j*n0 + k*n0*n1] - imgr[i-1 + j*n0 + k*n0*n1];\n");
+    source.append("     }\n");
+    source.append("     else\n");
+    source.append("     {\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = 0.5*imgr[i+1 + j*n0 + k*n0*n1] - 0.5*imgr[i-1 + j*n0 + k*n0*n1];\n");
+    source.append("     }\n");
+    source.append("};");
+    return source;
+};
+
+std::string kernel_gradienty(std::string input_type)
+{
+    std::string source;
+    source.append("__kernel void kernel_gradienty(");
+    source.append("     __global const " + input_type + " * imgr,");
+    source.append("     __global " + input_type + " * imgo)\n");
+    // source.append("     int w,");   //img ref width
+    // source.append("     int h)\n"); //img ref height
+    source.append("{\n");
+    source.append("     int i = get_global_id(0);\n");
+    source.append("     int j = get_global_id(1);\n");
+    source.append("     int k = get_global_id(2);\n");
+    source.append("     int n0 = get_global_size(0);\n");
+    source.append("     int n1 = get_global_size(1);\n");
+    source.append("     int n2 = get_global_size(2);\n");
+
+    source.append("     if(j == 0)\n");
+    source.append("     {\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = imgr[i + (j+1)*n0 + k*n0*n1] - imgr[i + j*n0 + k*n0*n1];\n");
+    source.append("     }\n");
+    source.append("     else if(j == n1 - 1)\n");
+    source.append("     {\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = imgr[i + j*n0 + k*n0*n1] - imgr[i + (j-1)*n0 + k*n0*n1];\n");
+    source.append("     }\n");
+    source.append("     else\n");
+    source.append("     {\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = 0.5*imgr[i + (j+1)*n0 + k*n0*n1] - 0.5*imgr[i + (j-1)*n0 + k*n0*n1];\n");
+    source.append("     }\n");
+    source.append("};");
+    return source;
+};
+
+std::string kernel_gradientz(std::string input_type)
+{
+    std::string source;
+    source.append("__kernel void kernel_gradientz(");
+    source.append("     __global const " + input_type + " * imgr,");
+    source.append("     __global " + input_type + " * imgo)\n");
+    // source.append("     int w,");   //img ref width
+    // source.append("     int h)\n"); //img ref height
+    source.append("{\n");
+    source.append("     int i = get_global_id(0);\n");
+    source.append("     int j = get_global_id(1);\n");
+    source.append("     int k = get_global_id(2);\n");
+    source.append("     int n0 = get_global_size(0);\n");
+    source.append("     int n1 = get_global_size(1);\n");
+    source.append("     int n2 = get_global_size(2);\n");
+
+    source.append("     if(k == 0)\n");
+    source.append("     {\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = imgr[i + j*n0 + (k+1)*n0*n1] - imgr[i + j*n0 + k*n0*n1];\n");
+    source.append("     }\n");
+    source.append("     else if(k == n2 - 1)\n");
+    source.append("     {\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = imgr[i + j*n0 + k*n0*n1] - imgr[i + j*n0 + (k-1)*n0*n1];\n");
+    source.append("     }\n");
+    source.append("     else\n");
+    source.append("     {\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = 0.5*imgr[i + j*n0 + (k+1)*n0*n1] - 0.5*imgr[i + j*n0 + (k-1)*n0*n1];\n");
+    source.append("     }\n");
     source.append("};");
     return source;
 };

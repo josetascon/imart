@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-29 10:03:15
+* @Last Modified time: 2020-07-25 01:16:41
 */
 
 
@@ -38,18 +38,18 @@ int main()
     x0->print_data("grid x0:");
     
     // Create affine transform
-    image_cpu<type>::pointer params( new image_cpu<type>{1.0, 0.0, 0.0, 1.0, 2.5, -1.0} );
-    affine<type> translation( 2, params );
+    image_gpu<type>::pointer params( new image_gpu<type>{1.0, 0.0, 0.0, 1.0, 2.5, -1.0} );
+    affine<type,vector_ocl<type>> translation( 2, params );
 
     // Apply transform
     grid_gpu<type>::pointer x1 = grid_gpu<type>::new_pointer();
-    x1 = translation.apply<vector_ocl<type>>(x0);
+    x1 = translation.apply(x0);
     translation.print_data("Transform parameters:");
     x1->print_data("x1 = transform(x0)");
 
     // Create interpolator
-    ilinear<type,vector_ocl<type>> image0_intp(image0, x0);
-    // inearest<type,vector_ocl<type>> image0_intp(image0); // new version
+    // ilinear<type,vector_ocl<type>> image0_intp(image0, x0);
+    ilinear<type,vector_ocl<type>> image0_intp(image0); // new version
     image_gpu<type>::pointer image1;
     image1 = image0_intp.apply(x1);
     image1->print_data("image 1:");
