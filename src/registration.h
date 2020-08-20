@@ -1,26 +1,26 @@
 /*
 * @Author: jose
-* @Date:   2020-01-27 00:00:00
+* @Date:   2020-08-20 00:00:00
 * @Last Modified by:   jose
-* @Last Modified time: 2020-01-27 00:00:00
+* @Last Modified time: 2020-08-20 00:00:00
 */
 
-#ifndef __OPTIMIZER_H__
-#define __OPTIMIZER_H__
+#ifndef __REGISTRATION_H__
+#define __REGISTRATION_H__
 
-#include "image.h"
-#include "transform.h"
+#include "pairwise_object.h"
 #include "metric.h"
+#include "optimizer.h"
 
 namespace imart
 {
 
 template <typename type, typename container=vector_cpu<type>>
-class optimizer: public inherit<optimizer<type,container>, process_object>
+class registration: public inherit<registration<type,container>, pairwise_object<type,container>>
 {
 public:
     //Type definitions
-    using self    = optimizer;
+    using self    = registration;
     using pointer = std::shared_ptr<self>;
     using vector  = std::vector<self::pointer>;
 
@@ -28,20 +28,17 @@ protected:
     // ===========================================
     // Internal Variables
     // ===========================================
-    int iterations;
-    int max_iterations;
-    
-    int unchanged_times;
-    int max_unchanged_times;
-    
-    double tolerance;
-    double current_cost;
-    double previous_cost;
-    double lowest_cost;
+    int levels;
+    std::vector<int> levels_scales;
+    std::vector<int> levels_sigmas;
+    std::vector<int> levels_iterations;
 
-    std::string termination;
-
-    typename metric<type,container>::pointer _method_;
+    using pairwise_object<type,container>::fixed;
+    using pairwise_object<type,container>::moving;
+    using pairwise_object<type,container>::transformation;
+    using pairwise_object<type,container>::interpolation;
+    typename metric<type,container>::pointer method;
+    typename optimizer<type,container>::pointer optimization;
 
     // ===========================================
     // Functions
@@ -53,22 +50,23 @@ public:
     // Create Functions
     // ===========================================
     // Constructors
-    optimizer();
+    registration();
     
     // ===========================================
     // Get Functions
     // ===========================================
-    int get_iterations() const;
-    int get_unchanged_times() const;
-    double get_tolerance() const;
-    std::string get_termination() const;
-
+    int get_levels() const;
+    std::vector<int> get_levels_scales() const;
+    std::vector<int> get_levels_sigmas() const;
+    std::vector<int> get_levels_iterations() const;
+    
     // ===========================================
     // Set Functions
     // ===========================================
-    void set_iterations(int i);
-    void set_unchanged_times(int u);
-    void set_tolerance(double t);
+    void set_levels(int lvls);
+    void set_levels_scales(std::vector<int> scales);
+    void set_levels_sigmas(std::vector<int> sigmas);
+    void set_levels_iterations(std::vector<int> iterations);
 
     // ===========================================
     // Print Functions
@@ -79,7 +77,7 @@ public:
     // Functions
     // ===========================================
     // optimization
-    virtual void optimize(typename metric<type,container>::pointer method);
+    virtual void apply(typename metric<type,container>::pointer method);
 };
 
 
@@ -92,92 +90,84 @@ public:
 // ===========================================
 // Constructor
 template <typename type, typename container>
-optimizer<type,container>::optimizer()
+registration<type,container>::registration()
 {
-    this->class_name = "optimizer";
+    this->class_name = "registration";
     init();
 };
 
 template <typename type, typename container>
-void optimizer<type,container>::init()
+void registration<type,container>::init()
 {
     // Initilize control variables
-    iterations = 0;
-    max_iterations = 300;
     
-    unchanged_times = 0;
-    max_unchanged_times = 15;
-    
-    tolerance = 1e-5;
-    previous_cost = 1e41;
-    current_cost = 1e40;
-    lowest_cost = 1e41;
-    termination = "none";
-
-    this->set_total_inputs(1);      //process_object::init
-    this->set_total_outputs(0);     //process_object::init
-
-    _method_ = metric<type,container>::new_pointer();
-    this->setup_input(_method_);
-    this->setup_output();           // output is transformation 
 };
 
 // ===========================================
 // Get Functions
 // ===========================================
 template <typename type, typename container>
-int optimizer<type,container>::get_iterations() const
+int registration<type,container>::get_levels() const
 {
-    return max_iterations;
+    return levels;
 };
 
 template <typename type, typename container>
-int optimizer<type,container>::get_unchanged_times() const
+std::vector<int> registration<type,container>::get_levels_scales() const
 {
-    return max_unchanged_times;
+    return levels_scales;
 };
 
 template <typename type, typename container>
-double optimizer<type,container>::get_tolerance() const
+std::vector<int> registration<type,container>::get_levels_sigmas() const
 {
-    return tolerance;
+    return levels_sigmas;
 };
 
 template <typename type, typename container>
-std::string optimizer<type,container>::get_termination() const
+std::vector<int> registration<type,container>::get_levels_iterations() const
 {
-    return termination;
+    return levels_iterations;
 };
 
 // ===========================================
 // Set Functions
 // ===========================================
 template <typename type, typename container>
-void optimizer<type,container>::set_iterations(int i)
+void registration<type,container>::set_levels(int lvls)
 {
-    max_iterations = i;
+    levels = lvls;
 };
 
 template <typename type, typename container>
-void optimizer<type,container>::set_unchanged_times(int u)
+void registration<type,container>::set_levels_scales(std::vector<int> scales)
 {
-    max_unchanged_times = u;
+    assert(levels == scales.size());
+    levels_scales = scales;
 };
 
 template <typename type, typename container>
-void optimizer<type,container>::set_tolerance(double t)
+void registration<type,container>::set_levels_sigmas(std::vector<int> sigmas)
 {
-    tolerance = t;
+    assert(levels == sigmas.size());
+    levels_sigmas = sigmas;
+};
+
+template <typename type, typename container>
+void registration<type,container>::set_levels_iterations(std::vector<int> iterations)
+{
+    assert(levels == iterations.size());
+    levels_iterations = iterations;
 };
 
 // ===========================================
 // Print Functions
 // ===========================================
 template <typename type, typename container>
-std::string optimizer<type,container>::info(std::string msg)
+std::string registration<type,container>::info(std::string msg)
 {
     std::stringstream ss;
-    std::string title = "Optimizer Information";
+    std::string title = "Registration Information";
     if (msg != "") { title = msg; };
 
     ss << object::info(title);
@@ -189,9 +179,9 @@ std::string optimizer<type,container>::info(std::string msg)
 // Functions
 // ===========================================
 template <typename type, typename container>
-void optimizer<type,container>::optimize(typename metric<type,container>::pointer method)
+void registration<type,container>::apply(typename metric<type,container>::pointer method)
 {
-    _method_ = method;
+    ;
 };
 
 }; //end namespace

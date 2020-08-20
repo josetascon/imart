@@ -39,6 +39,11 @@ protected:
     std::vector<double> direction;  // direction of elements
 
     // ===========================================
+    // Set Functions
+    // ===========================================
+    void set_size(std::vector<int> sz);
+
+    // ===========================================
     // Functions
     // ===========================================
     virtual void init(int d);                               // init default properties
@@ -75,7 +80,7 @@ public:
     // ===========================================
     // Set Functions
     // ===========================================
-    void set_size(std::vector<int> sz);
+    // void set_size(std::vector<int> sz);
     void set_spacing(std::vector<double> s);
     void set_origin(std::vector<double> o);
     void set_direction(std::vector<double> d);

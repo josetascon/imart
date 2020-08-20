@@ -19,9 +19,13 @@ namespace imart
 template<typename type>
 std::string string_type(){ return typeid(type).name();};
 template<>
-std::string string_type<short>(){ return "short";};
+std::string string_type<unsigned char>(){ return "unsigned char";};
+template<>
+std::string string_type<char>(){ return "char";};
 template<>
 std::string string_type<unsigned short>(){ return "unsigned short";};
+template<>
+std::string string_type<short>(){ return "short";};
 template<>
 std::string string_type<unsigned int>(){ return "unsigned int";};
 template<>
@@ -424,8 +428,8 @@ std::string kernel_dfield_2d(std::string input_type)
     source.append("     __global " + input_type + " * yout)\n");
     source.append("{\n");
     source.append("     int i = get_global_id(0);\n"); // Set NDRange one dimension, buffer in and out xy equal size
-    source.append("     xout[i] = xin[i] + x[i]);\n");
-    source.append("     yout[i] = yin[i] + y[i]);\n");
+    source.append("     xout[i] = xin[i] + x[i];\n");
+    source.append("     yout[i] = yin[i] + y[i];\n");
     source.append("};");
     return source;
 };
@@ -433,7 +437,7 @@ std::string kernel_dfield_2d(std::string input_type)
 std::string kernel_dfield_3d(std::string input_type)
 {
     std::string source;
-    source.append("__kernel void kernel_dfield_2d(");
+    source.append("__kernel void kernel_dfield_3d(");
     source.append("     __global const " + input_type + " * xin,"); // grid coordinates
     source.append("     __global const " + input_type + " * yin,");
     source.append("     __global const " + input_type + " * zin,");
@@ -445,9 +449,9 @@ std::string kernel_dfield_3d(std::string input_type)
     source.append("     __global " + input_type + " * zout)\n");
     source.append("{\n");
     source.append("     int i = get_global_id(0);\n"); // Set NDRange one dimension, buffer in and out xy equal size
-    source.append("     xout[i] = xin[i] + x[i]);\n");
-    source.append("     yout[i] = yin[i] + y[i]);\n");
-    source.append("     zout[i] = zin[i] + z[i]);\n");
+    source.append("     xout[i] = xin[i] + x[i];\n");
+    source.append("     yout[i] = yin[i] + y[i];\n");
+    source.append("     zout[i] = zin[i] + z[i];\n");
     source.append("};");
     return source;
 };
@@ -706,6 +710,75 @@ std::string kernel_gradientz(std::string input_type)
     source.append("};");
     return source;
 };
+
+std::string kernel_convolution_2d(std::string input_type)
+{
+    std::string source;
+    source.append("__kernel void kernel_convolution_2d(");
+    source.append("     __global const " + input_type + " * imgr,");
+    source.append("     __global const " + input_type + " * kern,");
+    source.append("     __global " + input_type + " * imgo,");
+    source.append("     int kwidth)\n"); //kernel width
+    source.append("{\n");
+    source.append("     int i = get_global_id(0);\n");
+    source.append("     int j = get_global_id(1);\n");
+    source.append("     int n0 = get_global_size(0);\n");
+    source.append("     int n1 = get_global_size(1);\n");
+    source.append("     int off = floor(kwidth/2.0);\n");
+
+    source.append("     if(i >= off && i < n0 - off && j >= off && j < n1 - off)\n");
+    source.append("     {\n");
+    source.append("         " + input_type + " sum = 0;\n");
+    source.append("         for (int p = 0; p < kwidth; p++)\n");
+    source.append("         {\n");
+    source.append("             for (int q = 0; q < kwidth; q++)\n");
+    source.append("             {\n");
+    source.append("                 sum += imgr[i+p-off + (j+q-off)*n0] * kern[p*kwidth + q];\n");
+    source.append("             };\n");
+    source.append("         };\n");
+    source.append("         imgo[i + j*n0] = sum;\n");
+    source.append("     };\n");
+    source.append("};");
+    return source;
+};
+
+std::string kernel_convolution_3d(std::string input_type)
+{
+    std::string source;
+    source.append("__kernel void kernel_convolution_3d(");
+    source.append("     __global const " + input_type + " * imgr,");
+    source.append("     __global const " + input_type + " * kern,");
+    source.append("     __global " + input_type + " * imgo,\n");
+    source.append("     int kwidth)\n"); //kernel width
+    source.append("{\n");
+    source.append("     int i = get_global_id(0);\n");
+    source.append("     int j = get_global_id(1);\n");
+    source.append("     int k = get_global_id(2);\n");
+    source.append("     int n0 = get_global_size(0);\n");
+    source.append("     int n1 = get_global_size(1);\n");
+    source.append("     int n2 = get_global_size(2);\n");
+    source.append("     int off = floor(kwidth/2.0);\n");
+
+    source.append("     if(i >= off && i < n0 - off && j >= off && j < n1 - off && k >= off && k < n2 - off)\n");
+    source.append("     {\n");
+    source.append("         " + input_type + " sum = 0;\n");
+    source.append("         for (int r = 0; r < kwidth; r++)\n");
+    source.append("         {\n");
+    source.append("             for (int p = 0; p < kwidth; p++)\n");
+    source.append("             {\n");
+    source.append("                 for (int q = 0; q < kwidth; q++)\n");
+    source.append("                 {\n");
+    source.append("                     sum += imgr[i+p-off + (j+q-off)*n0 + (k-off)*n0*n1] * kern[r*kwidth*kwidth + p*kwidth + q];\n");
+    source.append("                 };\n");
+    source.append("             };\n");
+    source.append("         };\n");
+    source.append("         imgo[i + j*n0 + k*n0*n1] = sum;\n");
+    source.append("     };\n");
+    source.append("};");
+    return source;
+};
+
+
 
 }; //end namespace
 

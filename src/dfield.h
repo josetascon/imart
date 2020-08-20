@@ -27,6 +27,11 @@ public:
     // Inherited variables
     using transform<type,container>::parameters;
     using transform<type,container>::inverse_parameters;
+    using transform<type,container>::allocate;
+    using transform<type,container>::get_parameters;
+    using transform<type,container>::get_inverse_parameters;
+    using transform<type,container>::get_parameters_vector;
+    using transform<type,container>::get_inverse_parameters_vector;
 
     // using transform<type,container>::operator=;
     // using transform<type,container>::operator+;
@@ -39,6 +44,7 @@ protected:
     // ===========================================
     void init(int d);
     void init(std::vector<int> sz);
+    void init(const space_object & input);
     void inverse_();
 
     std::vector<type> transform_2d(std::vector<type> & point);
@@ -53,16 +59,10 @@ public:
     // ===========================================
     dfield();
     dfield(int d);
-    dfield(int d, typename image<type,container>::vector params);
-
-    // ===========================================
-    // Overloading Functions
-    // ===========================================
-    // dfield<type,container> & operator = (const dfield<type,container> & input);
-    // dfield<type,container> operator + (const dfield<type,container> & input);
-    // dfield<type,container> operator - (const dfield<type,container> & input);
-    // dfield<type,container> operator * (const image<type,container> & input);
-    // dfield<type,container> operator * (type scalar);
+    dfield(int d, typename transform<type,container>::ptr_vector_image params);
+    dfield(std::vector<int> sz);
+    dfield(typename image<type,container>::pointer input);
+    dfield(typename grid<type,container>::pointer input);
 
     // ===========================================
     // Functions
@@ -70,8 +70,13 @@ public:
     void identity();
     std::vector<type> apply(std::vector<type> & point);
     typename grid<type,container>::pointer apply(const typename grid<type,container>::pointer input);
-    // void transform(image<type,container> & image); // not going to implement this
 };
+
+template<typename type>
+using dfield_cpu = dfield<type,vector_cpu<type>>;
+
+template<typename type>
+using dfield_gpu = dfield<type,vector_ocl<type>>;
 
 
 // ===========================================
@@ -92,31 +97,24 @@ dfield<type,container>::dfield()
 template <typename type, typename container>
 dfield<type,container>::dfield(int d)
 {
+    // std::cout << "dfield" << std::endl;
     this->class_name = "dfield";
     init(d);
     identity();
+    // std::cout << "created" << std::endl;
 };
 
 template <typename type, typename container>
 dfield<type,container>::dfield(std::vector<int> sz)
 {
     this->class_name = "dfield";
-    space_object::init(sz.size());
+    init(sz.size());
     init(sz);
     identity();
 };
 
 template <typename type, typename container>
-dfield<type,container>::dfield(const space_object & input)
-{
-    this->class_name = "dfield";
-    this->copy_space();
-    init(this->get_size());
-    identity();
-};
-
-template <typename type, typename container>
-dfield<type,container>::dfield(int d, typename image<type,container>::vector params)
+dfield<type,container>::dfield(int d, typename transform<type,container>::ptr_vector_image params)
 {
     // assert(params->get_total_elements()==(d*d+d));
     this->class_name = "dfield";
@@ -126,29 +124,49 @@ dfield<type,container>::dfield(int d, typename image<type,container>::vector par
 };
 
 template <typename type, typename container>
+dfield<type,container>::dfield(typename image<type,container>::pointer input)
+{
+    this->class_name = "dfield";
+    init(*input); 
+    identity();
+};
+
+template <typename type, typename container>
+dfield<type,container>::dfield(typename grid<type,container>::pointer input)
+{
+    this->class_name = "dfield";
+    init(*input); 
+    identity();
+};
+
+template <typename type, typename container>
 void dfield<type,container>::init(int d)
 {
     space_object::init(d);
-    parameters = image<type,container>::vector(d);          // parameters are 2d
-    inverse_parameters = image<type,container>::vector(d);  // parameters are 2d
-    for (int i = 0; i < d; i++)
-    {
-        parameters[0] = image<type,container>::new_pointer(d);
-        parameters[0] = image<type,container>::new_pointer(d);
-    }
+    allocate(d);
 };
 
 template <typename type, typename container>
 void dfield<type,container>::init(std::vector<int> sz)
 {
-    int d = sz.size();
-    parameters = image<type,container>::vector(d);          // parameters are 2d
-    inverse_parameters = image<type,container>::vector(d);  // parameters are 2d
-    for (int i = 0; i < d; i++)
+    // int d = sz.size();
+    // space_object::init(d);
+    // // allocate
+    // parameters = std::make_shared< std::vector< typename image<type,container>::pointer >>(d);
+    // inverse_parameters = std::make_shared< std::vector< typename image<type,container>::pointer >>(d);
+    for(int i = 0; i < this->get_dimension(); i++)
     {
-        parameters[0] = image<type,container>::new_pointer(sz);
-        parameters[0] = image<type,container>::new_pointer(sz);
-    }
+        (*parameters)[i] = image<type,container>::new_pointer(sz);        // parameters are 2d
+        (*inverse_parameters)[i] = image<type,container>::new_pointer(sz);// parameters are 2d
+    };
+};
+
+template <typename type, typename container>
+void dfield<type,container>::init(const space_object & input)
+{
+    this->copy_space(input);
+    allocate(input.get_dimension());
+    init(input.get_size());
 };
 
 // ===========================================
@@ -159,15 +177,17 @@ void dfield<type,container>::identity()
 {
     for (int i = 0; i < this->dim; i++)
     {
-        parameters[i]->zeros()
-        inverse_parameters[i]->zeros();
-    }
+        // std::cout << "zeros" << std::endl;
+        // get_parameters(i)->print();
+        get_parameters(i)->zeros();
+        get_inverse_parameters(i)->zeros();
+    };
 };
 
 template <typename type, typename container>
 void dfield<type,container>::inverse_()
 {
-    for (int i = 0; i < this->dim; i++) *inverse_parameters[i] = (*parameters[i])*-1;
+    *inverse_parameters = (*parameters)*((type)-1.0);
 };
 
 //Transform point
@@ -198,12 +218,13 @@ std::vector<type> dfield<type,container>::transform_2d(std::vector<type> & point
     // TODO: consider if the point uses the inverse or the direct transform. I think direct.
     assert(this->get_dimension() == point.size());
     std::vector<type> out(point.size());
-    std::vector<type> va = parameters->get_data()->std_vector();
-    type * a = va.data();
+    
+    // interpolation required!
 
-    out[0] = a[0]*point[0] + a[1]*point[1] + a[4];
-    out[1] = a[2]*point[0] + a[3]*point[1] + a[5];
-
+    // std::vector<type> va = parameters->get_data()->std_vector();
+    // type * a = va.data();
+    // out[0] = a[0]*point[0] + a[1]*point[1] + a[4];
+    // out[1] = a[2]*point[0] + a[3]*point[1] + a[5];
     return out;
 };
 
@@ -218,7 +239,7 @@ typename grid<type,container>::pointer dfield<type,container>::transform_2d(type
     typename image<type,container>::pointer * xout = output->ptr();
 
     container::dfield_2d(xin[0]->get_data(), xin[1]->get_data(),
-                         parameters[0]->get_data(), parameters[1]->get_data(),
+                         get_parameters(0)->get_data(), get_parameters(1)->get_data(),
                          xout[0]->get_data(), xout[1]->get_data());
     return output;
 };
@@ -233,11 +254,14 @@ std::vector<type> dfield<type,container>::transform_3d(std::vector<type> & point
     // TODO: consider if the point uses the inverse or the direct transform. I think direct.
     assert(this->get_dimension() == point.size());
     std::vector<type> out(point.size());
-    std::vector<type> va = parameters->get_data()->std_vector();
-    type * a = va.data();
-    out[0] = a[0]*point[0] + a[1]*point[1] + a[2]*point[2] + a[9];
-    out[1] = a[3]*point[0] + a[4]*point[1] + a[5]*point[2] + a[10];
-    out[2] = a[6]*point[0] + a[7]*point[1] + a[8]*point[2] + a[11];
+
+    // interpolation required!
+
+    // std::vector<type> va = parameters->get_data()->std_vector();
+    // type * a = va.data();
+    // out[0] = a[0]*point[0] + a[1]*point[1] + a[2]*point[2] + a[9];
+    // out[1] = a[3]*point[0] + a[4]*point[1] + a[5]*point[2] + a[10];
+    // out[2] = a[6]*point[0] + a[7]*point[1] + a[8]*point[2] + a[11];
     return out;
 };
 
@@ -252,75 +276,10 @@ typename grid<type,container>::pointer dfield<type,container>::transform_3d(type
     typename image<type,container>::pointer * xout = output->ptr();
 
     container::dfield_3d(xin[0]->get_data(), xin[1]->get_data(), xin[2]->get_data(),
-                         parameters[0]->get_data(), parameters[1]->get_data(), parameters[2]->get_data(),
+                         get_parameters(0)->get_data(), get_parameters(1)->get_data(), get_parameters(2)->get_data(),
                          xout[0]->get_data(), xout[1]->get_data(), xout[2]->get_data());
     return output;
 };
-
-// ===========================================
-// Overloading Functions
-// ===========================================
-// Equal
-// template <typename type, typename container>
-// dfield<type,container> & dfield<type,container>::operator = (const dfield<type,container> & input)
-// {
-//     // delete &data;
-//     this->copy_(input);
-//     return *this;
-// };
-
-// // Transform to Transform
-// template <typename type, typename container>
-// dfield<type,container> dfield<type,container>::operator + (const dfield<type,container> & input)
-// {
-//     auto pp = image<type,container>::new_pointer();
-//     *pp = *parameters + *(input.get_parameters());
-
-//     dfield<type,container> output;
-//     output.mimic_(*this);
-//     output.set_parameters( pp );
-//     return output;
-//     // pointer output = this->mimic();
-//     // output->set_parameters( pp );
-//     // return *output;
-// };
-
-// template <typename type, typename container>
-// dfield<type,container> dfield<type,container>::operator - (const dfield<type,container> & input)
-// {
-//     auto pp = image<type,container>::new_pointer();
-//     *pp = *parameters - *(input.get_parameters());
-
-//     dfield<type,container> output;
-//     output.mimic_(*this);
-//     output.set_parameters( pp );
-//     return output;
-// };
-
-// template <typename type, typename container>
-// dfield<type,container> dfield<type,container>::operator * (const image<type,container> & input)
-// {
-//     auto pp = image<type,container>::new_pointer();
-//     *pp = (*parameters)*input;
-
-//     dfield<type,container> output;
-//     output.mimic_(*this);
-//     output.set_parameters( pp );
-//     return output;
-// };
-
-// // Scalar
-// template <typename type, typename container>
-// dfield<type,container> dfield<type,container>::operator * (type scalar)
-// {
-//     auto pp = image<type,container>::new_pointer();
-//     *pp = scalar*(*parameters);
-
-//     dfield<type,container> output;
-//     output.mimic_(*this);
-//     output.set_parameters( pp );
-//     return output;
-// };
 
 }; //end namespace
 

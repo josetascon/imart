@@ -198,6 +198,8 @@ public:
     friend image<type_,container_> operator * (type_ scalar, image<type_,container_> & input);
     template<typename type_, typename container_>
     friend image<type_,container_> operator / (type_ scalar, const image<type_,container_> & input);
+    template<typename type_, typename container_>
+    friend image<type_,container_> operator ^ (type_ scalar, const image<type_,container_> & input);
     
     // ===========================================
     // Functions
@@ -358,6 +360,7 @@ image<type,container>::image(container_pointer buffer, int w, int h, int l)
 template <typename type, typename container>
 image<type,container>::image(std::initializer_list<type> list)
 {
+    this->class_name = "image";
     int s = list.size();
     init(s, 1, 1);
     data.reset();
@@ -368,6 +371,7 @@ image<type,container>::image(std::initializer_list<type> list)
 template <typename type, typename container>
 image<type,container>::image(const image & input)
 {
+    this->class_name = "image";
     clone_(input);
 };
 
@@ -391,7 +395,8 @@ void image<type,container>::init(int w, int h, int channel)
     space_object::init(2);
     data_object<type,container>::init(num_elements);   // allocation
 
-    this->size = std::vector<int>{width, height};
+    // this->size = std::vector<int>{width, height};
+    space_object::set_size(std::vector<int>{width, height});
 };
 
 template <typename type, typename container>
@@ -406,7 +411,8 @@ void image<type,container>::init(int w, int h, int l, int channel)
     space_object::init(3);                              // spatial properties
     data_object<type,container>::init(num_elements);    // allocate
 
-    this->size = std::vector<int>{width, height, length};
+    // this->size = std::vector<int>{width, height, length};
+    space_object::set_size(std::vector<int>{width, height, length});
 };
 
 // Copy metadata
@@ -776,7 +782,15 @@ template <typename type, typename container>
 image<type,container> operator / (type scalar, const image<type,container> & input)
 {
     typename image<type,container>::pointer output = input.mimic();
-    output->set_data(scalar - *(input.get_data()));
+    output->set_data(scalar / *(input.get_data()));
+    return *output;
+};
+
+template <typename type, typename container>
+image<type,container> operator ^ (type scalar, const image<type,container> & input)
+{
+    typename image<type,container>::pointer output = input.mimic();
+    output->set_data(scalar ^ *(input.get_data()));
     return *output;
 };
 

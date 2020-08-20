@@ -128,6 +128,8 @@ public:
     friend typename vector_cpu<type_>::pointer operator * (type_ scalar, vector_cpu<type_> & input);
     template<typename type_>
     friend typename vector_cpu<type_>::pointer operator / (type_ scalar, const vector_cpu<type_> & input);
+    template<typename type_>
+    friend typename vector_cpu<type_>::pointer operator ^ (type_ scalar, const vector_cpu<type_> & input);
 
     // ===========================================
     // Reduction functions
@@ -202,6 +204,11 @@ public:
     static void gradientz( typename vector_cpu<type>::pointer imgr,
                            typename vector_cpu<type>::pointer imgo,
                            std::vector<int> ref_size);
+
+    static void convolution( typename vector_cpu<type>::pointer imgr,
+                             typename vector_cpu<type>::pointer kernel,
+                             typename vector_cpu<type>::pointer imgo,
+                             std::vector<int> ref_size, int kwidth);
 
 };
 
@@ -604,6 +611,21 @@ typename vector_cpu<type>::pointer operator / (type scalar, const vector_cpu<typ
     for(int k=0; k<size; k++)
     {
         p2[k] = scalar / p1[k];
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer operator ^ (type scalar, const vector_cpu<type> & input)
+{
+    int size = input.size();
+    typename vector_cpu<type>::pointer output = input.mimic(); // init a image with same poperties
+    const type * p1 = input.data();
+    type * p2 = output->data();
+
+    for(int k=0; k<size; k++)
+    {
+        p2[k] = pow(scalar, p1[k]);
     };
     return output;
 };
@@ -1362,6 +1384,66 @@ void vector_cpu<type>::gradientz(typename vector_cpu<type>::pointer imgr,
                     if(k == 0)          pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + (k+1)*n0*n1] - pimgr[i + j*n0 + k*n0*n1];
                     else if (k == n2-1) pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + k*n0*n1] - pimgr[i + j*n0 + (k-1)*n0*n1];
                     else    pimgo[i + j*n0 + k*n0*n1] = 0.5*pimgr[i + j*n0 + (k+1)*n0*n1] - 0.5*pimgr[i + j*n0 + (k-1)*n0*n1];
+                };
+            };
+        };
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
+                                    typename vector_cpu<type>::pointer kernel,
+                                    typename vector_cpu<type>::pointer imgo,
+                                    std::vector<int> ref_size, int kwidth)
+{
+    type * pimgr = imgr->data();
+    type * pkrnl = kernel->data();
+    type * pimgo = imgo->data();
+
+    int off = std::floor(kwidth/2.0);
+
+    if (ref_size.size() == 2)
+    {
+        int n0 = ref_size[0]; int n1 = ref_size[1];
+        
+        for(int j = off; j < n1-off; j++)
+        {
+            for(int i = off; i < n0-off; i++)
+            {
+                type sum = 0;
+                for (int p = 0; p < kwidth; p++)
+                {
+                    for (int q = 0; q < kwidth; q++)
+                    {
+                        sum += pimgr[i+p-off + (j+q-off)*n0] * pkrnl[p*kwidth + q];
+                    };
+                };
+                pimgo[i + j*n0] = sum;
+            };
+        };
+    }
+    else if (ref_size.size() == 3)
+    {
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[1];
+        
+        for(int k = off; k < n2-off; k++)
+        {
+            for(int j = off; j < n1-off; j++)
+            {
+                for(int i = off; i < n0-off; i++)
+                {
+                    type sum = 0;
+                    for (int r = 0; r < kwidth; r++)
+                    {
+                        for (int p = 0; p < kwidth; p++)
+                        {
+                            for (int q = 0; q < kwidth; q++)
+                            {
+                                sum += pimgo[i+p-off + (j+q-off)*n0 + (k-off)*n0*n1] * pkrnl[r*kwidth*kwidth + p*kwidth + q];
+                            };
+                        };
+                    };
+                    pimgo[i + j*n0 + k*n0*n1] = sum;
                 };
             };
         };

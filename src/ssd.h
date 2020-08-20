@@ -93,8 +93,8 @@ typename transform<type,container>::pointer ssd<type,container>::derivative()
     int d = fixed->get_dimension();
     type N = (type)fixed->get_total_elements();
 
-    auto trfm = transformation->mimic();
-    auto param = transformation->get_parameters()->mimic();
+    typename transform<type,container>::pointer trfm = transformation->mimic();
+    typename image<type,container>::pointer param = transformation->get_parameters()->mimic();
     
     // moving prime already computed
     // auto moving_prime = this->warped_moving();        // consider store this to avoid compute again
@@ -114,14 +114,19 @@ typename transform<type,container>::pointer ssd<type,container>::derivative()
         
         if (d == 2)
         {
+            // set scales
+            std::vector<type> s(6);
+            s[0] = 0.12; s[1] = 0.12; s[2] = 0.12; s[3] = 0.12;
+            s[4] = 2000; s[5] = 2000;
+
             // compute derivatives
             std::vector<type> p(6);
-            p[0] = (1.0/N)*( dm_di->dot(gx*x) );
-            p[1] = (1.0/N)*( dm_di->dot(gx*y) );
-            p[2] = (1.0/N)*( dm_di->dot(gy*x) );
-            p[3] = (1.0/N)*( dm_di->dot(gy*y) );
-            p[4] = (1.0/N)*( dm_di->dot(gx) );
-            p[5] = (1.0/N)*( dm_di->dot(gy) );
+            p[0] = s[0]*(1.0/N)*( dm_di->dot(gx*x) );
+            p[1] = s[1]*(1.0/N)*( dm_di->dot(gx*y) );
+            p[2] = s[2]*(1.0/N)*( dm_di->dot(gy*x) );
+            p[3] = s[3]*(1.0/N)*( dm_di->dot(gy*y) );
+            p[4] = s[4]*(1.0/N)*( dm_di->dot(gx) );
+            p[5] = s[5]*(1.0/N)*( dm_di->dot(gy) );
             // write to parameters
             param->get_data()->read_ram(p.data(),p.size());
         }
@@ -129,20 +134,27 @@ typename transform<type,container>::pointer ssd<type,container>::derivative()
         {
             auto z = *(x0->ptr()[2]);
             auto gz = *grad[2];
+            // set scales
+            std::vector<type> s(12);
+            s[0] = 0.12; s[1] = 0.12; s[2] = 0.12; 
+            s[3] = 0.12; s[4] = 0.12; s[5] = 0.12; 
+            s[6] = 0.12; s[7] = 0.12; s[8] = 0.12;
+            s[9] = 2000; s[10] = 2000; s[11] = 2000;
+
             // compute derivatives
             std::vector<type> p(12);
-            p[0]  = (1.0/N)*( dm_di->dot(gx*x) );
-            p[1]  = (1.0/N)*( dm_di->dot(gx*y) );
-            p[2]  = (1.0/N)*( dm_di->dot(gx*z) );
-            p[3]  = (1.0/N)*( dm_di->dot(gy*x) );
-            p[4]  = (1.0/N)*( dm_di->dot(gy*y) );
-            p[5]  = (1.0/N)*( dm_di->dot(gy*z) );
-            p[6]  = (1.0/N)*( dm_di->dot(gz*x) );
-            p[7]  = (1.0/N)*( dm_di->dot(gz*y) );
-            p[8]  = (1.0/N)*( dm_di->dot(gz*z) );
-            p[9]  = (1.0/N)*( dm_di->dot(gx) );
-            p[10] = (1.0/N)*( dm_di->dot(gy) );
-            p[11] = (1.0/N)*( dm_di->dot(gz) );
+            p[0]  = s[0]*(1.0/N)*( dm_di->dot(gx*x) );
+            p[1]  = s[1]*(1.0/N)*( dm_di->dot(gx*y) );
+            p[2]  = s[2]*(1.0/N)*( dm_di->dot(gx*z) );
+            p[3]  = s[3]*(1.0/N)*( dm_di->dot(gy*x) );
+            p[4]  = s[4]*(1.0/N)*( dm_di->dot(gy*y) );
+            p[5]  = s[5]*(1.0/N)*( dm_di->dot(gy*z) );
+            p[6]  = s[6]*(1.0/N)*( dm_di->dot(gz*x) );
+            p[7]  = s[7]*(1.0/N)*( dm_di->dot(gz*y) );
+            p[8]  = s[8]*(1.0/N)*( dm_di->dot(gz*z) );
+            p[9]  = s[9]*(1.0/N)*( dm_di->dot(gx) );
+            p[10] = s[10]*(1.0/N)*( dm_di->dot(gy) );
+            p[11] = s[11]*(1.0/N)*( dm_di->dot(gz) );
             // write to parameters
             param->get_data()->read_ram(p.data(),p.size());
         };

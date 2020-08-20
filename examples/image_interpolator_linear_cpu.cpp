@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-07-25 01:15:04
+* @Last Modified time: 2020-08-19 16:17:06
 */
 
 
@@ -58,8 +58,9 @@ int main()
     //   Testing interpolator with manual grid
     // ============================================
     // Create a grid from scratch
-    grid_cpu<type>::pointer x2 = grid_cpu<type>::new_pointer(2);
-    x2->set_size(std::vector<int>{7, 5});
+    // grid_cpu<type>::pointer x2 = grid_cpu<type>::new_pointer(2);
+    // x2->set_size(std::vector<int>{7, 5});
+    grid_cpu<type>::pointer x2 = grid_cpu<type>::new_pointer(std::vector<int>{7, 5});
     x2->set_spacing(std::vector<double>{2.0, 1.5});
     x2->set_origin(std::vector<double>{-1.0, 2.5});
     x2->meshgrid();

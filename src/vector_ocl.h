@@ -21,6 +21,7 @@
 #include "object.h"
 #include "kernels.h"
 #include "opencl_object.h"
+#include "vector_cpu.h"
 #include "utils/timer.h"
 
 
@@ -144,6 +145,8 @@ public:
     friend typename vector_ocl<type_>::pointer operator * (type_ scalar, vector_ocl<type_> & input);
     template<typename type_>
     friend typename vector_ocl<type_>::pointer operator / (type_ scalar, const vector_ocl<type_> & input);
+    template<typename type_>
+    friend typename vector_ocl<type_>::pointer operator ^ (type_ scalar, const vector_ocl<type_> & input);
 
     // ===========================================
     // Reduction functions
@@ -218,6 +221,11 @@ public:
     static void gradientz( typename vector_ocl<type>::pointer imgr,
                            typename vector_ocl<type>::pointer imgo,
                            std::vector<int> ref_size);
+
+    static void convolution( typename vector_ocl<type>::pointer imgr,
+                             typename vector_ocl<type>::pointer kernel,
+                             typename vector_ocl<type>::pointer imgo,
+                             std::vector<int> ref_size, int kwidth);
 };
 
 
@@ -300,6 +308,7 @@ void vector_ocl<type>::clone_(const vector_ocl<type> & input)
     mimic_(input);
     // clone buffer;
     std::string str_kernel = kernel_copy(string_type<type>());
+    // std::cout << str_kernel << std::endl;
     cl_manager.program(str_kernel, "kernel_copy");
     cl_manager.arguments(*(input.get_buffer()), *buffer);
     cl_manager.execute(_size_);
@@ -425,11 +434,14 @@ void vector_ocl<type>::ones()
 template <typename type>
 void vector_ocl<type>::assign(type value)
 {
-    type v = value;
-    std::string str_kernel = kernel_assign(string_type<type>());
-    cl_manager.program(str_kernel, "kernel_assign");
-    cl_manager.arguments(*buffer, v);
-    cl_manager.execute(_size_);
+    if (_size_ > 0)
+    {
+        type v = value;
+        std::string str_kernel = kernel_assign(string_type<type>());
+        cl_manager.program(str_kernel, "kernel_assign");
+        cl_manager.arguments(*buffer, v);
+        cl_manager.execute(_size_);
+    };
 };
 
 template <typename type>
@@ -617,7 +629,7 @@ typename vector_ocl<type>::pointer operator - (type scalar, const vector_ocl<typ
     int size = input.size();
     auto output = vector_ocl<type>::new_pointer(size);
     
-    std::string str_kernel = kernel_scalar( string_type<type>(), "-", false, true);  // function = true, reverse = true
+    std::string str_kernel = kernel_scalar( string_type<type>(), "-", false, true);  // function = false, reverse = true
     cl_manager.program(str_kernel, "kernel_scalar");
     cl_manager.arguments(*(input.get_buffer()), *(output->get_buffer()), scalar);
     cl_manager.execute(size);
@@ -636,7 +648,20 @@ typename vector_ocl<type>::pointer operator / (type scalar, const vector_ocl<typ
     int size = input.size();
     auto output = vector_ocl<type>::new_pointer(size);
     
-    std::string str_kernel = kernel_scalar( string_type<type>(), "/", false, true);  // function = true, reverse = true
+    std::string str_kernel = kernel_scalar( string_type<type>(), "/", false, true);  // function = false, reverse = true
+    cl_manager.program(str_kernel, "kernel_scalar");
+    cl_manager.arguments(*(input.get_buffer()), *(output->get_buffer()), scalar);
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer operator ^ (type scalar, const vector_ocl<type> & input)
+{
+    int size = input.size();
+    auto output = vector_ocl<type>::new_pointer(size);
+    
+    std::string str_kernel = kernel_scalar( string_type<type>(), "pow", true, true);  // function = false, reverse = true
     cl_manager.program(str_kernel, "kernel_scalar");
     cl_manager.arguments(*(input.get_buffer()), *(output->get_buffer()), scalar);
     cl_manager.execute(size);
@@ -1215,6 +1240,32 @@ void vector_ocl<type>::gradientz( typename vector_ocl<type>::pointer imgr,
     cl_manager.execute(ref_size); // multidimensional NDRange
 };
 
+template <typename type>
+void vector_ocl<type>::convolution( typename vector_ocl<type>::pointer imgr,
+                                    typename vector_ocl<type>::pointer kernel,
+                                    typename vector_ocl<type>::pointer imgo,
+                                    std::vector<int> ref_size, int kwidth)
+{
+    if (ref_size.size() == 2)
+    {
+        std::string str_kernel = kernel_convolution_2d( string_type<type>() );
+        // std::cout << str_kernel << std::endl;
+        cl_manager.program(str_kernel, "kernel_convolution_2d");
+        cl_manager.arguments(*(imgr->get_buffer()), *(kernel->get_buffer()), 
+                            *(imgo->get_buffer()), kwidth);
+        cl_manager.execute(ref_size); // multidimensional NDRange
+    }
+    else if (ref_size.size() == 3)
+    {
+        std::string str_kernel = kernel_convolution_3d( string_type<type>() );
+        // std::cout << str_kernel << std::endl;
+        cl_manager.program(str_kernel, "kernel_convolution_3d");
+        cl_manager.arguments(*(imgr->get_buffer()), *(kernel->get_buffer()), 
+                            *(imgo->get_buffer()), kwidth);
+        cl_manager.execute(ref_size); // multidimensional NDRange
+    }
+    else ;
+};
 
 }; //end namespace
 

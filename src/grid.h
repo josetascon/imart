@@ -56,6 +56,7 @@ public:
     // ===========================================
     grid();
     grid(int dim);
+    grid(std::vector<int> sz);
     grid(const grid<type,container> & input);
     grid(const image<type,container> & input);
     grid(const typename grid<type,container>::pointer input);
@@ -120,7 +121,15 @@ grid<type,container>::grid(int d)
 {
     this->class_name = "grid";
     init(d);
-}
+};
+
+template <typename type, typename container>
+grid<type,container>::grid(std::vector<int> sz)
+{
+    this->class_name = "grid";
+    init(sz.size());
+    space_object::set_size(sz);
+};
 
 template <typename type, typename container>
 grid<type,container>::grid(const grid<type,container> & input)
@@ -128,7 +137,7 @@ grid<type,container>::grid(const grid<type,container> & input)
     this->class_name = "grid";
     allocate(input.get_dimension());
     clone_(input);
-}
+};
 
 template <typename type, typename container>
 grid<type,container>::grid(const image<type,container> & input)
@@ -292,8 +301,9 @@ std::string grid<type,container>::info_data(std::string msg)
 template <typename type, typename container>
 void grid<type,container>::meshgrid()
 {   
-    if (this->dim == 2) { meshgrid2(); };
-    if (this->dim == 3) { meshgrid3(); };
+    if (this->dim == 2) { meshgrid2(); }
+    else if (this->dim == 3) { meshgrid3(); }
+    else ;
 };
 
 template <typename type, typename container>
