@@ -36,6 +36,7 @@ public:
     using optimizer<type,container>::previous_cost;
     using optimizer<type,container>::lowest_cost;
     using optimizer<type,container>::termination;
+    using optimizer<type,container>::_method_;
 
     using optimizer<type,container>::init;
 
@@ -107,11 +108,18 @@ void gradient_descent<type,container>::set_step(type s)
 template <typename type, typename container>
 void gradient_descent<type,container>::optimize(typename metric<type,container>::pointer method)
 {
+    _method_ = method;
     std::cout << "Init optimization" << std::endl;
+    // Affine
+    // typename affine<type,container>::pointer tr_base = std::static_pointer_cast<affine<type,container>>(method->get_transform());
+    // typename affine<type,container>::pointer tr_derive = tr_base->mimic();
+    // typename affine<type,container>::pointer tr_best = tr_base->mimic();
 
-    typename affine<type,container>::pointer tr_base = std::static_pointer_cast<affine<type,container>>(method->get_transform());
-    typename affine<type,container>::pointer tr_derive = tr_base->mimic();
-    typename affine<type,container>::pointer tr_best = tr_base->mimic();
+    typename transform<type,container>::pointer tr_base = method->get_transform();
+    typename transform<type,container>::pointer tr_derive = tr_base->mimic();
+    typename transform<type,container>::pointer tr_best = tr_base->mimic();
+
+
     // tr_base->print("transform base");
     // tr_base->print_data("transform base");
     // tr_derive->print("transform derive");
@@ -123,21 +131,21 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
     double diff = 0.0;
 
     // Affine transform
-    auto scales = tr_base->get_parameters()->mimic();
-    std::vector<type> p(d*d + d);
-    if (d == 2)
-    {
-        p[0] = 0.12; p[1] = 0.12; p[2] = 0.12; p[3] = 0.12;
-        p[4] = 2000; p[5] = 2000;
-    }
-    else if (d == 3)
-    {
-        p[0] = 0.12; p[1] = 0.12; p[2] = 0.12; 
-        p[3] = 0.12; p[4] = 0.12; p[5] = 0.12; 
-        p[6] = 0.12; p[7] = 0.12; p[8] = 0.12;
-        p[9] = 2000; p[10] = 2000; p[11] = 2000;
-    }
-    scales->get_data()->read_ram(p.data(),p.size());
+    // typename transform<type,container>::pointer scales = tr_base->mimic();
+    // std::vector<type> p(d*d + d);
+    // if (d == 2)
+    // {
+    //     p[0] = 0.12; p[1] = 0.12; p[2] = 0.12; p[3] = 0.12;
+    //     p[4] = 2000; p[5] = 2000;
+    // }
+    // else if (d == 3)
+    // {
+    //     p[0] = 0.12; p[1] = 0.12; p[2] = 0.12; 
+    //     p[3] = 0.12; p[4] = 0.12; p[5] = 0.12; 
+    //     p[6] = 0.12; p[7] = 0.12; p[8] = 0.12;
+    //     p[9] = 2000; p[10] = 2000; p[11] = 2000;
+    // }
+    // scales->get_parameters()->get_data()->read_ram(p.data(),p.size());
 
     timer t("ms");
     t.start();
@@ -146,15 +154,25 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
     {
         // std::cout << "Cost:" << std::endl;
         current_cost = method->cost();
+
+        // auto output = image<unsigned char>::new_pointer();
+        // auto tmp = method->warped_moving();
+        // cast((*tmp)*(type(255)),*output);
+        // output->write("./out" + std::to_string(iterations) + ".png");
+
         
         // std::cout << "Derivative:" << std::endl;
-        tr_derive = std::static_pointer_cast<affine<type,container>>(method->derivative());
-        // tr_derive = method->derivative();
+        tr_derive = method->derivative();
         // tr_derive->print_data("gradient");
         
         // std::cout << "Update:" << std::endl;
-        *tr_base = *tr_base - (*tr_derive)*(step*(*scales));
+        // *tr_base = *tr_base - (*tr_derive)*(*scales)*step;
+        *tr_base = *tr_base - (*tr_derive)*step;
         // tr_base->print_data("transform update");
+
+        type sigma = 2.0;
+        tr_base->set_parameters( gaussian_filter(tr_base->get_parameters(0),sigma,3), 0 );
+        tr_base->set_parameters( gaussian_filter(tr_base->get_parameters(1),sigma,3), 1 );
 
         diff = abs(previous_cost - current_cost);
         t.lap();
@@ -193,7 +211,8 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
     std::cout << "Iterations:\t" << iterations << std::endl;
     std::cout << "Lowest cost:\t" << lowest_cost << std::endl;
     std::cout << "Termination:\t" << termination << std::endl;
-    tr_best->print_data();
+    // tr_best->print_data();
+    method->set_transform(tr_best);
 
 };
 

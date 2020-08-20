@@ -72,6 +72,7 @@ public:
     typename image<type,container>::pointer get_fixed() const;
     typename image<type,container>::pointer get_moving() const;
     typename transform<type,container>::pointer get_transform() const;
+    typename interpolator<type,container>::pointer get_interpolator() const;
     typename grid<type,container>::pointer get_grid_fixed() const;
     typename grid<type,container>::pointer get_grid_moving() const;
 
@@ -81,6 +82,7 @@ public:
     void set_fixed(typename image<type,container>::pointer fixed_image);
     void set_moving(typename image<type,container>::pointer moving_image);
     void set_transform(typename transform<type,container>::pointer transformd);
+    void set_interpolator(typename interpolator<type,container>::pointer interpolation);
 
     // ===========================================
     // Print Functions
@@ -169,7 +171,10 @@ void metric<type,container>::init( typename image<type,container>::pointer fixed
     cost_value = 1e40;
     fixed = fixed_image;
     moving = moving_image;
-    transformation = transformd;
+
+    transformation = transformd->copy();
+    // transformation = transformd;
+    
     grid_fixed(); // x0 = grid<type,container>::new_pointer(fixed);
     // x1 = grid<type,container>::new_pointer(moving);
     interpolate_fixed = ilinear<type,container>::new_pointer(fixed);
@@ -210,7 +215,11 @@ typename transform<type,container>::pointer metric<type,container>::get_transfor
     return transformation;
 };
 
-
+template <typename type, typename container>
+typename interpolator<type,container>::pointer metric<type,container>::get_interpolator() const
+{
+    return interpolate_moving; // same type as fixed
+};
 
 template <typename type, typename container>
 typename grid<type,container>::pointer metric<type,container>::get_grid_fixed() const
@@ -245,6 +254,15 @@ template <typename type, typename container>
 void metric<type,container>::set_transform(typename transform<type,container>::pointer transformd)
 {
     transformation = transformd;
+};
+
+template <typename type, typename container>
+void metric<type,container>::set_interpolator(typename interpolator<type,container>::pointer interpolation)
+{
+    interpolate_fixed = interpolation->mimic();
+    interpolate_moving = interpolation->mimic();
+    interpolate_fixed->set_reference(fixed);
+    interpolate_moving->set_reference(moving);
 };
 
 // ===========================================

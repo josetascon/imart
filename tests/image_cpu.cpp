@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-06 00:00:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-17 10:00:37
+* @Last Modified time: 2020-08-19 20:26:17
 */
 
 // std libs
@@ -32,6 +32,7 @@ TYPED_TEST(test_image_cpu, constructor)
 {
     image_cpu<TypeParam> img1;
     ASSERT_TRUE("image" == img1.get_name());
+    ASSERT_EQ( 2, img1.get_dimension() );
     ASSERT_EQ( 0, img1.get_total_elements() );
     ASSERT_EQ( 0, img1.get_width() );
     ASSERT_EQ( 0, img1.get_height() );
@@ -39,6 +40,8 @@ TYPED_TEST(test_image_cpu, constructor)
     ASSERT_EQ( 1, img1.get_channels() );
 
     image_cpu<TypeParam> img2(20,10);
+    ASSERT_TRUE("image" == img2.get_name());
+    ASSERT_EQ( 2, img2.get_dimension() );
     ASSERT_EQ( 20*10, img2.get_total_elements() );
     ASSERT_EQ( 20, img2.get_width() );
     ASSERT_EQ( 10, img2.get_height() );
@@ -47,33 +50,83 @@ TYPED_TEST(test_image_cpu, constructor)
 
     image_cpu<TypeParam> img3(121,50,37);
     ASSERT_TRUE("image" == img3.get_name());
+    ASSERT_EQ( 3, img3.get_dimension() );
     ASSERT_EQ( 121*50*37, img3.get_total_elements() );
     ASSERT_EQ( 121, img3.get_width() );
     ASSERT_EQ( 50, img3.get_height() );
     ASSERT_EQ( 37, img3.get_length() );
     ASSERT_EQ( 1, img3.get_channels() );
 
-    std::vector<int> size({20,30,15});
-    image_cpu<TypeParam> img4(size, 1);
-    ASSERT_EQ( 20*30*15, img4.get_total_elements() );
-    ASSERT_EQ( 20, img4.get_width() );
-    ASSERT_EQ( 30, img4.get_height() );
-    ASSERT_EQ( 15, img4.get_length() );
+    std::vector<int> size4({12,23,8});
+    image_cpu<TypeParam> img4(size4);
+    ASSERT_TRUE("image" == img4.get_name());
+    ASSERT_EQ( 3, img4.get_dimension() );
+    ASSERT_EQ( 12*23*8, img4.get_total_elements() );
+    ASSERT_EQ( 12, img4.get_width() );
+    ASSERT_EQ( 23, img4.get_height() );
+    ASSERT_EQ( 8, img4.get_length() );
     ASSERT_EQ( 1, img4.get_channels() );
 
-    // list
+    std::vector<int> size5({20,30,15});
+    image_cpu<TypeParam> img5(size5, 1);
+    ASSERT_TRUE("image" == img5.get_name());
+    ASSERT_EQ( 3, img5.get_dimension() );
+    ASSERT_EQ( 20*30*15, img5.get_total_elements() );
+    ASSERT_EQ( 20, img5.get_width() );
+    ASSERT_EQ( 30, img5.get_height() );
+    ASSERT_EQ( 15, img5.get_length() );
+    ASSERT_EQ( 1, img5.get_channels() );
 
-    // image_cpu<TypeParam> img5(10,-5.2);
-    // ASSERT_TRUE("image" == img5.get_name());
-    // ASSERT_FLOAT_EQ( -5.2, img5[0] );
-    // ASSERT_FLOAT_EQ( -5.2, img5[4] );
-    // ASSERT_FLOAT_EQ( -5.2, img5[9] );
+    // {TypeParam(1.0),TypeParam(2.0),TypeParam(3.0),TypeParam(9.0),TypeParam(-1.0),TypeParam(2.0)}
+    image_cpu<TypeParam> img6{1.82,2.0,3.113,9.0,-1.0,-2.212};
+    ASSERT_TRUE("image" == img6.get_name());
+    ASSERT_EQ( 2, img6.get_dimension() );
+    ASSERT_EQ( 6*1*1, img6.get_total_elements() );
+    ASSERT_EQ( 6, img6.get_width() );
+    ASSERT_EQ( 1, img6.get_height() );
+    ASSERT_EQ( 1, img6.get_length() );
+    ASSERT_EQ( 1, img6.get_channels() );
+    ASSERT_FLOAT_EQ( 1.82, img6[0] );
+    ASSERT_FLOAT_EQ( 3.113, img6[2] );
+    ASSERT_FLOAT_EQ( -2.212, img6[5] );
 
-    // image_cpu<TypeParam> img6(img5);
-    // ASSERT_TRUE("image" == img6.get_name());
-    // ASSERT_FLOAT_EQ( -5.2, img5[0] );
-    // ASSERT_FLOAT_EQ( -5.2, img5[4] );
-    // ASSERT_FLOAT_EQ( -5.2, img5[9] );
+    typename vector_cpu<TypeParam>::pointer vec1 = vector_cpu<TypeParam>::new_pointer(8,3.0);
+    image_cpu<TypeParam> img7(vec1,4,2);
+    ASSERT_TRUE("image" == img7.get_name());
+    ASSERT_EQ( 2, img7.get_dimension() );
+    ASSERT_EQ( 4*2*1, img7.get_total_elements() );
+    ASSERT_EQ( 4, img7.get_width() );
+    ASSERT_EQ( 2, img7.get_height() );
+    ASSERT_EQ( 1, img7.get_length() );
+    ASSERT_EQ( 1, img7.get_channels() );
+    ASSERT_FLOAT_EQ( 3.0, img7[0] );
+    ASSERT_FLOAT_EQ( 3.0, img7[3] );
+    ASSERT_FLOAT_EQ( 3.0, img7[7] );
+
+    typename vector_cpu<TypeParam>::pointer vec2 = vector_cpu<TypeParam>::new_pointer(48,11.343);
+    image_cpu<TypeParam> img8(vec2,8,2,3);
+    ASSERT_TRUE("image" == img8.get_name());
+    ASSERT_EQ( 3, img8.get_dimension() );
+    ASSERT_EQ( 8*2*3, img8.get_total_elements() );
+    ASSERT_EQ( 8, img8.get_width() );
+    ASSERT_EQ( 2, img8.get_height() );
+    ASSERT_EQ( 3, img8.get_length() );
+    ASSERT_EQ( 1, img8.get_channels() );
+    ASSERT_FLOAT_EQ( 11.343, img8[0] );
+    ASSERT_FLOAT_EQ( 11.343, img8[23] );
+    ASSERT_FLOAT_EQ( 11.343, img8[47] );
+
+    image_cpu<TypeParam> img9(img8);
+    ASSERT_TRUE("image" == img9.get_name());
+    ASSERT_EQ( 3, img9.get_dimension() );
+    ASSERT_EQ( 8*2*3, img9.get_total_elements() );
+    ASSERT_EQ( 8, img9.get_width() );
+    ASSERT_EQ( 2, img9.get_height() );
+    ASSERT_EQ( 3, img9.get_length() );
+    ASSERT_EQ( 1, img9.get_channels() );
+    ASSERT_FLOAT_EQ( 11.343, img9[0] );
+    ASSERT_FLOAT_EQ( 11.343, img9[23] );
+    ASSERT_FLOAT_EQ( 11.343, img9[47] );
 }
 
 // ============================================
@@ -81,43 +134,194 @@ TYPED_TEST(test_image_cpu, constructor)
 // ============================================
 TYPED_TEST(test_image_cpu, pointers)
 {
-    // using imgcpu_pointer = typename image_cpu<TypeParam>::pointer;
-    // imgcpu_pointer img1 = image_cpu<TypeParam>::new_pointer();
-    // ASSERT_TRUE("image" == img1->get_name());
-    // ASSERT_EQ( 0, img1->get_total_elements() );
-    // ASSERT_EQ( 0, img1->get_width() );
-    // ASSERT_EQ( 0, img1->get_height() );
-    // ASSERT_EQ( 1, img1->get_length() );
-    // ASSERT_EQ( 1, img1->get_channels() );
+    using imgcpu_pointer = typename image_cpu<TypeParam>::pointer;
+    imgcpu_pointer img1 = image_cpu<TypeParam>::new_pointer();
+    ASSERT_TRUE("image" == img1->get_name());
+    ASSERT_EQ( 2, img1->get_dimension() );
+    ASSERT_EQ( 0, img1->get_total_elements() );
+    ASSERT_EQ( 0, img1->get_width() );
+    ASSERT_EQ( 0, img1->get_height() );
+    ASSERT_EQ( 1, img1->get_length() );
+    ASSERT_EQ( 1, img1->get_channels() );
 
-    // imgcpu_pointer img2 = image_cpu<TypeParam>::new_pointer(7,8);
-    // ASSERT_EQ( 7*8, img2->get_total_elements() );
-    // ASSERT_EQ( 7, img1->get_width() );
-    // ASSERT_EQ( 8, img1->get_height() );
-    // ASSERT_EQ( 1, img1->get_length() );
-    // ASSERT_EQ( 1, img1->get_channels() );
+    imgcpu_pointer img2 = image_cpu<TypeParam>::new_pointer(2);
+    ASSERT_TRUE("image" == img2->get_name());
+    ASSERT_EQ( 2, img2->get_dimension() );
+    ASSERT_EQ( 0, img2->get_total_elements() );
+    ASSERT_EQ( 0, img2->get_width() );
+    ASSERT_EQ( 0, img2->get_height() );
+    ASSERT_EQ( 1, img2->get_length() );
+    ASSERT_EQ( 1, img2->get_channels() );
 
-    // imgcpu_pointer img3 = image_cpu<TypeParam>::new_pointer();
-    // ASSERT_TRUE("image" == img3->get_name());
-    // ASSERT_EQ( 201, img3->get_total_elements() );
+    imgcpu_pointer img3 = image_cpu<TypeParam>::new_pointer(3);
+    ASSERT_TRUE("image" == img3->get_name());
+    ASSERT_EQ( 3, img3->get_dimension() );
+    ASSERT_EQ( 0, img3->get_total_elements() );
+    ASSERT_EQ( 0, img3->get_width() );
+    ASSERT_EQ( 0, img3->get_height() );
+    ASSERT_EQ( 0, img3->get_length() );
+    ASSERT_EQ( 1, img3->get_channels() );
 
-    // imgcpu_pointer img4 = image_cpu<TypeParam>::new_pointer(1,-7.0);
-    // ASSERT_FLOAT_EQ( -7.0, img4->operator[](0) );
+    imgcpu_pointer img4 = image_cpu<TypeParam>::new_pointer(7,8);
+    ASSERT_TRUE("image" == img4->get_name());
+    ASSERT_EQ( 2, img4->get_dimension() );
+    ASSERT_EQ( 7*8*1, img4->get_total_elements() );
+    ASSERT_EQ( 7, img4->get_width() );
+    ASSERT_EQ( 8, img4->get_height() );
+    ASSERT_EQ( 1, img4->get_length() );
+    ASSERT_EQ( 1, img4->get_channels() );
 
-    // imgcpu_pointer img5 = image_cpu<TypeParam>::new_pointer(21,11.2231);
-    // ASSERT_TRUE("image" == img5->get_name());
-    // ASSERT_FLOAT_EQ( 11.2231, img5->operator[](0) );
-    // ASSERT_FLOAT_EQ( 11.2231, img5->operator[](15) );
-    // ASSERT_FLOAT_EQ( 11.2231, img5->operator[](20) );
+    imgcpu_pointer img5 = image_cpu<TypeParam>::new_pointer(9,5,3);
+    ASSERT_TRUE("image" == img5->get_name());
+    ASSERT_EQ( 3, img5->get_dimension() );
+    ASSERT_EQ( 9*5*3, img5->get_total_elements() );
+    ASSERT_EQ( 9, img5->get_width() );
+    ASSERT_EQ( 5, img5->get_height() );
+    ASSERT_EQ( 3, img5->get_length() );
+    ASSERT_EQ( 1, img5->get_channels() );
+
+    std::initializer_list<TypeParam> ll = {1.82,2.0,3.113,9.0,-1.0,-2.212};
+    imgcpu_pointer img6 = image_cpu<TypeParam>::new_pointer(ll);
+    ASSERT_TRUE("image" == img6->get_name());
+    ASSERT_EQ( 2, img6->get_dimension() );
+    ASSERT_EQ( 6*1*1, img6->get_total_elements() );
+    ASSERT_EQ( 6, img6->get_width() );
+    ASSERT_EQ( 1, img6->get_height() );
+    ASSERT_EQ( 1, img6->get_length() );
+    ASSERT_EQ( 1, img6->get_channels() );
+    ASSERT_FLOAT_EQ( 1.82, img6->operator[](0) );
+    ASSERT_FLOAT_EQ( 3.113, img6->operator[](2) );
+    ASSERT_FLOAT_EQ( -2.212, img6->operator[](5) );
+
+    typename vector_cpu<TypeParam>::pointer vec1 = vector_cpu<TypeParam>::new_pointer(8,3.0);
+    imgcpu_pointer img7 = image_cpu<TypeParam>::new_pointer(vec1,4,2);
+    ASSERT_TRUE("image" == img7->get_name());
+    ASSERT_EQ( 2, img7->get_dimension() );
+    ASSERT_EQ( 4*2*1, img7->get_total_elements() );
+    ASSERT_EQ( 4, img7->get_width() );
+    ASSERT_EQ( 2, img7->get_height() );
+    ASSERT_EQ( 1, img7->get_length() );
+    ASSERT_EQ( 1, img7->get_channels() );
+    ASSERT_FLOAT_EQ( 3.0, img7->operator[](0) );
+    ASSERT_FLOAT_EQ( 3.0, img7->operator[](3) );
+    ASSERT_FLOAT_EQ( 3.0, img7->operator[](7) );
+
+    typename vector_cpu<TypeParam>::pointer vec2 = vector_cpu<TypeParam>::new_pointer(48,11.343);
+    imgcpu_pointer img8 = image_cpu<TypeParam>::new_pointer(vec2,8,2,3);
+    ASSERT_TRUE("image" == img8->get_name());
+    ASSERT_EQ( 3, img8->get_dimension() );
+    ASSERT_EQ( 8*2*3, img8->get_total_elements() );
+    ASSERT_EQ( 8, img8->get_width() );
+    ASSERT_EQ( 2, img8->get_height() );
+    ASSERT_EQ( 3, img8->get_length() );
+    ASSERT_EQ( 1, img8->get_channels() );
+    ASSERT_FLOAT_EQ( 11.343, img8->operator[](0) );
+    ASSERT_FLOAT_EQ( 11.343, img8->operator[](23) );
+    ASSERT_FLOAT_EQ( 11.343, img8->operator[](47) );
+
+    imgcpu_pointer img9 = image_cpu<TypeParam>::new_pointer(*img8);
+    ASSERT_TRUE("image" == img9->get_name());
+    ASSERT_EQ( 3, img9->get_dimension() );
+    ASSERT_EQ( 8*2*3, img9->get_total_elements() );
+    ASSERT_EQ( 8, img9->get_width() );
+    ASSERT_EQ( 2, img9->get_height() );
+    ASSERT_EQ( 3, img9->get_length() );
+    ASSERT_EQ( 1, img9->get_channels() );
+    ASSERT_FLOAT_EQ( 11.343, img9->operator[](0) );
+    ASSERT_FLOAT_EQ( 11.343, img9->operator[](23) );
+    ASSERT_FLOAT_EQ( 11.343, img9->operator[](47) );
 }
-/*
+
+// ============================================
+//          Testing Inherited Space
+// ============================================
+TYPED_TEST(test_image_cpu, inheritance)
+{
+    using imgcpu_pointer = typename image_cpu<TypeParam>::pointer;
+    imgcpu_pointer img2 = image_cpu<TypeParam>::new_pointer(2);
+    ASSERT_EQ( 2, img2->get_dimension() );
+    ASSERT_EQ( 2, img2->get_size().size() );
+    ASSERT_EQ( 0, img2->get_size()[0] );
+    ASSERT_EQ( 0, img2->get_size()[1] );
+    ASSERT_FLOAT_EQ( 1.0, img2->get_spacing()[0] );
+    ASSERT_FLOAT_EQ( 1.0, img2->get_spacing()[1] );
+    ASSERT_FLOAT_EQ( 0.0, img2->get_origin()[0] );
+    ASSERT_FLOAT_EQ( 0.0, img2->get_origin()[1] );
+    ASSERT_FLOAT_EQ( 1.0, img2->get_direction()[0] );
+    ASSERT_FLOAT_EQ( 0.0, img2->get_direction()[1] );
+    ASSERT_FLOAT_EQ( 0.0, img2->get_direction()[2] );
+    ASSERT_FLOAT_EQ( 1.0, img2->get_direction()[3] );
+
+    // change properties
+    img2->set_spacing(std::vector<double>({2.2,1.1}));
+    img2->set_origin(std::vector<double>({-10.2,8.1}));
+    img2->set_direction(std::vector<double>({1.1,-0.1, 0.2, 0.9}));
+
+    ASSERT_FLOAT_EQ( 2.2, img2->get_spacing()[0] );
+    ASSERT_FLOAT_EQ( 1.1, img2->get_spacing()[1] );
+    ASSERT_FLOAT_EQ( -10.2, img2->get_origin()[0] );
+    ASSERT_FLOAT_EQ( 8.1, img2->get_origin()[1] );
+    ASSERT_FLOAT_EQ( 1.1, img2->get_direction()[0] );
+    ASSERT_FLOAT_EQ( -0.1, img2->get_direction()[1] );
+    ASSERT_FLOAT_EQ( 0.2, img2->get_direction()[2] );
+    ASSERT_FLOAT_EQ( 0.9, img2->get_direction()[3] );
+
+    imgcpu_pointer img3 = image_cpu<TypeParam>::new_pointer(3);
+    ASSERT_EQ( 3, img3->get_dimension() );
+    ASSERT_EQ( 3, img3->get_size().size() );
+    ASSERT_EQ( 0, img3->get_size()[0] );
+    ASSERT_EQ( 0, img3->get_size()[1] );
+    ASSERT_EQ( 0, img3->get_size()[2] );
+    ASSERT_FLOAT_EQ( 1.0, img3->get_spacing()[0] );
+    ASSERT_FLOAT_EQ( 1.0, img3->get_spacing()[1] );
+    ASSERT_FLOAT_EQ( 1.0, img3->get_spacing()[2] );
+    ASSERT_FLOAT_EQ( 0.0, img3->get_origin()[0] );
+    ASSERT_FLOAT_EQ( 0.0, img3->get_origin()[1] );
+    ASSERT_FLOAT_EQ( 0.0, img3->get_origin()[2] );
+    ASSERT_FLOAT_EQ( 1.0, img3->get_direction()[0] );
+    ASSERT_FLOAT_EQ( 0.0, img3->get_direction()[1] );
+    ASSERT_FLOAT_EQ( 0.0, img3->get_direction()[2] );
+    ASSERT_FLOAT_EQ( 0.0, img3->get_direction()[3] );
+    ASSERT_FLOAT_EQ( 1.0, img3->get_direction()[4] );
+    ASSERT_FLOAT_EQ( 0.0, img3->get_direction()[5] );
+    ASSERT_FLOAT_EQ( 0.0, img3->get_direction()[6] );
+    ASSERT_FLOAT_EQ( 0.0, img3->get_direction()[7] );
+    ASSERT_FLOAT_EQ( 1.0, img3->get_direction()[8] );
+
+    // change properties
+    img3->set_spacing(std::vector<double>({2.2,1.1,3.0}));
+    img3->set_origin(std::vector<double>({-10.2,8.1,41.123}));
+    img3->set_direction(std::vector<double>({1.1,-0.1, 0.2, 0.05, 0.9, -0.2, -0.12, 0.15, 1.0 }));
+
+    ASSERT_FLOAT_EQ( 2.2, img3->get_spacing()[0] );
+    ASSERT_FLOAT_EQ( 1.1, img3->get_spacing()[1] );
+    ASSERT_FLOAT_EQ( 3.0, img3->get_spacing()[2] );
+    ASSERT_FLOAT_EQ( -10.2, img3->get_origin()[0] );
+    ASSERT_FLOAT_EQ( 8.1, img3->get_origin()[1] );
+    ASSERT_FLOAT_EQ( 41.123, img3->get_origin()[2] );
+    ASSERT_FLOAT_EQ( 1.1, img3->get_direction()[0] );
+    ASSERT_FLOAT_EQ( -0.1, img3->get_direction()[1] );
+    ASSERT_FLOAT_EQ( 0.2, img3->get_direction()[2] );
+    ASSERT_FLOAT_EQ( 0.05, img3->get_direction()[3] );
+    ASSERT_FLOAT_EQ( 0.9, img3->get_direction()[4] );
+    ASSERT_FLOAT_EQ( -0.2, img3->get_direction()[5] );
+    ASSERT_FLOAT_EQ( -0.12, img3->get_direction()[6] );
+    ASSERT_FLOAT_EQ( 0.15, img3->get_direction()[7] );
+    ASSERT_FLOAT_EQ( 1.0, img3->get_direction()[8] );
+}
+
 // ============================================
 //          Testing Clone Methods
 // ============================================
 TYPED_TEST(test_image_cpu, clones)
 {
     using imgcpu_pointer = typename image_cpu<TypeParam>::pointer;
-    imgcpu_pointer img1 = image_cpu<TypeParam>::new_pointer(8,3.14159);
+    imgcpu_pointer img1 = image_cpu<TypeParam>::new_pointer(8,5);
+    img1->assign(3.14159);
+    img1->set_spacing(std::vector<double>({3.2,1.1}));
+    img1->set_origin(std::vector<double>({-0.5,0.5}));
+    img1->set_direction(std::vector<double>({1.05,-0.2, -0.3, -0.9}));
+
     imgcpu_pointer img2 = img1->clone();
     imgcpu_pointer img3 = img1->copy();
     imgcpu_pointer img4 = img1->mimic();
@@ -126,26 +330,77 @@ TYPED_TEST(test_image_cpu, clones)
     ASSERT_TRUE("image" == img3->get_name());
     ASSERT_TRUE("image" == img4->get_name());
 
-    ASSERT_EQ( 8, img1->size() );
-    ASSERT_EQ( 8, img2->size() );
-    ASSERT_EQ( 8, img3->size() );
-    ASSERT_EQ( 8, img4->size() );
+    ASSERT_EQ( 40, img1->get_total_elements() );
+    ASSERT_EQ( 40, img2->get_total_elements() );
+    ASSERT_EQ( 40, img3->get_total_elements() );
+    ASSERT_EQ( 40, img4->get_total_elements() );
+    ASSERT_EQ( 8, img1->get_width() );
+    ASSERT_EQ( 8, img2->get_width() );
+    ASSERT_EQ( 8, img3->get_width() );
+    ASSERT_EQ( 8, img4->get_width() );
+    ASSERT_EQ( 5, img1->get_height() );
+    ASSERT_EQ( 5, img2->get_height() );
+    ASSERT_EQ( 5, img3->get_height() );
+    ASSERT_EQ( 5, img4->get_height() );
+    ASSERT_EQ( 1, img1->get_length() );
+    ASSERT_EQ( 1, img2->get_length() );
+    ASSERT_EQ( 1, img3->get_length() );
+    ASSERT_EQ( 1, img4->get_length() );
+    ASSERT_EQ( 1, img1->get_channels() );
+    ASSERT_EQ( 1, img2->get_channels() );
+    ASSERT_EQ( 1, img3->get_channels() );
+    ASSERT_EQ( 1, img4->get_channels() );
+
+    ASSERT_FLOAT_EQ( 3.2, img2->get_spacing()[0] );
+    ASSERT_FLOAT_EQ( 1.1, img2->get_spacing()[1] );
+    ASSERT_FLOAT_EQ( -0.5, img2->get_origin()[0] );
+    ASSERT_FLOAT_EQ( 0.5, img2->get_origin()[1] );
+    ASSERT_FLOAT_EQ( 1.05, img2->get_direction()[0] );
+    ASSERT_FLOAT_EQ( -0.2, img2->get_direction()[1] );
+    ASSERT_FLOAT_EQ( -0.3, img2->get_direction()[2] );
+    ASSERT_FLOAT_EQ( -0.9, img2->get_direction()[3] );
+
+    ASSERT_FLOAT_EQ( 3.2, img3->get_spacing()[0] );
+    ASSERT_FLOAT_EQ( 1.1, img3->get_spacing()[1] );
+    ASSERT_FLOAT_EQ( -0.5, img3->get_origin()[0] );
+    ASSERT_FLOAT_EQ( 0.5, img3->get_origin()[1] );
+    ASSERT_FLOAT_EQ( 1.05, img3->get_direction()[0] );
+    ASSERT_FLOAT_EQ( -0.2, img3->get_direction()[1] );
+    ASSERT_FLOAT_EQ( -0.3, img3->get_direction()[2] );
+    ASSERT_FLOAT_EQ( -0.9, img3->get_direction()[3] );
+
+    ASSERT_FLOAT_EQ( 3.2, img4->get_spacing()[0] );
+    ASSERT_FLOAT_EQ( 1.1, img4->get_spacing()[1] );
+    ASSERT_FLOAT_EQ( -0.5, img4->get_origin()[0] );
+    ASSERT_FLOAT_EQ( 0.5, img4->get_origin()[1] );
+    ASSERT_FLOAT_EQ( 1.05, img4->get_direction()[0] );
+    ASSERT_FLOAT_EQ( -0.2, img4->get_direction()[1] );
+    ASSERT_FLOAT_EQ( -0.3, img4->get_direction()[2] );
+    ASSERT_FLOAT_EQ( -0.9, img4->get_direction()[3] );
 
     ASSERT_FALSE(img1.get() == img2.get());
     ASSERT_FALSE(img1.get() == img3.get());
     ASSERT_FALSE(img1.get() == img4.get());
 
+    ASSERT_FALSE(img1->get_data() == img2->get_data());
+    ASSERT_TRUE(img1->get_data() == img3->get_data());
+    ASSERT_FALSE(img1->get_data() == img4->get_data());
+
     ASSERT_FLOAT_EQ( 3.14159, img1->operator[](0) );
     ASSERT_FLOAT_EQ( 3.14159, img1->operator[](7) );
+    ASSERT_FLOAT_EQ( 3.14159, img1->operator[](39) );
     ASSERT_FLOAT_EQ( 3.14159, img2->operator[](0) );
     ASSERT_FLOAT_EQ( 3.14159, img2->operator[](7) );
-    EXPECT_FLOAT_EQ( 0.0, img3->operator[](0) );
-    EXPECT_FLOAT_EQ( 0.0, img3->operator[](7) );
+    ASSERT_FLOAT_EQ( 3.14159, img2->operator[](39) );
+    ASSERT_FLOAT_EQ( 3.14159, img3->operator[](0) );
+    ASSERT_FLOAT_EQ( 3.14159, img3->operator[](7) );
+    ASSERT_FLOAT_EQ( 3.14159, img3->operator[](39) );
     EXPECT_FLOAT_EQ( 0.0, img4->operator[](0) );
     EXPECT_FLOAT_EQ( 0.0, img4->operator[](7) );
+    EXPECT_FLOAT_EQ( 0.0, img4->operator[](39) );
 }
-*/
-/*
+
+
 // ============================================
 //          Testing Initialization Methods
 // ============================================
@@ -184,7 +439,7 @@ TYPED_TEST(test_image_cpu, initialization)
     ASSERT_FALSE( img3->operator[](0) == img3->operator[](int(size/2)) );
     ASSERT_FALSE( img3->operator[](int(size/2)) == img3->operator[](size-4) );
 }
-
+/*
 // ============================================
 //          Testing Vector Operations
 // ============================================

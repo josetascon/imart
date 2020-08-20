@@ -36,7 +36,7 @@ set (CMAKE_CXX_STANDARD 17)
 # ===========================================
 #                  Options
 # ===========================================
-option(BUILD_TESTS "Build the tests" OFF)
+option(BUILD_TESTS "Build the tests" ON)
 
 if(BUILD_TESTS)
    add_subdirectory(tests)
