@@ -68,10 +68,10 @@ public:
     // ===========================================
     // Set Functions
     // ===========================================
-    void set_fixed(typename image<type,container>::pointer fixed_image);
-    void set_moving(typename image<type,container>::pointer moving_image);
-    void set_transform(typename transform<type,container>::pointer transformd);
-    void set_interpolator(typename interpolator<type,container>::pointer interpolation);
+    virtual void set_fixed(typename image<type,container>::pointer fixed_image);
+    virtual void set_moving(typename image<type,container>::pointer moving_image);
+    virtual void set_transform(typename transform<type,container>::pointer transformd);
+    virtual void set_interpolator(typename interpolator<type,container>::pointer interpolationd);
 
     // ===========================================
     // Print Functions
@@ -123,10 +123,12 @@ pairwise_object<type,container>::pairwise_object( typename image<type,container>
 template <typename type, typename container>
 void pairwise_object<type,container>::init(int d)
 {
+    // std::cout << "init pairwise_object" << std::endl;
     auto fixed_image = image<type,container>::new_pointer(d);
     auto moving_image = image<type,container>::new_pointer(d);
     auto transformd = transform<type,container>::new_pointer(d);
     init(fixed_image, moving_image, transformd);
+    // std::cout << "end init pairwise_object" << std::endl;
 }
 
 template <typename type, typename container>
@@ -185,18 +187,21 @@ template <typename type, typename container>
 void pairwise_object<type,container>::set_fixed(typename image<type,container>::pointer fixed_image)
 {
     fixed = fixed_image;
+    this->set_input(0, fixed); // update process input
 };
 
 template <typename type, typename container>
 void pairwise_object<type,container>::set_moving(typename image<type,container>::pointer moving_image)
 {
     moving = moving_image;
+    this->set_input(1, moving); // update process input
 };
 
 template <typename type, typename container>
 void pairwise_object<type,container>::set_transform(typename transform<type,container>::pointer transformd)
 {
     transformation = transformd;
+    this->set_input(2, transformation); // update process input
 };
 
 template <typename type, typename container>

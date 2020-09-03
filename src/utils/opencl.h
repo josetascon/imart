@@ -35,9 +35,12 @@ void imart_assert_opencl_error(cl_int status, const char* file, int line, const 
 {
     if (status != 0)
     {
-        std::cerr << "\n[Error] Information:\t" << msg
-                  << "\n[Error] OpenCL error:\t" << opencl_error(status)
-                  << "\n[Error] File:\t\t" << file << ", Line " << line << std::endl;
+        std::cerr << "\n******* OpenCL Error *******\t" << msg
+                  << "\n[Error] Information:\t" << msg
+                  << "\n[Error] Error code:\t" << status
+                  << "\n[Error] Description:\t" << opencl_error(status)
+                  << "\n[Error] File:\t\t" << file
+                  << "\n[Error] Line:\t\t" << line << std::endl;
         assert(status == 0);
     };
 };

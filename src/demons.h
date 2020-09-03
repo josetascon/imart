@@ -25,9 +25,9 @@ public:
 
     // Inherited variables
     using metric<type,container>::cost_value; //Parent class properties to be used here (avoid use "this->")
-    using metric<type,container>::fixed;
-    using metric<type,container>::moving;
-    using metric<type,container>::transformation;
+    using pairwise_object<type,container>::fixed;
+    using pairwise_object<type,container>::moving;
+    using pairwise_object<type,container>::transformation;
     using metric<type,container>::x0;
     using metric<type,container>::x1;
     using metric<type,container>::cost;
@@ -36,27 +36,43 @@ public:
 
     using inherit<demons<type,container>, metric<type,container>>::inherit;
 
+    double sigma;
+    int kernel_width;
+    void init_sigma();
+
 public:
     // ===========================================
     // Create Functions
     // ===========================================
     // Constructors
     demons() : inherit<demons<type,container>, metric<type,container>>()
-          { this->class_name = "demons"; };
+          { this->class_name = "demons"; init_sigma(); };
 
     demons(int d) : inherit<demons<type,container>, metric<type,container>>(d)
-               { this->class_name = "demons"; };
+               { this->class_name = "demons"; init_sigma(); };
 
     demons(typename image<type,container>::pointer fixed_image, 
         typename image<type,container>::pointer moving_image)
         : inherit<demons<type,container>, metric<type,container>>(fixed_image, moving_image)
-        { this->class_name = "demons"; };
+        { this->class_name = "demons"; init_sigma(); };
 
     demons(typename image<type,container>::pointer fixed_image, 
         typename image<type,container>::pointer moving_image,
         typename transform<type,container>::pointer transformd)
         : inherit<demons<type,container>, metric<type,container>>(fixed_image, moving_image, transformd)
-        { this->class_name = "demons"; };
+        { this->class_name = "demons"; init_sigma(); };
+
+    // ===========================================
+    // Get Functions
+    // ===========================================
+    double get_sigma() const;
+    int get_kernel_width() const;
+
+    // ===========================================
+    // Set Functions
+    // ===========================================
+    void set_sigma(double s);
+    void set_kernel_width(int k); // automatically assign based on sigma, this is manual modification
 
     // ===========================================
     // Functions
@@ -82,14 +98,62 @@ using demons_gpu = demons<type,vector_ocl<type>>;
 // Functions
 // ===========================================
 template <typename type, typename container>
+void demons<type,container>::init_sigma()
+{
+    sigma = 2.0;
+    kernel_width = int(ceil(3*sigma));
+    if (kernel_width%2 == 0) kernel_width -= 1;
+};
+
+// ===========================================
+// Get Functions
+// ===========================================
+template <typename type, typename container>
+double demons<type,container>::get_sigma() const
+{
+    return sigma;
+};
+
+template <typename type, typename container>
+int demons<type,container>::get_kernel_width() const
+{
+    return kernel_width;
+};
+
+// ===========================================
+// Set Functions
+// ===========================================
+template <typename type, typename container>
+void demons<type,container>::set_sigma(double s)
+{
+    sigma = s;
+    kernel_width = int(ceil(3*sigma));
+    if (kernel_width%2 == 0) kernel_width -= 1;
+};
+
+template <typename type, typename container>
+void demons<type,container>::set_kernel_width(int k)
+{
+    kernel_width = k;
+};
+
+// ===========================================
+// Functions
+// ===========================================
+template <typename type, typename container>
 type demons<type,container>::cost()
 {
+    // std::cout << "init cost" << std::endl;
     this->warped_moving(); // update moving_prime
     // auto moving_prime = this->warped_moving();
     // moving_prime->print_data("moving prime");
+    // std::cout << "dif cost" << std::endl;
+    // fixed->print("dem fix");
+    // moving_prime->print("dem mov");
     type N = (type)fixed->get_total_elements();
     image<type,container> ssd_ = *fixed - *moving_prime;
     cost_value = (0.5/N)*( (ssd_^2).sum() );
+    // std::cout << "end cost" << std::endl;
     return cost_value;
 };
 

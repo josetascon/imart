@@ -269,6 +269,7 @@ void opencl_object::arguments(Args&&... args)
 
 void opencl_object::execute(int max_size)
 {
+    if (max_size < 1) return; // finish if size is zero
     // if (max_size < work_group_size) work_group_size = max_size;
     // std::cout << "Run Kernel" << std::endl;
     _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(max_size));
@@ -279,6 +280,7 @@ void opencl_object::execute(int max_size)
 
 void opencl_object::execute(int global_range, int local_range)
 {
+    if (global_range < 1) return; // finish if size is zero
     if (global_range < local_range) global_range = local_range;
     // std::cout << "Run Kernel" << std::endl;
     _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(global_range), cl::NDRange(local_range));
@@ -292,11 +294,21 @@ void opencl_object::execute(std::vector<int> & dims)
     assert(dims.size() > 0 && dims.size() < 4);
     // std::cout << "Run Kernel" << std::endl;
     if (dims.size() == 1)
+    {
+        if (dims[0] < 1) return; // finish if size is zero
         _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(dims[0]));
+    }
     else if (dims.size() == 2)
+    {
+        if (dims[0] < 1 or dims[1] < 1) return; // finish if size is zero
         _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(dims[0],dims[1]));
-    else
+    }
+    else if (dims.size() == 3)
+    {
+        if (dims[0] < 1 or dims[1] < 1 or dims[2] < 1) return; // finish if size is zero
         _error_ = _queue_.enqueueNDRangeKernel(_kernel_, cl::NullRange, cl::NDRange(dims[0],dims[1],dims[2]));
+    }
+    else ;
     // std::cout << "Kernel error" << _error_ << std::endl;
     imart_assert_cl(_error_, "Error while running the kernel.");
     // assert(_error_ == 0);

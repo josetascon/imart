@@ -63,10 +63,12 @@ public:
     dfield(std::vector<int> sz);
     dfield(typename image<type,container>::pointer input);
     dfield(typename grid<type,container>::pointer input);
+    dfield(const dfield<type,container> & input);
 
     // ===========================================
     // Functions
     // ===========================================
+    void change_size(std::vector<int> sz); // special function for multiresolution
     void identity();
     std::vector<type> apply(std::vector<type> & point);
     typename grid<type,container>::pointer apply(const typename grid<type,container>::pointer input);
@@ -77,6 +79,9 @@ using dfield_cpu = dfield<type,vector_cpu<type>>;
 
 template<typename type>
 using dfield_gpu = dfield<type,vector_ocl<type>>;
+
+template<typename type>
+using dfield_cuda = dfield<type,vector_cuda<type>>;
 
 
 // ===========================================
@@ -140,6 +145,13 @@ dfield<type,container>::dfield(typename grid<type,container>::pointer input)
 };
 
 template <typename type, typename container>
+dfield<type,container>::dfield(const dfield<type,container> & input)
+{
+    this->class_name = "dfield";
+    this->clone_(input);
+};
+
+template <typename type, typename container>
 void dfield<type,container>::init(int d)
 {
     space_object::init(d);
@@ -149,11 +161,9 @@ void dfield<type,container>::init(int d)
 template <typename type, typename container>
 void dfield<type,container>::init(std::vector<int> sz)
 {
-    // int d = sz.size();
-    // space_object::init(d);
-    // // allocate
-    // parameters = std::make_shared< std::vector< typename image<type,container>::pointer >>(d);
-    // inverse_parameters = std::make_shared< std::vector< typename image<type,container>::pointer >>(d);
+    // initialize size
+    this->set_size(sz);
+    // allocated parameters, change the size
     for(int i = 0; i < this->get_dimension(); i++)
     {
         (*parameters)[i] = image<type,container>::new_pointer(sz);        // parameters are 2d
@@ -173,15 +183,24 @@ void dfield<type,container>::init(const space_object & input)
 // Functions
 // ===========================================
 template <typename type, typename container>
+void dfield<type,container>::change_size(std::vector<int> sz)
+{
+    space_object::set_size(sz);
+};
+
+template <typename type, typename container>
 void dfield<type,container>::identity()
 {
+    // std::cout << "init identity" << std::endl;
     for (int i = 0; i < this->dim; i++)
     {
         // std::cout << "zeros" << std::endl;
         // get_parameters(i)->print();
         get_parameters(i)->zeros();
+        // std::cout << "inv" << std::endl;
         get_inverse_parameters(i)->zeros();
     };
+    // std::cout << "end identity" << std::endl;
 };
 
 template <typename type, typename container>

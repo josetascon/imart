@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-07-24 10:02:18
+* @Last Modified time: 2020-08-29 12:36:56
 */
 
 
@@ -100,6 +100,40 @@ int main(int argc, char *argv[])
         vimage13[k]->print();
         cast(*(vimage13[k]),*(vimage14[k]));
         vimage14[k]->write(outfile2 + std::to_string(k) + ".png");
+    };
+
+    // ============================================
+    //              Testing CUDA
+    // ============================================
+    auto image21 = image_cuda<unsigned short>::new_pointer(2);
+    auto image22 = image_cuda<type>::new_pointer(2);
+    typename image_cuda<type>::vector vimage23(num_scales);
+    typename image_cuda<unsigned short>::vector vimage24(num_scales);
+
+    for(int k = 0; k < num_scales; k++)
+    {
+        vimage23[k] = image_cuda<type>::new_pointer(2);
+        vimage24[k] = image_cuda<unsigned short>::new_pointer(2);
+    }
+
+    image21->read(argv[1]);
+    cast(*image21,*image22);
+    image22->print();
+    auto mresolution_cuda = resolution<type,vector_cuda<type>>::new_pointer(image22);
+
+    // single test
+    // auto imagea1 = mresolution_cuda->apply(2.0);
+    // auto imageo1 = image_cuda<unsigned short>::new_pointer(2);
+    // cast(*imagea1,*imageo1);
+    // imageo1->write("./out_res_2d_cuda.png");
+
+    std::string outfile3 = "./out_res_2d_cuda";
+    for(int k = 0; k < num_scales; k++)
+    {
+        vimage23[k] = mresolution_cuda->apply(pow(2.0,k+1));
+        vimage23[k]->print();
+        cast(*(vimage23[k]),*(vimage24[k]));
+        vimage24[k]->write(outfile3 + std::to_string(k) + ".png");
     };
 
     return 0;

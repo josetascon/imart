@@ -55,3 +55,9 @@ target_link_libraries( interpolator_linear_itk ${bench_targets} )
 add_executable( metric_ssd_cpu_vs_gpu metric_ssd_cpu_vs_gpu.cpp )
 target_link_libraries( metric_ssd_cpu_vs_gpu ${bench_targets} )
 
+add_executable( interpolator_nearest_cpu_gpu_cuda interpolator_nearest_cpu_gpu_cuda.cpp )
+target_link_libraries( interpolator_nearest_cpu_gpu_cuda ${bench_targets} )
+
+add_executable( interpolator_linear_cpu_gpu_cuda interpolator_linear_cpu_gpu_cuda.cpp )
+target_link_libraries( interpolator_linear_cpu_gpu_cuda ${bench_targets} )
+

@@ -47,6 +47,7 @@ protected:
     // Functions
     // ===========================================
     void init();
+    void defaults();
 
 public:
     // ===========================================
@@ -102,25 +103,36 @@ template <typename type, typename container>
 void optimizer<type,container>::init()
 {
     // Initilize control variables
-    iterations = 0;
-    max_iterations = 300;
-    
-    unchanged_times = 0;
-    max_unchanged_times = 15;
-    
+    // std::cout << "init optimizer" << std::endl;
+    defaults();
     tolerance = 1e-5;
-    previous_cost = 1e41;
-    current_cost = 1e40;
-    lowest_cost = 1e41;
-    termination = "none";
 
     this->set_total_inputs(1);      //process_object::init
     this->set_total_outputs(0);     //process_object::init
 
     _method_ = metric<type,container>::new_pointer();
     this->setup_input(_method_);
-    this->setup_output();           // output is transformation 
+    this->setup_output();           // output is transformation
+    // std::cout << "end init optimizer" << std::endl;
 };
+
+template <typename type, typename container>
+void optimizer<type,container>::defaults()
+{
+    // Initilize control variables
+    iterations = 0;
+    max_iterations = 300;
+    
+    unchanged_times = 0;
+    max_unchanged_times = 15;
+    
+    // tolerance = 1e-5;
+    previous_cost = 1e41;
+    current_cost = 1e40;
+    lowest_cost = 1e41;
+    termination = "none";
+};
+
 
 // ===========================================
 // Get Functions
@@ -154,7 +166,8 @@ std::string optimizer<type,container>::get_termination() const
 // ===========================================
 template <typename type, typename container>
 void optimizer<type,container>::set_iterations(int i)
-{
+{   
+    defaults(); // reset actual iterations
     max_iterations = i;
 };
 

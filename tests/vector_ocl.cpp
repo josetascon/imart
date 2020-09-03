@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-06 00:00:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-22 11:22:52
+* @Last Modified time: 2020-08-27 15:05:07
 */
 
 // std libs
@@ -349,7 +349,7 @@ TYPED_TEST(test_vector_ocl, scalar_operations)
     ASSERT_FLOAT_EQ( 2.0, vec5->operator[](8) );
     ASSERT_FLOAT_EQ( 2.0, vec5->operator[](21) );
 }
-/*
+
 // ============================================
 //          Testing Reduction Operations
 // ============================================
@@ -362,16 +362,22 @@ TYPED_TEST(test_vector_ocl, reduction_operations)
 
     TypeParam dot1 = 0; TypeParam dot2 = 0;
     TypeParam add1 = 0; TypeParam add2 = 0;
+
+    std::vector<TypeParam> tmp_vec1(size);
+    std::vector<TypeParam> tmp_vec2(size);
     
     for (int i=0; i<size; ++i)
     {
-        vec1->operator[](i) = TypeParam(i+100);
-        vec2->operator[](i) = TypeParam(-i*0.1);
+        tmp_vec1[i] = TypeParam(i+100);
+        tmp_vec2[i] = TypeParam(-i*0.1);
         add1 += (i+100);
         dot1 += (i+100)*(i+100);
         add2 += -i*0.1;
         dot2 += (-i*0.1)*(-i*0.1);
     };
+
+    vec1->read_ram(tmp_vec1.data(), size);
+    vec2->read_ram(tmp_vec2.data(), size);
 
     ASSERT_FLOAT_EQ( 100, vec1->min() );
     ASSERT_FLOAT_EQ( 131, vec1->max() );
@@ -399,18 +405,16 @@ TYPED_TEST(test_vector_ocl, auxialiary_functions)
     vector_ocl<float>::pointer vec3 = vec1->template cast<float>();
     vector_ocl<double>::pointer vec4 = vec1->template cast<double>();
     vector_ocl<unsigned int>::pointer vec5 = vec1->template cast<unsigned int>();
-    // vec2->print_data();
-    // std::cout << vec2->operator[](10);
 
     int vari = -1.0;
     float varf = -1.1;
     double vard = -1.1;
     // unsigned int varui = (unsigned int)(varf);
 
-    // ASSERT_TRUE(typeid(int) == typeid(vec2->operator[](10)));
-    // ASSERT_TRUE(typeid(float) == typeid(vec3->operator[](10)));
-    // ASSERT_TRUE(typeid(double) == typeid(vec4->operator[](10)));
-    // ASSERT_TRUE(typeid(unsigned int) == typeid(vec5->operator[](10)));
+    ASSERT_TRUE(typeid(int) == typeid(vec2->operator[](10)));
+    ASSERT_TRUE(typeid(float) == typeid(vec3->operator[](10)));
+    ASSERT_TRUE(typeid(double) == typeid(vec4->operator[](10)));
+    ASSERT_TRUE(typeid(unsigned int) == typeid(vec5->operator[](10)));
     ASSERT_EQ( vari, vec2->operator[](10) );
     // ASSERT_EQ( varui, vec5->operator[](10) ); // unsigned int cast not same in gpu as cpu
     ASSERT_FLOAT_EQ( varf, vec3->operator[](10) );
@@ -422,11 +426,16 @@ TYPED_TEST(test_vector_ocl, auxialiary_functions)
     vgpu_pointer vec13;
     vgpu_pointer vec14;
 
+    std::vector<TypeParam> tmp_vec11(size);
+    std::vector<TypeParam> tmp_vec12(size);
     for (int i=0; i<size; ++i)
     {
-        vec11->operator[](i) = TypeParam(-i-131.2);
-        vec12->operator[](i) = TypeParam(i+10.5);
+        tmp_vec11[i] = TypeParam(-i-131.2);
+        tmp_vec12[i] = TypeParam(i+10.5);
     };
+
+    vec11->read_ram(tmp_vec11.data(), size);
+    vec12->read_ram(tmp_vec12.data(), size);
 
     vec13 = vec11->normalize();
     vec14 = vec12->normalize();
@@ -441,31 +450,8 @@ TYPED_TEST(test_vector_ocl, auxialiary_functions)
     ASSERT_FLOAT_EQ( 0.0, vec14->operator[](0) );
     ASSERT_FLOAT_EQ( 1/double(size-1), vec14->operator[](1) );
     ASSERT_FLOAT_EQ( 1.0, vec14->operator[](size-1) );
-
-    // vec13 = vec11->normalize();
-    // std::vector<TypeParam> a(size);
-    // viennacl::copy(vec13->begin(),vec13->end(),a.begin()); //copy this befor assignment
-    // // for(int k=0;k<size;k++){std::cout<<a[k]<<",";}
-    // // vec13->print_data();
-    // vec14 = vec12->normalize();
-    // // vec13->print_data();
-
-
-    // ASSERT_FLOAT_EQ( -131.2, vec11->operator[](0) );
-    // ASSERT_FLOAT_EQ( -131.2 - size + 1.0, vec11->operator[](size-1) );
-    // ASSERT_FLOAT_EQ( 10.5, vec12->operator[](0) );
-    // ASSERT_FLOAT_EQ( 10.5 + size - 1.0, vec12->operator[](size-1) );
-    // // EXPECT_FLOAT_EQ( 1.0, vec13->operator[](0) );
-    // // EXPECT_FLOAT_EQ( 1/double(size-1), vec13->operator[](size-2) );
-    // // EXPECT_FLOAT_EQ( 0.0, vec13->operator[](size-1) );
-    // EXPECT_FLOAT_EQ( 1.0, a[0] );
-    // EXPECT_FLOAT_EQ( 1/double(size-1), a[size-2] );
-    // EXPECT_FLOAT_EQ( 0.0, a[size-1] );
-    // ASSERT_FLOAT_EQ( 0.0, vec14->operator[](0) );
-    // ASSERT_FLOAT_EQ( 1/double(size-1), vec14->operator[](1) );
-    // ASSERT_FLOAT_EQ( 1.0, vec14->operator[](size-1) );
 }
-*/
+
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);

@@ -169,7 +169,7 @@ std::string kernel_minmax(std::string input_type, bool is_max)
     else
         source.append("         thread_result = thread_result < tmp ? thread_result : tmp;\n");
     source.append("     };\n");
-    source.append("  local_data[get_local_id(0)] = thread_result; \n");
+    source.append("     local_data[get_local_id(0)] = thread_result; \n");
 
     source.append("     for (int i = local_size >> 1; i > 0; i >>= 1)\n");
     source.append("     {\n");
