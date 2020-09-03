@@ -13,20 +13,16 @@
 #include <vector>       // std::vector
 #include <cassert>      // assert
 
-// opencl libs
-#include <CL/cl.hpp>
-
 // local libs
 #include "object.h"
-#include "kernels.h"
-#include "opencl_object.h"
+#include "cuda_object.h"
+#include "cuda_buffer.h"
 #include "utils/timer.h"
-
 
 namespace imart
 {
 
-opencl_object cl_manager; // manager of vector ocl;
+cuda_object cuda_manager; // manager of vector ocl;
 
 // Class object
 template <typename type>
@@ -47,8 +43,8 @@ protected:
     // Internal Variables
     // ===========================================
     int _size_;
-    cl_int err;
-    std::shared_ptr<cl::Buffer> buffer;
+    int err;
+    std::shared_ptr<cuda_buffer<type>> buffer;
 
     // ===========================================
     // Constructor Functions
@@ -59,8 +55,8 @@ protected:
     // ===========================================
     // Reduction functions
     // ===========================================
-    pointer sum_loop(pointer input, cl_int workGroupSize, cl_int numWorkGroups);
-    pointer minmax_loop(pointer input, cl_int workGroupSize, cl_int numWorkGroups);
+    pointer sum_loop(pointer input, int workGroupSize, int numWorkGroups);
+    pointer minmax_loop(pointer input, int workGroupSize, int numWorkGroups, bool is_max);
     
 public:
     // ===========================================
@@ -84,7 +80,7 @@ public:
     // Get Functions
     // ===========================================
     int size() const;
-    std::shared_ptr<cl::Buffer> get_buffer() const;
+    std::shared_ptr<cuda_buffer<type>> get_buffer() const;
     std::vector<type> std_vector();
 
     // ===========================================
@@ -143,6 +139,8 @@ public:
     friend typename vector_cuda<type_>::pointer operator * (type_ scalar, vector_cuda<type_> & input);
     template<typename type_>
     friend typename vector_cuda<type_>::pointer operator / (type_ scalar, const vector_cuda<type_> & input);
+    template<typename type_>
+    friend typename vector_cuda<type_>::pointer operator ^ (type_ scalar, const vector_cuda<type_> & input);
 
     // ===========================================
     // Reduction functions
@@ -186,7 +184,7 @@ public:
     static void dfield_3d(typename vector_cuda<type>::pointer xi, typename vector_cuda<type>::pointer yi, typename vector_cuda<type>::pointer zi,
                           typename vector_cuda<type>::pointer x, typename vector_cuda<type>::pointer y, typename vector_cuda<type>::pointer z,
                           typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo, typename vector_cuda<type>::pointer zo);
-
+    
     static std::vector<typename vector_cuda<type>::pointer> grid2(int w, int h, std::vector<double> & sod);
     static std::vector<typename vector_cuda<type>::pointer> grid3(int w, int h, int l, std::vector<double> & sod);
 
@@ -204,7 +202,7 @@ public:
                         typename vector_cuda<type>::pointer imgr, typename vector_cuda<type>::pointer imgo,
                         std::vector<int> ref_size, std::vector<int> out_size);
 
-    static void fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward);
+    // static void fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward);
 
     static void gradientx( typename vector_cuda<type>::pointer imgr,
                            typename vector_cuda<type>::pointer imgo,
@@ -217,6 +215,11 @@ public:
     static void gradientz( typename vector_cuda<type>::pointer imgr,
                            typename vector_cuda<type>::pointer imgo,
                            std::vector<int> ref_size);
+
+    static void convolution( typename vector_cuda<type>::pointer imgr,
+                             typename vector_cuda<type>::pointer kernel,
+                             typename vector_cuda<type>::pointer imgo,
+                             std::vector<int> ref_size, int kwidth);
 };
 
 
@@ -256,7 +259,8 @@ vector_cuda<type>::vector_cuda(std::initializer_list<type> list)
     int s = list.size();
     init(s);
     if (s > 0)
-        cl_manager.get_queue().enqueueWriteBuffer(*buffer, CL_TRUE, 0, sizeof(type)*(s), list.begin());
+        buffer->push_memory(list.begin(),s);
+        // cuda_manager.get_queue().enqueueWriteBuffer(*buffer, CL_TRUE, 0, sizeof(type)*(s), list.begin());
 };
 
 template <typename type>
@@ -277,16 +281,16 @@ template <typename type>
 void vector_cuda<type>::init(int s)
 {
     _size_ = s;
-    if(_size_>0) allocate(_size_);
+    if(_size_>0) allocate(s);
     else buffer = nullptr;
 };
 
 template <typename type>
 void vector_cuda<type>::allocate(int s)
 {
-    err = 0;
-    buffer = std::make_shared<cl::Buffer>(cl_manager.get_context(), CL_MEM_READ_WRITE, sizeof(type)*s, nullptr, &err);
-    assert(err == 0);
+    // err = 0;
+    buffer = std::make_shared<cuda_buffer<type>>(s);
+    // assert(err == 0);
 };
 
 // ===========================================
@@ -298,10 +302,8 @@ void vector_cuda<type>::clone_(const vector_cuda<type> & input)
     // std::cout << "clone_";
     mimic_(input);
     // clone buffer;
-    std::string str_kernel = kernel_copy(string_type<type>());
-    cl_manager.program(str_kernel, "kernel_copy");
-    cl_manager.arguments(*(input.get_buffer()), *buffer);
-    cl_manager.execute(_size_);
+    cuda_manager.setup(_size_);
+    cuda_manager.execute(cuda_kernel_copy<type>, input.get_buffer()->get(), buffer->get(), _size_);
 };
 
 template <typename type>
@@ -332,7 +334,7 @@ int vector_cuda<type>::size() const
 };
 
 template <typename type>
-std::shared_ptr<cl::Buffer> vector_cuda<type>::get_buffer() const
+std::shared_ptr<cuda_buffer<type>> vector_cuda<type>::get_buffer() const
 {
     return buffer;
 };
@@ -342,7 +344,8 @@ std::vector<type> vector_cuda<type>::std_vector()
 {
     std::vector<type> tmp(_size_);
     if (_size_ > 0)
-        cl_manager.get_queue().enqueueReadBuffer(*buffer, CL_TRUE, 0, sizeof(type)*tmp.size(), tmp.data());
+        buffer->pull_memory(tmp.data(), _size_);
+        // std::cout << "std_vector" << std::endl;
     return tmp;
 };
 
@@ -353,14 +356,14 @@ template <typename type>
 void vector_cuda<type>::read_ram(type * p, int s, int offset)
 {
     if(s > 0)
-        cl_manager.get_queue().enqueueWriteBuffer(*buffer, CL_TRUE, sizeof(type)*offset, sizeof(type)*(s), p);
+        buffer->push_memory(p, s, offset);
 };
 
 template <typename type>
 void vector_cuda<type>::write_ram(type * p, int s, int offset)
 {
     if(s > 0)
-        cl_manager.get_queue().enqueueReadBuffer(*buffer, CL_TRUE, sizeof(type)*offset, sizeof(type)*s, p);
+        buffer->pull_memory(p, s, offset);
 };
 
 
@@ -371,13 +374,15 @@ template <typename type>
 std::string vector_cuda<type>::info(std::string msg)
 {
     std::stringstream ss;
-    std::string title = "Vector GPU Information";
+    std::string title = "Vector CUDA Information";
     if (msg != "") { title = msg; };
 
     // Summary of the object information
     ss << object::info(title);
     ss << "Size: \t\t\t" << _size_ << std::endl;
     ss << "Memory: \t\t" << buffer << std::endl;
+    if (buffer != nullptr) ss << "Address cuda: \t\t" << buffer->get() << std::endl;
+    else ss << "Address cuda: \t\t" << 0 << std::endl;
     // ss << "Capacity: \t\t" << this->capacity() << std::endl;
     return ss.str();
 };
@@ -424,21 +429,30 @@ void vector_cuda<type>::ones()
 template <typename type>
 void vector_cuda<type>::assign(type value)
 {
-    type v = value;
-    std::string str_kernel = kernel_assign(string_type<type>());
-    cl_manager.program(str_kernel, "kernel_assign");
-    cl_manager.arguments(*buffer, v);
-    cl_manager.execute(_size_);
+    if( _size_ > 0 )
+    {
+        type v = value;
+        cuda_manager.setup(_size_);
+        cuda_manager.execute(cuda_kernel_assign<type>, buffer->get(), v, _size_);
+    };
+
+    // manual call
+    // auto block = std::vector<int>{32,0,0};
+    // auto grid = std::vector<int>{1,0,0};
+    // cuda_kernel_assign<type>(grid,block,buffer->get(), value, _size_);
 };
 
 template <typename type>
 void vector_cuda<type>::random(float min, float max)
 {
-    std::string str_kernel = kernel_random( string_type<type>(), min, max);
-    // // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_random");
-    cl_manager.arguments(*buffer);
-    cl_manager.execute(_size_);
+    // cuda_manager.setup(_size_);
+    // cuda_manager.execute(&cuda_kernel_random, buffer->get(), min, max);
+
+    // std::string str_kernel = kernel_random( string_type<type>(), min, max);
+    // // // std::cout << str_kernel << std::endl;
+    // cuda_manager.program(str_kernel, "kernel_random");
+    // cuda_manager.arguments(*buffer);
+    // cuda_manager.execute(_size_);
 };
 
 // ===========================================
@@ -450,7 +464,7 @@ type vector_cuda<type>::operator [](int e)
     std::vector<type> tmp(1);
     if(e >= 0 && e < _size_ && _size_ > 0)
         // std::cout << "cl read" << std::endl;
-        cl_manager.get_queue().enqueueReadBuffer(*buffer, CL_TRUE, sizeof(type)*(e), sizeof(type)*(1), tmp.data());
+        buffer->pull_memory(tmp.data(), 1, e); //offset e
     return tmp[0];
 };
 
@@ -474,10 +488,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator + (const vector_
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
 
-    std::string str_kernel = kernel_vector( string_type<type>(), "+");
-    cl_manager.program(str_kernel, "kernel_vector");
-    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_add<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
     return output;
 };
 
@@ -488,10 +500,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator - (const vector_
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
 
-    std::string str_kernel = kernel_vector( string_type<type>(), "-");
-    cl_manager.program(str_kernel, "kernel_vector");
-    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_sub<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
     return output;
 };
 
@@ -502,10 +512,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator * (const vector_
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
 
-    std::string str_kernel = kernel_vector( string_type<type>(), "*");
-    cl_manager.program(str_kernel, "kernel_vector");
-    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_mul<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
     return output;
 };
 
@@ -516,10 +524,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator / (const vector_
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
 
-    std::string str_kernel = kernel_vector( string_type<type>(), "/");
-    cl_manager.program(str_kernel, "kernel_vector");
-    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_div<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
     return output;
 };
 
@@ -530,10 +536,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator ^ (const vector_
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
     
-    std::string str_kernel = kernel_vector( string_type<type>(), "pow", true);
-    cl_manager.program(str_kernel, "kernel_vector");
-    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_pow<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
     return output;
 };
 
@@ -544,10 +548,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator + (type scalar)
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
 
-    std::string str_kernel = kernel_scalar( string_type<type>(), "+");
-    cl_manager.program(str_kernel, "kernel_scalar");
-    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_add_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
     return output;
 };
 
@@ -557,10 +559,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator - (type scalar)
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
     
-    std::string str_kernel = kernel_scalar( string_type<type>(), "-");
-    cl_manager.program(str_kernel, "kernel_scalar");
-    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_sub_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
     return output;
 };
 
@@ -570,10 +570,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator * (type scalar)
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
     
-    std::string str_kernel = kernel_scalar( string_type<type>(), "*");
-    cl_manager.program(str_kernel, "kernel_scalar");
-    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_mul_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
     return output;
 };
 
@@ -583,10 +581,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator / (type scalar)
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
     
-    std::string str_kernel = kernel_scalar( string_type<type>(), "/");
-    cl_manager.program(str_kernel, "kernel_scalar");
-    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_div_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
     return output;
 };
 
@@ -596,10 +592,8 @@ typename vector_cuda<type>::pointer vector_cuda<type>::operator ^ (type scalar)
     int size = this->size();
     auto output = vector_cuda<type>::new_pointer(size);
     
-    std::string str_kernel = kernel_scalar( string_type<type>(), "pow", true);  // function = true
-    cl_manager.program(str_kernel, "kernel_scalar");
-    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_pow_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
     return output;
 };
 
@@ -616,10 +610,8 @@ typename vector_cuda<type>::pointer operator - (type scalar, const vector_cuda<t
     int size = input.size();
     auto output = vector_cuda<type>::new_pointer(size);
     
-    std::string str_kernel = kernel_scalar( string_type<type>(), "-", false, true);  // function = true, reverse = true
-    cl_manager.program(str_kernel, "kernel_scalar");
-    cl_manager.arguments(*(input.get_buffer()), *(output->get_buffer()), scalar);
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_sub_scalar_inv<type>, input.get_buffer()->get(), output->get_buffer()->get(), scalar, size);
     return output;
 };
 
@@ -635,10 +627,19 @@ typename vector_cuda<type>::pointer operator / (type scalar, const vector_cuda<t
     int size = input.size();
     auto output = vector_cuda<type>::new_pointer(size);
     
-    std::string str_kernel = kernel_scalar( string_type<type>(), "/", false, true);  // function = true, reverse = true
-    cl_manager.program(str_kernel, "kernel_scalar");
-    cl_manager.arguments(*(input.get_buffer()), *(output->get_buffer()), scalar);
-    cl_manager.execute(size);
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_div_scalar_inv<type>, input.get_buffer()->get(), output->get_buffer()->get(), scalar, size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer operator ^ (type scalar, const vector_cuda<type> & input)
+{
+    int size = input.size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_pow_scalar_inv<type>, input.get_buffer()->get(), output->get_buffer()->get(), scalar, size);
     return output;
 };
 
@@ -653,19 +654,15 @@ type vector_cuda<type>::min()
     pointer output = input;
 
     // Working groups
-    auto workGroupSize = cl_manager.get_work_group_size();
+    auto workGroupSize = cuda_manager.get_threads();
     auto numWorkGroups = 1 + ((input->size() - 1)/workGroupSize);   // round up num work groups
     // std::cout << "\nwork group size =" << workGroupSize << std::endl;
     // std::cout << "num groups =" << numWorkGroups << std::endl;
 
-    // Setup the kernel
-    std::string str_kernel = kernel_minmax( string_type<type>(), false );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_min");
-    
+    // Main loop
     while(numWorkGroups > workGroupSize)
     {
-        output = minmax_loop(input, workGroupSize, numWorkGroups);
+        output = minmax_loop(input, workGroupSize, numWorkGroups, false);
         input = output;
         numWorkGroups = 1 + ((input->size() - 1)/workGroupSize);   // round up num work groups
     };
@@ -685,19 +682,15 @@ type vector_cuda<type>::max()
     pointer output = input;
 
     // Working groups
-    auto workGroupSize = cl_manager.get_work_group_size();
+    auto workGroupSize = cuda_manager.get_threads();
     auto numWorkGroups = 1 + ((input->size() - 1)/workGroupSize);   // round up num work groups
     // std::cout << "\nwork group size =" << workGroupSize << std::endl;
     // std::cout << "num groups =" << numWorkGroups << std::endl;
 
-    // Setup the kernel
-    std::string str_kernel = kernel_minmax( string_type<type>(), true );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_max");
-
+    // Main loop
     while(numWorkGroups > workGroupSize)
     {
-        output = minmax_loop(input, workGroupSize, numWorkGroups);
+        output = minmax_loop(input, workGroupSize, numWorkGroups, true);
         input = output;
         numWorkGroups = 1 + ((input->size() - 1)/workGroupSize);   // round up num work groups
     };
@@ -710,16 +703,20 @@ type vector_cuda<type>::max()
 };
 
 template <typename type>
-typename vector_cuda<type>::pointer vector_cuda<type>::minmax_loop(typename vector_cuda<type>::pointer input, cl_int workGroupSize, cl_int numWorkGroups)
+typename vector_cuda<type>::pointer vector_cuda<type>::minmax_loop(typename vector_cuda<type>::pointer input, int workGroupSize, int numWorkGroups, bool is_max)
 {
     auto output = vector_cuda<type>::new_pointer(numWorkGroups);
 
-    cl_manager.get_kernel().setArg(0, *(input->get_buffer()));
-    cl_manager.get_kernel().setArg(1, input->size());
-    cl_manager.get_kernel().setArg(2, sizeof(type)*workGroupSize, nullptr);
-    cl_manager.get_kernel().setArg(3, *(output->get_buffer()));
-
-    cl_manager.execute(numWorkGroups*workGroupSize, workGroupSize);
+    if (is_max)
+    {
+        cuda_manager.setup(numWorkGroups);
+        cuda_manager.execute( cuda_kernel_max<type>, input->get_buffer()->get(), output->get_buffer()->get(), input->size() );
+    }
+    else
+    {
+        cuda_manager.setup(numWorkGroups);
+        cuda_manager.execute( cuda_kernel_min<type>, input->get_buffer()->get(), output->get_buffer()->get(), input->size() );
+    };
     return output;
 };
 
@@ -731,20 +728,18 @@ type vector_cuda<type>::sum()
     pointer output = input;
 
     // Working groups
-    auto workGroupSize = cl_manager.get_work_group_size();
+    auto workGroupSize = cuda_manager.get_threads();
+    // auto numWorkGroups = input->size();
     auto numWorkGroups = 1 + ((input->size() - 1)/workGroupSize);   // round up num work groups
     // std::cout << "\nwork group size =" << workGroupSize << std::endl;
     // std::cout << "num groups =" << numWorkGroups << std::endl;
 
-    // Setup the kernel
-    std::string str_kernel = kernel_sum( string_type<type>());
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_sum");
-
+    // Main loop
     while(numWorkGroups > workGroupSize)
     {
         output = sum_loop(input, workGroupSize, numWorkGroups);
         input = output;
+        // numWorkGroups = input->size();
         numWorkGroups = 1 + ((input->size() - 1)/workGroupSize);   // round up num work groups
     };
 
@@ -756,15 +751,13 @@ type vector_cuda<type>::sum()
 };
 
 template <typename type>
-typename vector_cuda<type>::pointer vector_cuda<type>::sum_loop(typename vector_cuda<type>::pointer input, cl_int workGroupSize, cl_int numWorkGroups)
+typename vector_cuda<type>::pointer vector_cuda<type>::sum_loop(typename vector_cuda<type>::pointer input, int workGroupSize, int numWorkGroups)
 {
     auto output = vector_cuda<type>::new_pointer(numWorkGroups);
 
-    cl_manager.get_kernel().setArg(0, *(input->get_buffer()));
-    cl_manager.get_kernel().setArg(1, sizeof(type)*workGroupSize, nullptr);
-    cl_manager.get_kernel().setArg(2, *(output->get_buffer()));
-
-    cl_manager.execute(numWorkGroups*workGroupSize, workGroupSize);
+    // cuda_manager.setup(numWorkGroups);
+    cuda_manager.setup(input->get_buffer()->size());
+    cuda_manager.execute( cuda_kernel_sum<type>, input->get_buffer()->get(), output->get_buffer()->get(), input->get_buffer()->size() );
     return output;
 };
 
@@ -797,11 +790,9 @@ typename vector_cuda<type_cast>::pointer vector_cuda<type>::cast()
 {
     int size = this->size();
     auto output = vector_cuda<type_cast>::new_pointer(size);
-    std::string str_kernel = kernel_cast( string_type<type>(), string_type<type_cast>());
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_cast");
-    cl_manager.arguments(*buffer, *(output->get_buffer()));
-    cl_manager.execute(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute( cuda_kernel_cast<type,type_cast>, buffer->get(), output->get_buffer()->get(), size );
     return output;
 };
 
@@ -810,19 +801,16 @@ void vector_cuda<type>::pad(typename vector_cuda<type>::pointer input, typename 
 {
     if(sz.size() == 2)
     {
-        std::string str_kernel = kernel_pad_2d( string_type<type>(), true );
-        cl_manager.program(str_kernel, "kernel_pad_2d");
-        cl_manager.arguments(*(input->get_buffer()), *(output->get_buffer()),
-                                pre[0], pre[1], post[0], post[1] );
-        cl_manager.execute(sz);
+        cuda_manager.setup(sz);
+        cuda_manager.execute( cuda_kernel_pad_2d<type>, input->get_buffer()->get(), output->get_buffer()->get(),
+                              pre[0], pre[1], post[0], post[1], sz[0], sz[1] );
+        
     }
     else if (sz.size() == 3)
     {
-        std::string str_kernel = kernel_pad_3d( string_type<type>(), true );
-        cl_manager.program(str_kernel, "kernel_pad_3d");
-        cl_manager.arguments(*(input->get_buffer()), *(output->get_buffer()),
-                                pre[0], pre[1], pre[2], post[0], post[1], post[2] );
-        cl_manager.execute(sz);
+        cuda_manager.setup(sz);
+        cuda_manager.execute( cuda_kernel_pad_3d<type>, input->get_buffer()->get(), output->get_buffer()->get(),
+                              pre[0], pre[1], pre[2], post[0], post[1], post[2], sz[0], sz[1], sz[2] );
     }
     else ;
 };
@@ -832,19 +820,16 @@ void vector_cuda<type>::unpad(typename vector_cuda<type>::pointer input, typenam
 {
     if(sz.size() == 2)
     {
-        std::string str_kernel = kernel_pad_2d( string_type<type>(), false );
-        cl_manager.program(str_kernel, "kernel_pad_2d");
-        cl_manager.arguments(*(input->get_buffer()), *(output->get_buffer()),
-                                pre[0], pre[1], post[0], post[1] );
-        cl_manager.execute(sz);
+        cuda_manager.setup(sz);
+        cuda_manager.execute( cuda_kernel_unpad_2d<type>, input->get_buffer()->get(), output->get_buffer()->get(),
+                              pre[0], pre[1], post[0], post[1], sz[0], sz[1] );
+        
     }
     else if (sz.size() == 3)
     {
-        std::string str_kernel = kernel_pad_3d( string_type<type>(), false );
-        cl_manager.program(str_kernel, "kernel_pad_3d");
-        cl_manager.arguments(*(input->get_buffer()), *(output->get_buffer()),
-                                pre[0], pre[1], pre[2], post[0], post[1], post[2] );
-        cl_manager.execute(sz);
+        cuda_manager.setup(sz);
+        cuda_manager.execute( cuda_kernel_unpad_3d<type>, input->get_buffer()->get(), output->get_buffer()->get(),
+                              pre[0], pre[1], pre[2], post[0], post[1], post[2], sz[0], sz[1], sz[2] );
     }
     else ;
 };
@@ -856,14 +841,11 @@ void vector_cuda<type>::affine_2d(typename vector_cuda<type>::pointer xi,
                                  typename vector_cuda<type>::pointer yo,
                                  typename vector_cuda<type>::pointer p)
 {
-    std::string str_kernel = kernel_affine_2d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_affine_2d");
-    cl_manager.arguments(*(xi->get_buffer()), *(yi->get_buffer()), 
-                         *(xo->get_buffer()), *(yo->get_buffer()),
-                         *(p->get_buffer()));
     int sz = xo->size();
-    cl_manager.execute(sz); // single dim NDRange
+    cuda_manager.setup(sz); // single dim
+    cuda_manager.execute( cuda_kernel_affine_2d<type>, xi->get_buffer()->get(), yi->get_buffer()->get(),
+                          xo->get_buffer()->get(), yo->get_buffer()->get(),
+                          p->get_buffer()->get(), sz);
 };
 
 template <typename type>
@@ -875,14 +857,11 @@ void vector_cuda<type>::affine_3d(typename vector_cuda<type>::pointer xi,
                                  typename vector_cuda<type>::pointer zo,
                                  typename vector_cuda<type>::pointer p)
 {
-    std::string str_kernel = kernel_affine_3d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_affine_3d");
-    cl_manager.arguments(*(xi->get_buffer()), *(yi->get_buffer()), *(zi->get_buffer()),
-                         *(xo->get_buffer()), *(yo->get_buffer()), *(zo->get_buffer()),
-                         *(p->get_buffer()));
     int sz = xo->size();
-    cl_manager.execute(sz); // single dim NDRange
+    cuda_manager.setup(sz); // single dim
+    cuda_manager.execute( cuda_kernel_affine_3d<type>, xi->get_buffer()->get(), yi->get_buffer()->get(), zi->get_buffer()->get(),
+                            xo->get_buffer()->get(), yo->get_buffer()->get(), zo->get_buffer()->get(),
+                            p->get_buffer()->get(), sz);
 };
 
 template <typename type>
@@ -895,14 +874,11 @@ void vector_cuda<type>::affine_sod_2d(typename vector_cuda<type>::pointer xo,
     auto p = vector_cuda<double>::new_pointer(sod.size());
     p->read_ram(sod.data(),sod.size());
 
-    std::string str_kernel = kernel_affine_sod_2d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_affine_sod_2d");
-    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), 
-                         *(xr->get_buffer()), *(yr->get_buffer()),
-                         *(p->get_buffer()));
     int sz = xo->size();
-    cl_manager.execute(sz); // single dim NDRange
+    cuda_manager.setup(sz); // single dim
+    cuda_manager.execute( cuda_kernel_affine_sod_2d<type>, xo->get_buffer()->get(), yo->get_buffer()->get(), 
+                         xr->get_buffer()->get(), yr->get_buffer()->get(),
+                         p->get_buffer()->get(), sz);
 };
 
 template <typename type>
@@ -917,14 +893,11 @@ void vector_cuda<type>::affine_sod_3d(typename vector_cuda<type>::pointer xo,
     auto p = vector_cuda<double>::new_pointer(sod.size());
     p->read_ram(sod.data(),sod.size());
 
-    std::string str_kernel = kernel_affine_sod_3d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_affine_sod_3d");
-    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), *(zo->get_buffer()),
-                         *(xr->get_buffer()), *(yr->get_buffer()), *(zr->get_buffer()),
-                         *(p->get_buffer()));
     int sz = xo->size();
-    cl_manager.execute(sz); // single dim NDRange
+    cuda_manager.setup(sz); // single dim
+    cuda_manager.execute( cuda_kernel_affine_sod_3d<type>, xo->get_buffer()->get(), yo->get_buffer()->get(), zo->get_buffer()->get(),
+                         xr->get_buffer()->get(), yr->get_buffer()->get(), zr->get_buffer()->get(),
+                         p->get_buffer()->get(), sz);
 };
 
 template <typename type>
@@ -932,14 +905,11 @@ void vector_cuda<type>::dfield_2d(typename vector_cuda<type>::pointer xi, typena
                                  typename vector_cuda<type>::pointer x, typename vector_cuda<type>::pointer y,
                                  typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo)
 {
-    std::string str_kernel = kernel_dfield_2d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_dfield_2d");
-    cl_manager.arguments(*(xi->get_buffer()), *(yi->get_buffer()), 
-                         *(x->get_buffer()), *(y->get_buffer()), 
-                         *(xo->get_buffer()), *(yo->get_buffer()));
     int sz = xo->size();
-    cl_manager.execute(sz); // single dim NDRange
+    cuda_manager.setup(sz); // single dim
+    cuda_manager.execute( cuda_kernel_dfield_2d<type>, xi->get_buffer()->get(), yi->get_buffer()->get(), 
+                         x->get_buffer()->get(), y->get_buffer()->get(), 
+                         xo->get_buffer()->get(), yo->get_buffer()->get(), sz);
 };
 
 template <typename type>
@@ -947,14 +917,11 @@ void vector_cuda<type>::dfield_3d(typename vector_cuda<type>::pointer xi, typena
                                  typename vector_cuda<type>::pointer x, typename vector_cuda<type>::pointer y, typename vector_cuda<type>::pointer z,
                                  typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo, typename vector_cuda<type>::pointer zo)
 {
-    std::string str_kernel = kernel_dfield_3d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_dfield_3d");
-    cl_manager.arguments(*(xi->get_buffer()), *(yi->get_buffer()), *(zi->get_buffer()),
-                         *(x->get_buffer()), *(y->get_buffer()), *(z->get_buffer()),
-                         *(xo->get_buffer()), *(yo->get_buffer()), *(zo->get_buffer()));
     int sz = xo->size();
-    cl_manager.execute(sz); // single dim NDRange
+    cuda_manager.setup(sz); // single dim
+    cuda_manager.execute( cuda_kernel_dfield_3d<type>, xi->get_buffer()->get(), yi->get_buffer()->get(), zi->get_buffer()->get(),
+                         x->get_buffer()->get(), y->get_buffer()->get(), z->get_buffer()->get(),
+                         xo->get_buffer()->get(), yo->get_buffer()->get(), zo->get_buffer()->get(), sz);
 };
 
 template <typename type>
@@ -967,14 +934,10 @@ std::vector<typename vector_cuda<type>::pointer> vector_cuda<type>::grid2(int w,
     auto p = vector_cuda<double>::new_pointer(sod.size());
     p->read_ram(sod.data(),sod.size());
 
-    std::string str_kernel = kernel_grid_2d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_grid_2d");
-    cl_manager.arguments(*(x->get_buffer()), *(y->get_buffer()), 
-                        *(p->get_buffer()), w, h);
     std::vector<int> ss({w,h});
-    cl_manager.execute(ss); // multidimensional NDRange
-    // cl_manager.execute(w);// single dim NDRange
+    cuda_manager.setup(ss); // multidimensional
+    cuda_manager.execute( cuda_kernel_grid_2d<type>, x->get_buffer()->get(), y->get_buffer()->get(), 
+                          p->get_buffer()->get(), w, h);
     
     std::vector<typename vector_cuda<type>::pointer> xy(2);
     xy[0] = x;
@@ -993,15 +956,10 @@ std::vector<typename vector_cuda<type>::pointer> vector_cuda<type>::grid3(int w,
     auto p = vector_cuda<double>::new_pointer(sod.size());
     p->read_ram(sod.data(),sod.size());
 
-    std::string str_kernel = kernel_grid_3d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_grid_3d");
-    cl_manager.arguments(*(x->get_buffer()), *(y->get_buffer()), 
-                        *(z->get_buffer()), *(p->get_buffer()),
-                         w, h, l);
     std::vector<int> ss({w,h,l});
-    cl_manager.execute(ss); // multidimensional NDRange
-    // cl_manager.execute(w);// single dim NDRange
+    cuda_manager.setup(ss); // multidimensional
+    cuda_manager.execute( cuda_kernel_grid_3d<type>, x->get_buffer()->get(), y->get_buffer()->get(), 
+                          z->get_buffer()->get(), p->get_buffer()->get(), w, h, l);
 
     std::vector<typename vector_cuda<type>::pointer> xyz(3);
     xyz[0] = x;
@@ -1018,13 +976,12 @@ void vector_cuda<type>::nearest2( typename vector_cuda<type>::pointer xo,
                                 typename vector_cuda<type>::pointer imgo,
                                 std::vector<int> ref_size, std::vector<int> out_size)
 {
-    std::string str_kernel = kernel_nearest_interpolation_2d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_nearest_interpolation_2d");
-    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), 
-                        *(imgr->get_buffer()), *(imgo->get_buffer()),
-                        ref_size[0], ref_size[1]);
-    cl_manager.execute(out_size); // multidimensional NDRange
+    cuda_manager.setup(out_size); // multidimensional
+    cuda_manager.execute( cuda_kernel_nearest_interpolation_2d<type>, 
+                        xo->get_buffer()->get(), yo->get_buffer()->get(),
+                        imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                        ref_size[0], ref_size[1],
+                        out_size[0], out_size[1]);
 };
 
 template <typename type>
@@ -1035,13 +992,12 @@ void vector_cuda<type>::nearest3( typename vector_cuda<type>::pointer xo,
                                 typename vector_cuda<type>::pointer imgo,
                                 std::vector<int> ref_size, std::vector<int> out_size)
 {
-    std::string str_kernel = kernel_nearest_interpolation_3d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_nearest_interpolation_3d");
-    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), *(zo->get_buffer()),
-                        *(imgr->get_buffer()), *(imgo->get_buffer()),
-                        ref_size[0], ref_size[1], ref_size[2]);
-    cl_manager.execute(out_size); // multidimensional NDRange
+    cuda_manager.setup(out_size); // multidimensional
+    cuda_manager.execute( cuda_kernel_nearest_interpolation_3d<type>, 
+                        xo->get_buffer()->get(), yo->get_buffer()->get(), zo->get_buffer()->get(),
+                        imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                        ref_size[0], ref_size[1], ref_size[2],
+                        out_size[0], out_size[1], out_size[2]);
 };
 
 template <typename type>
@@ -1051,13 +1007,12 @@ void vector_cuda<type>::linear2( typename vector_cuda<type>::pointer xo,
                                 typename vector_cuda<type>::pointer imgo,
                                 std::vector<int> ref_size, std::vector<int> out_size)
 {
-    std::string str_kernel = kernel_linear_interpolation_2d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_linear_interpolation_2d");
-    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), 
-                        *(imgr->get_buffer()), *(imgo->get_buffer()),
-                        ref_size[0], ref_size[1]);
-    cl_manager.execute(out_size); // multidimensional NDRange
+    cuda_manager.setup(out_size); // multidimensional
+    cuda_manager.execute( cuda_kernel_linear_interpolation_2d<type>, 
+                        xo->get_buffer()->get(), yo->get_buffer()->get(),
+                        imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                        ref_size[0], ref_size[1],
+                        out_size[0], out_size[1]);
 };
 
 template <typename type>
@@ -1068,15 +1023,14 @@ void vector_cuda<type>::linear3( typename vector_cuda<type>::pointer xo,
                                 typename vector_cuda<type>::pointer imgo,
                                 std::vector<int> ref_size, std::vector<int> out_size)
 {
-    std::string str_kernel = kernel_linear_interpolation_3d( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_linear_interpolation_3d");
-    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), *(zo->get_buffer()),
-                        *(imgr->get_buffer()), *(imgo->get_buffer()),
-                        ref_size[0], ref_size[1], ref_size[2]);
-    cl_manager.execute(out_size); // multidimensional NDRange
+    cuda_manager.setup(out_size); // multidimensional
+    cuda_manager.execute( cuda_kernel_linear_interpolation_3d<type>, 
+                        xo->get_buffer()->get(), yo->get_buffer()->get(), zo->get_buffer()->get(),
+                        imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                        ref_size[0], ref_size[1], ref_size[2],
+                        out_size[0], out_size[1], out_size[2]);
 };
-
+/*
 template <typename type>
 void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward)
 {
@@ -1123,7 +1077,7 @@ void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> &
     if (dim == 3) dd = CLFFT_3D;
 
     // t.lap("[Handle]");
-    cl_context ctx = (cl_manager.get_context())();
+    cl_context ctx = (cuda_manager.get_context())();
     err = clfftCreateDefaultPlan(&plan_handle, ctx, dd, lengths);
     // t.lap("[Plan]");
 
@@ -1135,7 +1089,7 @@ void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> &
     // t.lap("[PlanProp]");
 
     // Bake the plan
-    cl_command_queue queue = (cl_manager.get_queue())();
+    cl_command_queue queue = (cuda_manager.get_queue())();
     err = clfftBakePlan(plan_handle, 1, &queue, NULL, NULL);
     // t.lap("[Bake]");
 
@@ -1144,7 +1098,7 @@ void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> &
 
     if ((status == 0) && (tmp_buffer_size > 0))
     {
-        // tmp_buffer = cl::Buffer(cl_manager.get_context(), CL_MEM_READ_WRITE, tmp_buffer_size, nullptr, &err);
+        // tmp_buffer = cl::Buffer(cuda_manager.get_context(), CL_MEM_READ_WRITE, tmp_buffer_size, nullptr, &err);
         tmp_buffer = clCreateBuffer(ctx, CL_MEM_READ_WRITE, tmp_buffer_size, 0, &err);
         if (err != CL_SUCCESS)
             printf("Error with tmp_buffer clCreateBuffer\n");
@@ -1177,17 +1131,20 @@ void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> &
     // Release clFFT library
     clfftTeardown();
 };
-
+*/
 template <typename type>
 void vector_cuda<type>::gradientx( typename vector_cuda<type>::pointer imgr,
                                   typename vector_cuda<type>::pointer imgo,
                                   std::vector<int> ref_size)
 {
-    std::string str_kernel = kernel_gradientx( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_gradientx");
-    cl_manager.arguments(*(imgr->get_buffer()), *(imgo->get_buffer()));
-    cl_manager.execute(ref_size); // multidimensional NDRange
+    cuda_manager.setup(ref_size); // multidimensional
+    if (ref_size.size() == 2)
+        cuda_manager.execute( cuda_kernel_gradientx<type>, imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                              ref_size[0], ref_size[1], 0 );
+    else if (ref_size.size() == 3)
+        cuda_manager.execute( cuda_kernel_gradientx<type>, imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                              ref_size[0], ref_size[1], ref_size[2] );
+    else ;
 };
 
 template <typename type>
@@ -1195,11 +1152,14 @@ void vector_cuda<type>::gradienty( typename vector_cuda<type>::pointer imgr,
                                   typename vector_cuda<type>::pointer imgo,
                                   std::vector<int> ref_size)
 {
-    std::string str_kernel = kernel_gradienty( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_gradienty");
-    cl_manager.arguments(*(imgr->get_buffer()), *(imgo->get_buffer()));
-    cl_manager.execute(ref_size); // multidimensional NDRange
+    cuda_manager.setup(ref_size); // multidimensional
+    if (ref_size.size() == 2)
+        cuda_manager.execute( cuda_kernel_gradienty<type>, imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                              ref_size[0], ref_size[1], 0 );
+    else if (ref_size.size() == 3)
+        cuda_manager.execute( cuda_kernel_gradienty<type>, imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                              ref_size[0], ref_size[1], ref_size[2] );
+    else ;
 };
 
 template <typename type>
@@ -1207,13 +1167,33 @@ void vector_cuda<type>::gradientz( typename vector_cuda<type>::pointer imgr,
                                   typename vector_cuda<type>::pointer imgo,
                                   std::vector<int> ref_size)
 {
-    std::string str_kernel = kernel_gradientz( string_type<type>() );
-    // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_gradientz");
-    cl_manager.arguments(*(imgr->get_buffer()), *(imgo->get_buffer()));
-    cl_manager.execute(ref_size); // multidimensional NDRange
+    cuda_manager.setup(ref_size); // multidimensional
+    if (ref_size.size() == 3)
+        cuda_manager.execute( cuda_kernel_gradientz<type>, imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                              ref_size[0], ref_size[1], ref_size[2] );
+    else ;
 };
 
+template <typename type>
+void vector_cuda<type>::convolution( typename vector_cuda<type>::pointer imgr,
+                                     typename vector_cuda<type>::pointer kernel,
+                                     typename vector_cuda<type>::pointer imgo,
+                                     std::vector<int> ref_size, int kwidth)
+{
+    if (ref_size.size() == 2)
+    {
+        cuda_manager.setup(ref_size); // multidimensional
+        cuda_manager.execute( cuda_kernel_convolution_2d<type>, imgr->get_buffer()->get(), kernel->get_buffer()->get(),
+                            imgo->get_buffer()->get(), kwidth, ref_size[0], ref_size[1]);
+    }
+    else if (ref_size.size() == 3)
+    {
+        cuda_manager.setup(ref_size); // multidimensional
+        cuda_manager.execute( cuda_kernel_convolution_3d<type>, imgr->get_buffer()->get(), kernel->get_buffer()->get(), 
+                            imgo->get_buffer()->get(), kwidth, ref_size[0], ref_size[1], ref_size[2]);
+    }
+    else ;
+};
 
 }; //end namespace
 

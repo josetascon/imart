@@ -101,6 +101,9 @@ using grid_cpu = grid<type,vector_cpu<type>>;
 template<typename type>
 using grid_gpu = grid<type,vector_ocl<type>>;
 
+template<typename type>
+using grid_cuda = grid<type,vector_cuda<type>>;
+
 
 // ===========================================
 //      Functions of Class grid
@@ -301,6 +304,7 @@ std::string grid<type,container>::info_data(std::string msg)
 template <typename type, typename container>
 void grid<type,container>::meshgrid()
 {   
+    if (this->get_size()[0] == 0) return;
     if (this->dim == 2) { meshgrid2(); }
     else if (this->dim == 3) { meshgrid3(); }
     else ;

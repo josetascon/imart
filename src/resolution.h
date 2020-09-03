@@ -10,7 +10,8 @@
 
 #include "process_object.h"
 #include "image.h"
-// #include "inearest.h"
+#include "transform.h"
+#include "interpolator.h"
 #include "ilinear.h"
 
 namespace imart
@@ -35,8 +36,7 @@ protected:
     // ===========================================
     typename image<type,container>::pointer in;
     typename image<type,container>::pointer out;
-    typename ilinear<type,container>::pointer interpol;
-    // typename inearest<type,container>::pointer interpol;
+    typename interpolator<type,container>::pointer interpolation;
     double scale;
 
 public:
@@ -51,12 +51,14 @@ public:
     // ===========================================
     double get_scale() const;
     typename image<type,container>::pointer get_image() const;
+    typename interpolator<type,container>::pointer get_interpolator() const;
 
     // ===========================================
     // Set Functions
     // ===========================================
     void set_scale(double scalar);
     void set_image(typename image<type,container>::pointer input);
+    void set_interpolator(typename interpolator<type,container>::pointer interpolationd);
 
     // ===========================================
     // Print Functions
@@ -69,6 +71,7 @@ public:
     // !apply the scale
     typename image<type,container>::pointer apply();
     typename image<type,container>::pointer apply(double scalar);
+    typename transform<type,container>::pointer apply(double scalar, typename transform<type,container>::pointer trfm);
 };
 
 
@@ -86,7 +89,7 @@ resolution<type,container>::resolution(typename image<type,container>::pointer i
     this->class_name = "resolution";
     in = input;
     out = image<type,container>::new_pointer(input->get_dimension());
-    interpol = ilinear<type,container>::new_pointer(in);
+    interpolation = ilinear<type,container>::new_pointer(in);
     scale = 1.0;
     
     // setup process
@@ -111,6 +114,12 @@ typename image<type,container>::pointer resolution<type,container>::get_image() 
     return in;
 };
 
+template <typename type, typename container>
+typename interpolator<type,container>::pointer resolution<type,container>::get_interpolator() const
+{
+    return interpolation;
+};
+
 // ===========================================
 // Set Functions
 // ===========================================
@@ -124,7 +133,15 @@ template <typename type, typename container>
 void resolution<type,container>::set_image(typename image<type,container>::pointer input)
 {
     in = input;
-    interpol = ilinear<type,container>::new_pointer(in);
+    interpolation->set_reference(in);
+    // interpolation = ilinear<type,container>::new_pointer(in);
+};
+
+template <typename type, typename container>
+void resolution<type,container>::set_interpolator(typename interpolator<type,container>::pointer interpolationd)
+{
+    interpolation = interpolationd->mimic();
+    interpolation->set_reference(in);
 };
 
 // ===========================================
@@ -156,7 +173,7 @@ typename image<type,container>::pointer resolution<type,container>::apply()
     {
         sz[i] = 1 + (sz[i]-1)/scale;
         space[i] = space[i]*scale;
-    }
+    };
 
     out = image<type,container>::new_pointer(sz);
     out->set_spacing(space);
@@ -167,7 +184,7 @@ typename image<type,container>::pointer resolution<type,container>::apply()
     auto x = grid<type,container>::new_pointer(out);
     // x->ptr()[0]->print_data();
     // std::cout << "interpolation" << std::endl;
-    return interpol->apply(x);
+    return interpolation->apply(x);
 };
 
 template <typename type, typename container>
@@ -175,6 +192,43 @@ typename image<type,container>::pointer resolution<type,container>::apply(double
 {
     set_scale(scalar);
     return apply();
+};
+
+template <typename type, typename container>
+typename transform<type,container>::pointer resolution<type,container>::apply(double scalar, typename transform<type,container>::pointer trfm)
+{
+    set_scale(scalar);
+
+    std::vector<int> sz = trfm->get_size();
+    std::vector<double> space = trfm->get_spacing();
+
+    for(int i = 0; i < sz.size(); i++)
+    {
+        // sz[i] = 1 + (sz[i]-1)/scale;
+        sz[i] = round(sz[i]/scale);
+        space[i] = space[i]*scale;
+    };
+
+    auto out_trfm = trfm->mimic();
+    out_trfm->change_size(sz);
+    out_trfm->set_spacing(space);
+    out_trfm->set_origin(trfm->get_origin());
+    out_trfm->set_direction(trfm->get_direction());
+
+    auto ref = image<type,container>::new_pointer(sz);
+    ref->set_spacing(space);
+    ref->set_origin(in->get_origin());
+    ref->set_direction(in->get_direction());
+
+    auto intertrfm = interpolation->mimic();
+
+    for(int i = 0; i < sz.size(); i ++)
+    {
+        auto x = grid<type,container>::new_pointer(ref);
+        intertrfm->set_reference(trfm->get_parameters(i));
+        out_trfm->set_parameters(intertrfm->apply(x),i);
+    };
+    return out_trfm;
 };
 
 }; //end namespace

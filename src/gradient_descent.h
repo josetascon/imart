@@ -119,7 +119,6 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
     typename transform<type,container>::pointer tr_derive = tr_base->mimic();
     typename transform<type,container>::pointer tr_best = tr_base->mimic();
 
-
     // tr_base->print("transform base");
     // tr_base->print_data("transform base");
     // tr_derive->print("transform derive");
@@ -129,23 +128,6 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
     int d = method->get_fixed()->get_dimension();
     termination = "max iterations";
     double diff = 0.0;
-
-    // Affine transform
-    // typename transform<type,container>::pointer scales = tr_base->mimic();
-    // std::vector<type> p(d*d + d);
-    // if (d == 2)
-    // {
-    //     p[0] = 0.12; p[1] = 0.12; p[2] = 0.12; p[3] = 0.12;
-    //     p[4] = 2000; p[5] = 2000;
-    // }
-    // else if (d == 3)
-    // {
-    //     p[0] = 0.12; p[1] = 0.12; p[2] = 0.12; 
-    //     p[3] = 0.12; p[4] = 0.12; p[5] = 0.12; 
-    //     p[6] = 0.12; p[7] = 0.12; p[8] = 0.12;
-    //     p[9] = 2000; p[10] = 2000; p[11] = 2000;
-    // }
-    // scales->get_parameters()->get_data()->read_ram(p.data(),p.size());
 
     timer t("ms");
     t.start();
@@ -170,15 +152,21 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
         *tr_base = *tr_base - (*tr_derive)*step;
         // tr_base->print_data("transform update");
 
-        type sigma = 2.0;
-        tr_base->set_parameters( gaussian_filter(tr_base->get_parameters(0),sigma,3), 0 );
-        tr_base->set_parameters( gaussian_filter(tr_base->get_parameters(1),sigma,3), 1 );
+        if (method->get_name() == "demons")
+        {
+            type sigma = method->get_sigma();
+            int kwidth = method->get_kernel_width();
+            // printf("sigma = %.1f, k = %i\n", sigma, kwidth);
+            for(int i = 0; i < tr_base->get_dimension(); i++)
+                tr_base->set_parameters( gaussian_filter(tr_base->get_parameters(i),sigma,kwidth), i );
+        };
 
         diff = abs(previous_cost - current_cost);
         t.lap();
-        std::cout << std::showpoint << std::setprecision(4);
-        std::cout << "iteration: " << std::setw(4) << iterations << "  cost: " << std::setw(4) <<  current_cost;
-        std::cout << "  diff: " << std::setw(4) << diff << "  time:" << std::setw(4) << t.get_elapsed() << std::endl;
+        printf( "iteration: %4d  cost: %7.3e  diff: %7.3e  time: %7.3f\n", iterations, current_cost, diff, t.get_elapsed() );
+        // std::cout << std::showpoint << std::setprecision(4);
+        // std::cout << "iteration: " << std::setw(4) << iterations << "  cost: " << std::setw(4) <<  current_cost;
+        // std::cout << "  diff: " << std::setw(4) << diff << "  time:" << std::setw(4) << t.get_elapsed() << std::endl;
         iterations++;
 
         if (diff > 0.0 and diff < tolerance)

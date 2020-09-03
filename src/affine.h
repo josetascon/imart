@@ -82,6 +82,9 @@ using affine_cpu = affine<type,vector_cpu<type>>;
 template<typename type>
 using affine_gpu = affine<type,vector_ocl<type>>;
 
+template<typename type>
+using affine_cuda = affine<type,vector_cuda<type>>;
+
 
 // ===========================================
 //          Functions of Class affine

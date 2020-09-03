@@ -29,6 +29,7 @@
 #include "data_object.h"
 #include "vector_cpu.h"
 #include "vector_ocl.h"
+#include "vector_cuda.h"
 #include "vector_vcl.h"
 
 namespace imart
@@ -168,7 +169,7 @@ public:
     // Overloading Operators
     // ===========================================
     // Access, does not support writing pixels
-    type & operator [] (int e);
+    type operator [] (int e);
     // type & operator () (int w, int h); //ONLY 2d***
     // type & operator () (int w, int h, int l); //ONLY 3d***
     
@@ -270,6 +271,8 @@ using image_cpu = image<type,vector_cpu<type>>;
 template<typename type>
 using image_gpu = image<type,vector_ocl<type>>;
 
+template<typename type>
+using image_cuda = image<type,vector_cuda<type>>;
 
 // ===========================================
 //      Functions of Class image
@@ -631,7 +634,7 @@ void image<type,container>::random(float min, float max)
 // ===========================================
 // Access
 template <typename type, typename container>
-type & image<type,container>::operator [] (int e)
+type image<type,container>::operator [] (int e)
 {
     // assert(e < num_elements);
     return data->operator[](e);

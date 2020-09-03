@@ -68,6 +68,9 @@ using inearest_cpu = inearest<type,vector_cpu<type>>;
 template<typename type>
 using inearest_gpu = inearest<type,vector_ocl<type>>;
 
+template<typename type>
+using inearest_cuda = inearest<type,vector_cuda<type>>;
+
 
 // ===========================================
 //      Functions of Class grid

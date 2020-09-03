@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-02 08:11:28
+* @Last Modified time: 2020-08-20 15:18:07
 */
 
 // std libs
@@ -90,5 +90,6 @@ int main()
 
     auto opt = gradient_descent<type,vector_ocl<type>>::new_pointer();
     opt->optimize(ssd1);
+    ssd1->get_transform()->print_data();
     return 0;
 };

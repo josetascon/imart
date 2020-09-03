@@ -68,6 +68,9 @@ using ilinear_cpu = ilinear<type,vector_cpu<type>>;
 template<typename type>
 using ilinear_gpu = ilinear<type,vector_ocl<type>>;
 
+template<typename type>
+using ilinear_cuda = ilinear<type,vector_cuda<type>>;
+
 
 // ===========================================
 //      Functions of Class grid

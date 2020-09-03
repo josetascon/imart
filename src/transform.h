@@ -82,6 +82,7 @@ public:
     // ===========================================
     void set_parameters(typename image<type,container>::pointer params, int n = 0);
     void set_parameters_vector(ptr_vector_image params);
+    virtual void change_size(std::vector<int> sz);
 
     // ===========================================
     // Print Functions
@@ -116,6 +117,15 @@ public:
     // grid<type,container> operator () (const grid<type,container> & input);
     typename grid<type,container>::pointer operator () (typename grid<type,container>::pointer input);
 };
+
+template<typename type>
+using transform_cpu = transform<type,vector_cpu<type>>;
+
+template<typename type>
+using transform_gpu = transform<type,vector_ocl<type>>;
+
+template<typename type>
+using transform_cuda = transform<type,vector_cuda<type>>;
 
 
 // ===========================================
@@ -179,6 +189,7 @@ void transform<type,container>::init(int d)
 template <typename type, typename container>
 void transform<type,container>::allocate(int d)
 {
+    // std::cout << "init allocate" << std::endl;
     parameters = std::make_shared< std::vector< typename image<type,container>::pointer >>(d);
     inverse_parameters = std::make_shared< std::vector< typename image<type,container>::pointer >>(d);
     for(int i = 0; i < d; i++)
@@ -186,15 +197,16 @@ void transform<type,container>::allocate(int d)
         (*parameters)[i] = image<type,container>::new_pointer();        // parameters are 2d
         (*inverse_parameters)[i] = image<type,container>::new_pointer();// parameters are 2d
     };
+    // std::cout << "end allocate" << std::endl;
 };
 
 // Full copy
 template <typename type, typename container>
 void transform<type,container>::clone_(const transform<type,container> & input)
 {
+    space_object::mimic_(input);
     int n = input.get_parameters_vector()->size();
     allocate(n);
-    space_object::mimic_(input);
     for(int i = 0; i < n; i++)
     {
         (*parameters)[i]->clone_(*(input.get_parameters(i)));
@@ -205,9 +217,9 @@ void transform<type,container>::clone_(const transform<type,container> & input)
 template <typename type, typename container>
 void transform<type,container>::copy_(const transform<type,container> & input)
 {
+    space_object::mimic_(input);
     int n = input.get_parameters_vector()->size();
     allocate(n);
-    space_object::mimic_(input);
     for(int i = 0; i < n; i++)
     {
         // std::cout << "copy" << std::endl;
@@ -219,12 +231,13 @@ void transform<type,container>::copy_(const transform<type,container> & input)
 template <typename type, typename container>
 void transform<type,container>::mimic_(const transform<type,container> & input)
 {
+    space_object::mimic_(input);
     int n = input.get_parameters_vector()->size();
     allocate(n);
-    space_object::mimic_(input);
     for(int i = 0; i < n; i++)
     {
         (*parameters)[i]->mimic_(*(input.get_parameters(i)));
+        (*parameters)[i]->zeros();
         (*inverse_parameters)[i]->mimic_(*(input.get_inverse_parameters(i)));
     };
 };
@@ -270,6 +283,12 @@ template <typename type, typename container>
 void transform<type,container>::set_parameters_vector(typename transform<type,container>::ptr_vector_image params)
 {
     parameters = params;
+};
+
+template <typename type, typename container>
+void transform<type,container>::change_size(std::vector<int> sz)
+{
+    return;
 };
 
 // ===========================================

@@ -2,15 +2,19 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-15 11:26:18
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-20 12:42:14
+* @Last Modified time: 2020-09-03 10:41:03
 */
 
 #include "../src/inherit.h"
 #include "../src/object.h"
+#include "../src/opencl_object.h"
+#include "../src/cuda_object.h"
 #include "../src/space_object.h"
 #include "../src/data_object.h"
 #include "../src/process_object.h"
 #include "../src/pairwise_object.h"
+
+#include "../src/cuda_buffer.h"
 
 #include "../src/image.h"
 #include "../src/image_utils.h"

@@ -296,6 +296,7 @@ void vector_ocl<type>::allocate(int s)
     err = 0;
     buffer = std::make_shared<cl::Buffer>(cl_manager.get_context(), CL_MEM_READ_WRITE, sizeof(type)*s, nullptr, &err);
     assert(err == 0);
+    // zeros(); // init for gpu
 };
 
 // ===========================================
@@ -381,7 +382,7 @@ template <typename type>
 std::string vector_ocl<type>::info(std::string msg)
 {
     std::stringstream ss;
-    std::string title = "Vector GPU Information";
+    std::string title = "Vector OpenCL Information";
     if (msg != "") { title = msg; };
 
     // Summary of the object information
@@ -434,14 +435,11 @@ void vector_ocl<type>::ones()
 template <typename type>
 void vector_ocl<type>::assign(type value)
 {
-    if (_size_ > 0)
-    {
-        type v = value;
-        std::string str_kernel = kernel_assign(string_type<type>());
-        cl_manager.program(str_kernel, "kernel_assign");
-        cl_manager.arguments(*buffer, v);
-        cl_manager.execute(_size_);
-    };
+    type v = value;
+    std::string str_kernel = kernel_assign(string_type<type>());
+    cl_manager.program(str_kernel, "kernel_assign");
+    cl_manager.arguments(*buffer, v);
+    cl_manager.execute(_size_);
 };
 
 template <typename type>

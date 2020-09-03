@@ -160,6 +160,7 @@ typename std::shared_ptr<image<type,container>> gaussian_filter(std::shared_ptr<
 {
     int d = input->get_dimension();
     auto output = input->mimic();
+    output->zeros();
 
     auto gkernel = gaussian_kernel<type,container>(d,sigma,kwidth);
 
