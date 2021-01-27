@@ -9,8 +9,10 @@
 #define __OPTIMIZER_H__
 
 #include "image.h"
+#include "image_utils.h"
 #include "transform.h"
 #include "metric.h"
+#include "utils/timer.h"
 
 namespace imart
 {
@@ -105,7 +107,8 @@ void optimizer<type,container>::init()
     // Initilize control variables
     // std::cout << "init optimizer" << std::endl;
     defaults();
-    tolerance = 1e-5;
+    tolerance = 1e-6;
+    max_unchanged_times = 15;
 
     this->set_total_inputs(1);      //process_object::init
     this->set_total_outputs(0);     //process_object::init
@@ -122,9 +125,7 @@ void optimizer<type,container>::defaults()
     // Initilize control variables
     iterations = 0;
     max_iterations = 300;
-    
     unchanged_times = 0;
-    max_unchanged_times = 15;
     
     // tolerance = 1e-5;
     previous_cost = 1e41;

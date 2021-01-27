@@ -10,8 +10,11 @@
 
 // std libs
 #include <iostream>     // std::cout
-#include <string>     // std::cout
+#include <string>       // std::string
 #include <cassert>      // assert
+
+// boost libs
+#include <boost/stacktrace.hpp>
 
 // opencl libs
 #include <CL/cl.hpp>
@@ -35,12 +38,13 @@ void imart_assert_opencl_error(cl_int status, const char* file, int line, const 
 {
     if (status != 0)
     {
-        std::cerr << "\n******* OpenCL Error *******\t" << msg
+        std::cerr << "\n******* OpenCL Error *******"
                   << "\n[Error] Information:\t" << msg
                   << "\n[Error] Error code:\t" << status
                   << "\n[Error] Description:\t" << opencl_error(status)
                   << "\n[Error] File:\t\t" << file
-                  << "\n[Error] Line:\t\t" << line << std::endl;
+                  << "\n[Error] Line:\t\t" << line// << std::endl;
+                  << "\n[Error] Backtrace:\n" << boost::stacktrace::stacktrace() << std::endl;
         assert(status == 0);
     };
 };

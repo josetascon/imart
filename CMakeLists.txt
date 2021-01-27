@@ -1,5 +1,7 @@
 # Author: José D. Tascón-Vidarte <josedtascon@gmail.com>
-
+# ===========================================
+#               CMAKE Project
+# ===========================================
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(imart C CXX)
 # project(imart LANGUAGES C CXX CUDA)
@@ -13,17 +15,14 @@ project(imart C CXX)
 set(CMAKE_LIBRARY_PATH "/usr/lib")
 
 # ===========================================
-#               Find Libraries
+#               Dependencies
 # ===========================================
-# Find ITK
-find_package( ITK REQUIRED )
-include(${ITK_USE_FILE})
-# Find OpenMP
-# find_package( OpenMP REQUIRED )
-# Find OpenCL.
-find_package( OpenCL REQUIRED )
-# Find CUDA
-# find_package( CUDA REQUIRED )
+option(ENABLE_OPENMP "Enable OpenMP" ON)
+option(ENABLE_OPENCL "Enable OpenCL" ON)
+option(ENABLE_CUDA "Enable CUDA" ON)
+
+option(ENABLE_FFTW "Enable fftw3" ON)
+option(ENABLE_CLFFTW "Enable clfft" ON)
 
 
 # ===========================================
@@ -32,11 +31,34 @@ find_package( OpenCL REQUIRED )
 # c++ standard
 set (CMAKE_CXX_STANDARD 17)
 # set (CMAKE_CUDA_STANDARD 17)
+set (CMAKE_CXX_FLAGS "-export-dynamic")
 
 # build type
-set (CMAKE_BUILD_TYPE Release)
-# set (CMAKE_BUILD_TYPE Debug)
-# set (CMAKE_BUILD_TYPE RelWithDebInfo)
+set (CMAKE_BUILD_TYPE "Release")
+# set (CMAKE_BUILD_TYPE "Debug")
+# set (CMAKE_BUILD_TYPE "RelWithDebInfo")
+
+if(ENABLE_OPENMP)
+    find_package( OpenMP REQUIRED )
+endif()
+
+
+
+# ===========================================
+#               Find Libraries
+# ===========================================
+# Find ITK
+find_package( ITK REQUIRED )
+include(${ITK_USE_FILE})
+
+find_package( Boost COMPONENTS program_options REQUIRED )
+include_directories( ${Boost_INCLUDE_DIR} )
+
+
+if(ENABLE_OPENCL)
+    # Find OpenCL.
+    find_package( OpenCL REQUIRED )
+endif()
 
 # ===========================================
 #                  Includes
@@ -53,9 +75,7 @@ add_subdirectory(src)
 # ===========================================
 #              Libs: imart_cuda
 # ===========================================
-option(BUILD_CUDA "Build with CUDA" ON)
-
-if(BUILD_CUDA)
+if(ENABLE_CUDA)
     enable_language(CUDA)
     set (CMAKE_CUDA_ARCHITECTURES 52 72)
     add_subdirectory(src/cuda)
@@ -64,15 +84,28 @@ endif()
 # ===========================================
 #                   Links
 # ===========================================
-set(link_targets imart_src ${ITK_LIBRARIES} OpenCL::OpenCL fftw3 clFFT)
-if (BUILD_CUDA)
+# set(link_targets imart_src ${ITK_LIBRARIES})
+set(link_targets imart_src ${ITK_LIBRARIES} ${Boost_LIBRARIES} dl)
+
+if (ENABLE_OPENMP)
+    set(link_targets ${link_targets} OpenMP::OpenMP_CXX)
+endif()
+if (ENABLE_OPENCL)
+    set(link_targets ${link_targets} OpenCL::OpenCL)
+endif()
+if (ENABLE_CUDA)
     set(link_targets ${link_targets} imart_cuda)
 endif()
-# set(link_targets ${ITK_LIBRARIES} OpenCL::OpenCL fftw3 clFFT)
-# set(link_targets OpenMP::OpenMP_CXX )
+
+if (ENABLE_FFTW)
+    set(link_targets ${link_targets} fftw3)
+endif()
+if (ENABLE_CLFFTW)
+    set(link_targets ${link_targets} clFFT)
+endif()
 
 # ===========================================
-#                  Options
+#               Build Options
 # ===========================================
 option(BUILD_TESTS "Build the tests" OFF)
 

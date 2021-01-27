@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-31 19:37:13
+* @Last Modified time: 2021-01-27 06:49:15
 */
 
 // std libs
@@ -63,7 +63,7 @@ int main()
     // img_moving->print();
     // img_moving->print_data();
     
-    auto trfm = dfield<type,vector_cuda<type>>::new_pointer(img_moving);
+    auto trfm = dfield<type,vector_cuda<type>>::new_pointer(img_fixed);
     trfm->print();
     // trfm->print_data();
     

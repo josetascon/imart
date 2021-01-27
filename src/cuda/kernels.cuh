@@ -90,6 +90,54 @@ template <typename type>
 void cuda_kernel_pow( std::vector<int> & grid, std::vector<int> & block, 
                       const type * vin1, const type * vin2, type * vout, int n );
 
+template <typename type>
+void cuda_kernel_equal( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n);
+
+template <typename type>
+void cuda_kernel_greater( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n);
+
+template <typename type>
+void cuda_kernel_less( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n);
+
+template <typename type>
+void cuda_kernel_greater_equal( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n);
+
+template <typename type>
+void cuda_kernel_less_equal( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n);
+
+template <typename type>
+void cuda_kernel_equal_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n);
+
+template <typename type>
+void cuda_kernel_greater_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n);
+
+template <typename type>
+void cuda_kernel_less_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n);
+
+template <typename type>
+void cuda_kernel_greater_equal_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n);
+
+template <typename type>
+void cuda_kernel_less_equal_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n);
+
+template <typename type>
+void cuda_kernel_replace( std::vector<int> & grid, std::vector<int> & block, 
+                          const type * idxs, const type * vin, type * vout, int n);
+
+template <typename type>
+void cuda_kernel_replace_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                          const type * idxs, type * vout, type value, int n);
+
 // ===========================================
 // Reduction Kernels
 // ===========================================
@@ -204,6 +252,20 @@ void cuda_kernel_linear_interpolation_3d( std::vector<int> & grid, std::vector<i
                                           int n0, int n1, int n2 );
 
 template <typename type>
+void cuda_kernel_cubic_interpolation_2d( std::vector<int> & grid, std::vector<int> & block,
+                                          const type * xo, const type * yo,
+                                          const type * imgr, type * imgo,
+                                          int w, int h,   //img ref width and height
+                                          int n0, int n1); //img out dims
+
+template <typename type>
+void cuda_kernel_cubic_interpolation_3d( std::vector<int> & grid, std::vector<int> & block,
+                                          const type * xo, const type * yo, const type * zo,
+                                          const type * imgr, type * imgo,
+                                          int w, int h, int l, //img ref width, height and length
+                                          int n0, int n1, int n2 );
+
+template <typename type>
 void cuda_kernel_gradientx( std::vector<int> & grid, std::vector<int> & block,
                             const type * imgr, type * imgo, 
                             int n0, int n1, int n2 );
@@ -227,6 +289,11 @@ template <typename type>
 void cuda_kernel_convolution_3d( std::vector<int> & grid, std::vector<int> & block,
                                  const type * imgr, const type * kern, //kernel width
                                  type * imgo, int kwidth, int n0, int n1, int n2 );
+
+// template <typename type>
+// void cuda_kernel_fft_2d( std::vector<int> & grid, std::vector<int> & block,
+//                          const type * in_real, const type * in_cmplx, ) ;
+
 
 //NEW KERNELS
 // template <typename type>

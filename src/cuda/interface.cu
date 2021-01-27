@@ -50,7 +50,7 @@ void cuda_check_gpu()
     {
         cudaDeviceProp deviceProperties;
         cudaGetDeviceProperties(&deviceProperties, deviceIndex);
-        std::cout << deviceProperties.name << std::endl;
+        std::cout << "CUDA Device:\t" << deviceProperties.name << std::endl;
     }
 };
 

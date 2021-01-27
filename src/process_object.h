@@ -10,7 +10,7 @@
 
 // std libs
 #include <iostream>     // std::cout
-#include <cassert>      // assert
+// #include <cassert>      // assert
 
 // local libs
 #include "inherit.h"
@@ -185,13 +185,13 @@ std::vector<object::pointer> process_object::get_output() const
 
 object::pointer process_object::get_input(unsigned int id) const
 {
-    assert(id < vinput.size());
+    imart_assert(id < vinput.size(), "Input index out of bounds");
     return vinput[id];
 };
 
 object::pointer process_object::get_output(unsigned int id) const
 {
-    assert(id < voutput.size());
+    imart_assert(id < voutput.size(), "Output index out of bounds");
     return voutput[id];
 };
 
@@ -212,7 +212,7 @@ template<typename ... Args>
 void process_object::setup_input(Args... args)
 {
     std::vector<object::pointer> in({args ...});
-    assert(num_inputs == in.size());
+    imart_assert(num_inputs == in.size(), "Arguments exceed the number of inputs");
     vinput = in;
     ready_in = true;
 };
@@ -221,20 +221,20 @@ template<typename ... Args>
 void process_object::setup_output(Args... args)
 {
     std::vector<object::pointer> out({args ...});
-    assert(num_outputs == out.size());
+    imart_assert(num_outputs == out.size(), "Arguments exceed the number of inputs");
     voutput = out;
     ready_out = true;
 };
 
 void process_object::set_input(unsigned int id, object::pointer ptr)
 {
-    assert(id < vinput.size());
+    imart_assert(id < vinput.size(), "Input index out of bounds");
     vinput[id] = ptr;
 };
 
 void process_object::set_output(unsigned int id, object::pointer ptr)
 {
-    assert(id < voutput.size());
+    imart_assert(id < voutput.size(), "Output index out of bounds");
     voutput[id] = ptr;
 };
 

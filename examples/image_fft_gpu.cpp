@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-07 10:13:08
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-07-03 10:53:33
+* @Last Modified time: 2020-09-21 14:49:28
 */
 
 
@@ -11,6 +11,7 @@
 
 // local libs
 #include "../src/image.h"
+#include "../src/image_utils.h"
 
 using namespace imart;
 

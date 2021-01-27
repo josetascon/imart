@@ -94,19 +94,21 @@ typename transform<type,container>::pointer ssd<type,container>::derivative()
     type N = (type)fixed->get_total_elements();
 
     typename transform<type,container>::pointer trfm = transformation->mimic();
-    typename image<type,container>::pointer param = transformation->get_parameters()->mimic();
     
-    // moving prime already computed
+    // moving prime already computed when cost() is called in optimizer
     // auto moving_prime = this->warped_moving();        // consider store this to avoid compute again
     auto dm_di = image<type,container>::new_pointer();
     *dm_di = (*moving_prime - *fixed);                // **** mising product 1/N
 
+    // Computing image gradient
+    auto grad = gradient(moving_prime);
+
     if (transformation->get_name() == "affine")
     {
-        // Computing gradient
-        auto grad = gradient(moving_prime);
+        // parameters to update
+        typename image<type,container>::pointer param = transformation->get_parameters()->mimic();
 
-        // dimensional data
+        // dimensional variables names
         auto x = *(x0->ptr()[0]);
         auto y = *(x0->ptr()[1]);
         auto gx = *grad[0];
@@ -114,7 +116,7 @@ typename transform<type,container>::pointer ssd<type,container>::derivative()
         
         if (d == 2)
         {
-            // set scales
+            // set scales ***TODO set values according to pixels
             std::vector<type> s(6);
             s[0] = 0.12; s[1] = 0.12; s[2] = 0.12; s[3] = 0.12;
             s[4] = 2000; s[5] = 2000;
@@ -158,9 +160,40 @@ typename transform<type,container>::pointer ssd<type,container>::derivative()
             // write to parameters
             param->get_data()->read_ram(p.data(),p.size());
         };
+
+        trfm->set_parameters( param );
+    }
+    else if (transformation->get_name() == "dfield")
+    {
+        // parameters to update
+        auto xupdate = transformation->get_parameters(0)->mimic();
+        auto yupdate = transformation->get_parameters(1)->mimic();
+        
+        // dimensional variables names
+        auto x = *(x0->ptr()[0]);
+        auto y = *(x0->ptr()[1]);
+        auto gx = *grad[0];
+        auto gy = *grad[1];
+
+        if (d == 2)
+        {
+            *xupdate = (*dm_di)*gx*x;
+            *yupdate = (*dm_di)*gy*y;
+        } 
+        else if (d == 3)
+        {
+            auto zupdate = transformation->get_parameters(2)->mimic();
+            auto z = *(x0->ptr()[2]);
+            auto gz = *grad[2];
+            *zupdate = (*dm_di)*gz*z;
+            trfm->set_parameters( zupdate, 2 );
+        };
+
+        trfm->set_parameters( xupdate, 0 );
+        trfm->set_parameters( yupdate, 1 );
     };
 
-    trfm->set_parameters( param );
+    
     return trfm;
 
 };

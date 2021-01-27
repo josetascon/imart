@@ -10,7 +10,7 @@
 
 // std libs
 #include <iostream>     // std::cout
-#include <cassert>      // assert
+// #include <cassert>      // assert
 
 // local libs
 #include "inherit.h"
@@ -248,25 +248,29 @@ std::vector<double> space_object::get_sod_inverse() const
 // ===========================================
 void space_object::set_size(std::vector<int> sz)
 {
-    assert(dim == sz.size());
+    // assert(dim == sz.size());
+    imart_assert(dim == sz.size(), "Mismatch of size and dimensions");
     size = sz;
 };
 
 void space_object::set_spacing(std::vector<double> s)
 {
-    assert(dim == s.size());
+    // assert(dim == s.size());
+    imart_assert(dim == s.size(), "Mismatch of spacing and dimensions");
     spacing = s;
 };
 
 void space_object::set_origin(std::vector<double> o)
 {
-    assert(dim == o.size());
+    // assert(dim == o.size());
+    imart_assert(dim == o.size(), "Mismatch of origin and dimensions");
     origin = o;
 };
 
 void space_object::set_direction(std::vector<double> d)
 {
-    assert(dim*dim == d.size());
+    // assert(dim*dim == d.size());
+    imart_assert(dim*dim == d.size(), "Mismatch of direction and dimensions");
     direction = d;
 };
 

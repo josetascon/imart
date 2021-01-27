@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-07 10:13:08
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-16 13:14:14
+* @Last Modified time: 2020-12-14 11:51:33
 */
 
 
@@ -32,10 +32,15 @@ int main()
     std::cout << "Test class image, warmup addition";
     std::cout << " =====================";
     std::cout << std::endl;
-    ptr_vector_d buffer1 = std::make_shared<vector_cpu<double>>(6);
-    *buffer1 = {1.1, 2.1, 3.1, 4.1, 5.1, 6.1};
-    ptr_vector_d buffer2 = std::make_shared<vector_cpu<double>>(6);
-    *buffer2 = {2.1, 1.1, 0.1, -0.9, -1.9, -2.9};
+    // ptr_vector_d buffer1 = std::make_shared<vector_cpu<double>>(6);
+    // *buffer1 = {1.1, 2.1, 3.1, 4.1, 5.1, 6.1};
+    // ptr_vector_d buffer2 = std::make_shared<vector_cpu<double>>(6);
+    // *buffer2 = {2.1, 1.1, 0.1, -0.9, -1.9, -2.9};
+
+    std::initializer_list<double> l1{1.1, 2.1, 3.1, 4.1, 5.1, 6.1};
+    std::initializer_list<double> l2{2.1, 1.1, 0.1, -0.9, -1.9, -2.9};
+    vector_cpu<double>::pointer buffer1 = std::make_shared<vector_cpu<double>>(l1);
+    vector_cpu<double>::pointer buffer2 = std::make_shared<vector_cpu<double>>(l2);
 
     image_cpu<double> image1(buffer1, 3,2);
     image_cpu<double> image2(buffer2, 3,2);
@@ -90,6 +95,10 @@ int main()
     image6.print_data("image6:");
     image6 = image6^2.0;
     image6.print_data("image6 = image6^2.0: ");
+
+
+    image_cpu<vector_cpu<float>> imagevec(4,3);
+    imagevec.print();
 
     /*
     std::cout << std::endl;

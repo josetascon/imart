@@ -72,6 +72,7 @@ public:
     typename image<type,container>::pointer apply();
     typename image<type,container>::pointer apply(double scalar);
     typename transform<type,container>::pointer apply(double scalar, typename transform<type,container>::pointer trfm);
+    typename transform<type,container>::pointer apply(std::vector<int> sz, std::vector<double> space, typename transform<type,container>::pointer trfm);
 };
 
 
@@ -171,7 +172,8 @@ typename image<type,container>::pointer resolution<type,container>::apply()
 
     for(int i = 0; i < sz.size(); i++)
     {
-        sz[i] = 1 + (sz[i]-1)/scale;
+        // sz[i] = 1 + (sz[i]-1)/scale;
+        sz[i] = std::round(sz[i]/scale);
         space[i] = space[i]*scale;
     };
 
@@ -205,10 +207,15 @@ typename transform<type,container>::pointer resolution<type,container>::apply(do
     for(int i = 0; i < sz.size(); i++)
     {
         // sz[i] = 1 + (sz[i]-1)/scale;
-        sz[i] = round(sz[i]/scale);
+        sz[i] = std::round(sz[i]/scale);
         space[i] = space[i]*scale;
     };
+    return apply(sz,space,trfm);
+};
 
+template <typename type, typename container>
+typename transform<type,container>::pointer resolution<type,container>::apply(std::vector<int> sz, std::vector<double> space, typename transform<type,container>::pointer trfm)
+{
     auto out_trfm = trfm->mimic();
     out_trfm->change_size(sz);
     out_trfm->set_spacing(space);

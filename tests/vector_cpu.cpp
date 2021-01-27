@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-06 00:00:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-27 15:05:39
+* @Last Modified time: 2020-09-07 16:55:57
 */
 
 // std libs
@@ -55,6 +55,15 @@ TYPED_TEST(test_vector_cpu, constructor)
     ASSERT_FLOAT_EQ( -5.2, vec5[0] );
     ASSERT_FLOAT_EQ( -5.2, vec5[4] );
     ASSERT_FLOAT_EQ( -5.2, vec5[9] );
+
+    vector_cpu<TypeParam> vec7{0.2, -0.2, 5.1, 8.234, -1.0};
+    ASSERT_TRUE("vector_cpu" == vec7.get_name());
+    ASSERT_EQ( 5, vec7.size() );
+    ASSERT_FLOAT_EQ( 0.2, vec7[0] );
+    ASSERT_FLOAT_EQ( -0.2, vec7[1] );
+    ASSERT_FLOAT_EQ( 5.1, vec7[2] );
+    ASSERT_FLOAT_EQ( 8.234, vec7[3] );
+    ASSERT_FLOAT_EQ( -1.0, vec7[4] );
 }
 
 // ============================================
@@ -400,14 +409,14 @@ TYPED_TEST(test_vector_cpu, auxialiary_functions)
     int vari = -1.0;
     float varf = -1.1;
     double vard = -1.1;
-    unsigned int varui = static_cast<unsigned int>(varf);
+    // unsigned int varui = static_cast<unsigned int>(varf);
 
     ASSERT_TRUE(typeid(int) == typeid(vec2->operator[](10)));
     ASSERT_TRUE(typeid(float) == typeid(vec3->operator[](10)));
     ASSERT_TRUE(typeid(double) == typeid(vec4->operator[](10)));
     ASSERT_TRUE(typeid(unsigned int) == typeid(vec5->operator[](10)));
     ASSERT_EQ( vari, vec2->operator[](10) );
-    ASSERT_EQ( varui, vec5->operator[](10) );
+    // ASSERT_EQ( varui, vec5->operator[](10) );
     ASSERT_FLOAT_EQ( varf, vec3->operator[](10) );
     ASSERT_FLOAT_EQ( vard, vec4->operator[](10) );
 

@@ -11,6 +11,7 @@
 // std libs
 #include <iostream>     // std::cout
 #include <sstream>      // stringstream
+#include <chrono>
 #include <ctime>
 #include <cmath>
 
@@ -19,13 +20,19 @@ class timer
 {
 
 private:
-    clock_t t1; // start clock
-    clock_t t2; // since start
-    clock_t t3; // since last lap
+    std::clock_t cpu_t1; // start clock
+    std::clock_t cpu_t2; // since start
+    std::clock_t cpu_t3; // since last lap
+    std::chrono::system_clock::time_point t1; // start clock
+    std::chrono::system_clock::time_point t2; // since start
+    std::chrono::system_clock::time_point t3; // since last lap
+
     bool laps;
-    float lap_time;
-    float total_time;
-    float scale;
+    double cpu_lap_time;
+    double cpu_total_time;
+    double lap_time;
+    double total_time;
+    double scale;
     std::string state;
     std::string units;
 
@@ -41,9 +48,12 @@ public:
     // ===========================================
     // Get Functions
     // ===========================================
-    clock_t get_clock();
-    float get_elapsed();
-    float get_time(); // get final time (total)
+    std::chrono::system_clock::time_point get_clock();
+    double get_elapsed();
+    double get_time(); // get final time (total)
+    std::clock_t get_clock_cpu();
+    double get_elapsed_cpu();
+    double get_time_cpu(); // get final time (total)
     std::string get_state();
     std::string get_units();
 
@@ -63,12 +73,6 @@ public:
     void lap(std::string msg="");
     void finish(bool show=false); // reset
 };
-
-
-
-
-
-
 
 
 // ===========================================
@@ -92,17 +96,32 @@ timer::~timer()
 // ===========================================
 // Get Functions
 // ===========================================
-clock_t timer::get_clock()
+std::clock_t timer::get_clock_cpu()
+{
+    return cpu_t1;
+};
+
+double timer::get_elapsed_cpu()
+{
+    return cpu_lap_time;
+};
+
+double timer::get_time_cpu()
+{
+    return cpu_total_time;
+};
+
+std::chrono::system_clock::time_point timer::get_clock()
 {
     return t1;
 };
 
-float timer::get_elapsed()
+double timer::get_elapsed()
 {
     return lap_time;
 };
 
-float timer::get_time()
+double timer::get_time()
 {
     return total_time;
 };
@@ -188,10 +207,10 @@ void timer::start()
 {
     if (state == "zero" || state == "reset" )
     {
-        clock_t taux = clock();
-        t1 = taux;
-        t2 = taux;
-        t3 = taux;
+        std::clock_t taux = clock();
+        auto wall_taux = std::chrono::system_clock::now();
+        cpu_t1 = cpu_t2 = cpu_t3 = taux;
+        t1 = t2 = t3 = wall_taux;
         state = "running";
         laps = false;
     }
@@ -202,14 +221,24 @@ void timer::lap(std::string msg)
 {
     if (state == "running")
     {
-        clock_t taux = clock();
-        t2 = taux - t1;
-        t3 = taux - t3;
+        // measure clocks
+        std::clock_t taux = clock();
+        auto wall_taux = std::chrono::system_clock::now();
 
-        total_time = ((float)t2)*scale/CLOCKS_PER_SEC;
-        lap_time = ((float)t3)*scale/CLOCKS_PER_SEC;
+        // cpu clock
+        cpu_t2 = taux - cpu_t1;
+        cpu_t3 = taux - cpu_t3;
+        cpu_total_time = ((double)cpu_t2)*scale/CLOCKS_PER_SEC;
+        cpu_lap_time = ((double)cpu_t3)*scale/CLOCKS_PER_SEC;
 
-        t3 = taux;
+        //wall clock
+        // t2 = wall_taux - t1;
+        // t3 = wall_taux - t3;
+        total_time = scale*(std::chrono::duration<double>(wall_taux - t1).count());
+        lap_time = scale*(std::chrono::duration<double>(wall_taux - t3).count());
+
+        cpu_t3 = taux;
+        t3 = wall_taux;
         laps = true;
         
         if (msg != ""){ timer::print(msg); };
@@ -221,19 +250,29 @@ void timer::finish(bool show)
 {
     if (state == "running")
     {
-        clock_t taux = clock();
-        t2 = taux - t1;
-        t3 = taux - t3;
+        // measure clocks
+        std::clock_t taux = clock();
+        auto wall_taux = std::chrono::system_clock::now();
 
-        total_time = ((float)t2)*scale/CLOCKS_PER_SEC;
-        lap_time = ((float)t3)*scale/CLOCKS_PER_SEC;
+        // cpu clock
+        cpu_t2 = taux - cpu_t1;
+        cpu_t3 = taux - cpu_t3;
+        cpu_total_time = ((double)cpu_t2)*scale/CLOCKS_PER_SEC;
+        cpu_lap_time = ((double)cpu_t3)*scale/CLOCKS_PER_SEC;
+
+        //wall clock
+        // t2 = wall_taux - t1;
+        // t3 = wall_taux - t3;
+        total_time = scale*(std::chrono::duration<double>(wall_taux - t1).count());
+        lap_time = scale*(std::chrono::duration<double>(wall_taux - t3).count());
 
         laps = false;
 
         if (show){ timer::print(); };
 
         // Reset all clocks
-        t1 = t2 = t3 = 0;
+        cpu_t1 = cpu_t2 = cpu_t3 = 0;
+        t1 = t2 = t3 = std::chrono::system_clock::time_point();
         state = "reset";
         // timer::start(); // ??
     }

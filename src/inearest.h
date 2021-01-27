@@ -68,9 +68,15 @@ using inearest_cpu = inearest<type,vector_cpu<type>>;
 template<typename type>
 using inearest_gpu = inearest<type,vector_ocl<type>>;
 
+#ifdef IMART_WITH_OPENCL
+template<typename type>
+using inearest_ocl = inearest<type,vector_ocl<type>>;
+#endif
+
+#ifdef IMART_WITH_CUDA
 template<typename type>
 using inearest_cuda = inearest<type,vector_cuda<type>>;
-
+#endif
 
 // ===========================================
 //      Functions of Class grid

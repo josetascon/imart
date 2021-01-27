@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-28 10:02:24
+* @Last Modified time: 2020-09-21 14:51:33
 */
 
 // File to test utilities such as: pad, unpad, normalize
@@ -14,6 +14,7 @@
 
 // local libs
 #include "../src/image.h"
+#include "../src/image_utils.h"
 
 using namespace imart;
 using type = float;
