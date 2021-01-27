@@ -11,6 +11,7 @@
 // std libs
 #include <iostream>     // std::cout
 #include <vector>       // std::vector
+#include <random>       // std::random
 #include <cassert>      // assert
 
 // local libs
@@ -22,7 +23,22 @@
 namespace imart
 {
 
+// #ifndef IMART_WITH_CUDA
+// void cuda_check_gpu()
+// {
+//     std::cout << "CUDA is not available with current imart built" << std::endl;
+// }
+// #endif
+
+#ifdef IMART_WITH_CUDA
 cuda_object cuda_manager; // manager of vector ocl;
+
+// imart function to check cuda device
+void imart_cuda_device_name()
+{
+    cuda_check_gpu(); // TODO: find a way to leave it when cuda is disabled
+};
+#endif
 
 // Class object
 template <typename type>
@@ -142,6 +158,22 @@ public:
     template<typename type_>
     friend typename vector_cuda<type_>::pointer operator ^ (type_ scalar, const vector_cuda<type_> & input);
 
+    // Conditions 
+    pointer operator == (const vector_cuda<type> & input);
+    pointer operator > (const vector_cuda<type> & input);
+    pointer operator < (const vector_cuda<type> & input);
+    pointer operator >= (const vector_cuda<type> & input);
+    pointer operator <= (const vector_cuda<type> & input);
+
+    pointer operator == (type scalar);
+    pointer operator > (type scalar);
+    pointer operator < (type scalar); // std::shared_ptr<vector_cuda<type>>
+    pointer operator >= (type scalar);
+    pointer operator <= (type scalar);
+
+    void replace(const vector_cuda<type> & idxs, const vector_cuda<type> & input);
+    void replace(const vector_cuda<type> & idxs, type value);
+
     // ===========================================
     // Reduction functions
     // ===========================================
@@ -202,7 +234,14 @@ public:
                         typename vector_cuda<type>::pointer imgr, typename vector_cuda<type>::pointer imgo,
                         std::vector<int> ref_size, std::vector<int> out_size);
 
-    // static void fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward);
+    static void cubic2( typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo,
+                        typename vector_cuda<type>::pointer imgr, typename vector_cuda<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
+    static void cubic3( typename vector_cuda<type>::pointer xo, typename vector_cuda<type>::pointer yo, typename vector_cuda<type>::pointer zo,
+                        typename vector_cuda<type>::pointer imgr, typename vector_cuda<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
+
+    static void fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward);
 
     static void gradientx( typename vector_cuda<type>::pointer imgr,
                            typename vector_cuda<type>::pointer imgo,
@@ -255,6 +294,7 @@ vector_cuda<type>::vector_cuda(int s, type value)
 template <typename type>
 vector_cuda<type>::vector_cuda(std::initializer_list<type> list)
 {
+    // printf("constructor init list\n");
     class_name = "vector_cuda";
     int s = list.size();
     init(s);
@@ -445,14 +485,20 @@ void vector_cuda<type>::assign(type value)
 template <typename type>
 void vector_cuda<type>::random(float min, float max)
 {
-    // cuda_manager.setup(_size_);
-    // cuda_manager.execute(&cuda_kernel_random, buffer->get(), min, max);
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    // std::default_random_engine gen(rd()); //Standard random generator()
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> uniform(min, max);
+    int size = this->size();
+    std::vector<type> vec(size);
+    type * p = vec.data();
+    
+    for(int k=0; k<size; k++)
+    {
+        p[k] = (type)uniform(gen); // casting to pixel_type
+    };
 
-    // std::string str_kernel = kernel_random( string_type<type>(), min, max);
-    // // // std::cout << str_kernel << std::endl;
-    // cuda_manager.program(str_kernel, "kernel_random");
-    // cuda_manager.arguments(*buffer);
-    // cuda_manager.execute(_size_);
+    read_ram(vec.data(),size);
 };
 
 // ===========================================
@@ -641,6 +687,144 @@ typename vector_cuda<type>::pointer operator ^ (type scalar, const vector_cuda<t
     cuda_manager.setup(size);
     cuda_manager.execute(cuda_kernel_pow_scalar_inv<type>, input.get_buffer()->get(), output->get_buffer()->get(), scalar, size);
     return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator == (const vector_cuda<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_equal<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator > (const vector_cuda<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_greater<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator < (const vector_cuda<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_less<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator >= (const vector_cuda<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_greater_equal<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator <= (const vector_cuda<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_less_equal<type>, buffer->get(), input.get_buffer()->get(), output->get_buffer()->get(), size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator == (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_equal_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator > (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_greater_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator < (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_less_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator >= (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_greater_equal_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
+    return output;
+};
+
+template <typename type>
+typename vector_cuda<type>::pointer vector_cuda<type>::operator <= (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cuda<type>::new_pointer(size);
+    
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_less_equal_scalar<type>, buffer->get(), output->get_buffer()->get(), scalar, size);
+    return output;
+};
+
+template <typename type>
+void vector_cuda<type>::replace(const vector_cuda<type> & idxs, const vector_cuda<type> & input)
+{
+    assert_size(idxs);
+    assert_size(input);
+    int size = this->size();
+
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_replace<type>, idxs.get_buffer()->get(), input.get_buffer()->get(), buffer->get(), size );
+    return;
+};
+
+template <typename type>
+void vector_cuda<type>::replace(const vector_cuda<type> & idxs, type value)
+{
+    assert_size(idxs);
+    int size = this->size();
+
+    cuda_manager.setup(size);
+    cuda_manager.execute(cuda_kernel_replace_scalar<type>, idxs.get_buffer()->get(), buffer->get(), value, size );
+    return;
 };
 
 // ===========================================
@@ -1030,6 +1214,56 @@ void vector_cuda<type>::linear3( typename vector_cuda<type>::pointer xo,
                         ref_size[0], ref_size[1], ref_size[2],
                         out_size[0], out_size[1], out_size[2]);
 };
+
+template <typename type>
+void vector_cuda<type>::cubic2( typename vector_cuda<type>::pointer xo, 
+                                typename vector_cuda<type>::pointer yo,
+                                typename vector_cuda<type>::pointer imgr,
+                                typename vector_cuda<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    cuda_manager.setup(out_size); // multidimensional
+    cuda_manager.execute( cuda_kernel_cubic_interpolation_2d<type>, 
+                        xo->get_buffer()->get(), yo->get_buffer()->get(),
+                        imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                        ref_size[0], ref_size[1],
+                        out_size[0], out_size[1]);
+};
+
+template <typename type>
+void vector_cuda<type>::cubic3( typename vector_cuda<type>::pointer xo, 
+                                typename vector_cuda<type>::pointer yo,
+                                typename vector_cuda<type>::pointer zo,
+                                typename vector_cuda<type>::pointer imgr,
+                                typename vector_cuda<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    cuda_manager.setup(out_size); // multidimensional
+    cuda_manager.execute( cuda_kernel_cubic_interpolation_3d<type>, 
+                        xo->get_buffer()->get(), yo->get_buffer()->get(), zo->get_buffer()->get(),
+                        imgr->get_buffer()->get(), imgo->get_buffer()->get(),
+                        ref_size[0], ref_size[1], ref_size[2],
+                        out_size[0], out_size[1], out_size[2]);
+};
+
+template <typename type>
+void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> sz, bool forward)
+{
+    std::cout << "CUDA FFT not implemented yet" << std::endl;
+    // if(sz.size() == 2)
+    // {
+    //     cuda_manager.setup(sz);
+    //     cuda_manager.execute( cuda_kernel_fft_2d<type>,  );
+        
+    // }
+    // else if (sz.size() == 3)
+    // {
+    //     cuda_manager.setup(sz);
+    //     cuda_manager.execute( cuda_kernel_fft_3d<type>,  );
+    // }
+    // else ;
+};
+
 /*
 template <typename type>
 void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward)

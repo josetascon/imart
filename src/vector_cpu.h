@@ -17,19 +17,28 @@
 #include <algorithm>    // std::max std::min
 // #include <complex>      // std::complex
 
-// fftw
-#include <fftw3.h>      // fft library
-
 // local libs
 #include "inherit.h"
 #include "object.h"
+#include "ram_buffer.h"
+
+// fftw
+#ifdef IMART_WITH_FFTW
+#include <fftw3.h>      // fft library
+#endif
+
+// openmp
+#ifdef IMART_WITH_OPENMP
+#include <omp.h>
+#endif
 
 namespace imart
 {
 
 // Class object
 template <typename type>
-class vector_cpu: public inherit<vector_cpu<type>, object>, std::vector<type>
+class vector_cpu: public inherit<vector_cpu<type>, ram_buffer<type>>
+// class vector_cpu: public inherit<vector_cpu<type>, object>, std::vector<type>
 {
 public:
     //Type definitions
@@ -40,11 +49,11 @@ public:
     // Inherited variables
     using object::class_name;
     using object::get_name;
-    using std::vector<type>::size;
-    using std::vector<type>::begin;
-    using std::vector<type>::end;
-    using std::vector<type>::operator[];
-    using std::vector<type>::data;
+    using ram_buffer<type>::size;
+    using ram_buffer<type>::data;
+    using ram_buffer<type>::operator[];
+
+    using inherit<vector_cpu<type>, ram_buffer<type>>::inherit;
 
 protected:
     // ===========================================
@@ -57,10 +66,10 @@ public:
     // ===========================================
     // Constructor Functions
     // ===========================================
-    vector_cpu(): std::vector<type>() { class_name = "vector_cpu"; };          // constructor empty
-    vector_cpu(int s): std::vector<type>(s) { class_name = "vector_cpu"; };    // constructor
-    vector_cpu(int s, type value): std::vector<type>(s, value) { class_name = "vector_cpu"; };
-    vector_cpu(std::initializer_list<type> list): std::vector<type>(list) { class_name = "vector_cpu"; };
+    vector_cpu(): inherit<vector_cpu<type>, ram_buffer<type>>() { class_name = "vector_cpu"; };          // constructor empty
+    vector_cpu(int s): inherit<vector_cpu<type>, ram_buffer<type>>(s) { class_name = "vector_cpu"; };    // constructor
+    vector_cpu(int s, type value): inherit<vector_cpu<type>, ram_buffer<type>>(s) { assign(value); class_name = "vector_cpu"; };
+    vector_cpu(std::initializer_list<type> list): inherit<vector_cpu<type>, ram_buffer<type>>(list) { class_name = "vector_cpu"; };
     vector_cpu(const vector_cpu & input);       // constructor clone
     ~vector_cpu();                              // destructor empty
 
@@ -105,6 +114,8 @@ public:
     // Overloading operators
     // ===========================================
     // Vector to vector
+    vector_cpu<type> & operator = (const vector_cpu & input);
+    vector_cpu<type> & operator = (std::initializer_list<type> il);
     pointer operator = (const vector_cpu<type>::pointer input);
     pointer operator + (const vector_cpu<type> & input);
     pointer operator - (const vector_cpu<type> & input);
@@ -131,6 +142,22 @@ public:
     template<typename type_>
     friend typename vector_cpu<type_>::pointer operator ^ (type_ scalar, const vector_cpu<type_> & input);
 
+    // Conditions 
+    pointer operator == (const vector_cpu<type> & input);
+    pointer operator > (const vector_cpu<type> & input);
+    pointer operator < (const vector_cpu<type> & input);
+    pointer operator >= (const vector_cpu<type> & input);
+    pointer operator <= (const vector_cpu<type> & input);
+
+    pointer operator == (type scalar);
+    pointer operator > (type scalar);
+    pointer operator < (type scalar); // std::shared_ptr<vector_cpu<type>>
+    pointer operator >= (type scalar);
+    pointer operator <= (type scalar);
+
+    void replace(const vector_cpu<type> & idxs, const vector_cpu<type> & input);
+    void replace(const vector_cpu<type> & idxs, type value);
+    
     // ===========================================
     // Reduction functions
     // ===========================================
@@ -191,7 +218,22 @@ public:
                    typename vector_cpu<type>::pointer imgr, typename vector_cpu<type>::pointer imgo,
                    std::vector<int> ref_size, std::vector<int> out_size);
 
+    static void linear2_test( typename vector_cpu<type>::pointer xo, 
+                                typename vector_cpu<type>::pointer yo,
+                                typename vector_cpu<type>::pointer imgr,
+                                typename vector_cpu<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<double> & sod, type defaultv);
+
+    static void cubic2( typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo,
+                        typename vector_cpu<type>::pointer imgr, typename vector_cpu<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
+    static void cubic3( typename vector_cpu<type>::pointer xo, typename vector_cpu<type>::pointer yo, typename vector_cpu<type>::pointer zo,
+                        typename vector_cpu<type>::pointer imgr, typename vector_cpu<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
+
+    #ifdef IMART_WITH_FFTW
     static void fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward);
+    #endif
 
     static void gradientx( typename vector_cpu<type>::pointer imgr,
                            typename vector_cpu<type>::pointer imgo,
@@ -245,8 +287,8 @@ void vector_cpu<type>::clone_(const vector_cpu<type> & input)
 
     // Create pointers
     type * p1 = this->data();
-    const type * p2 = input.data();
-
+    type * p2 = input.data();
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p1[k] = p2[k];
@@ -275,7 +317,10 @@ void vector_cpu<type>::mimic_(const vector_cpu<type> & input)
 template <typename type>
 std::vector<type> vector_cpu<type>::std_vector()
 {
-    return static_cast<std::vector<type>>(*this);
+    std::vector<type> output(this->size());
+    write_ram(output.data(), this->size());
+    return output;
+    // return static_cast<std::vector<type>>(*this);
 };
 
 // ===========================================
@@ -285,6 +330,7 @@ template <typename type>
 void vector_cpu<type>::read_ram(type * p, int s, int offset)
 {
     type * d = this->data() + offset;
+    #pragma omp parallel for if (s > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<s; k++)
     {
         *(d+k) = *(p+k);
@@ -295,6 +341,7 @@ template <typename type>
 void vector_cpu<type>::write_ram(type * p, int s, int offset)
 {
     type * d = this->data() + offset;
+    #pragma omp parallel for if (s > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<s; k++)
     {
         *(p+k) = *(d+k);
@@ -337,7 +384,7 @@ std::string vector_cpu<type>::info_data(std::string msg)
 template <typename type>
 void vector_cpu<type>::assert_size(const vector_cpu<type> & input)
 {
-    assert(this->size() == input.size());
+    imart_assert(this->size() == input.size(), "Mismatch of vector size");
 };
 
 // ===========================================
@@ -346,31 +393,36 @@ void vector_cpu<type>::assert_size(const vector_cpu<type> & input)
 template <typename type>
 void vector_cpu<type>::zeros()
 {
-    int size = this->size();
-    type * p = this->data();
-    for(int k=0; k<size; k++)
-    {
-        p[k] = (type)0; // casting to pixel_type
-    };
+    assign( (type)0.0 );
+    // int size = this->size();
+    // type * p = this->data();
+    // for(int k=0; k<size; k++)
+    // {
+    //     p[k] = (type)0; // casting to pixel_type
+    // };
 };
 
 template <typename type>
 void vector_cpu<type>::ones()
 {
-    int size = this->size();
-    type * p = this->data();
-    for(int k=0; k<size; k++)
-    {
-        p[k] = (type)1.0; // casting to pixel_type
-    };
+    assign( (type)1.0 );
+    // int size = this->size();
+    // type * p = this->data();
+    // for(int k=0; k<size; k++)
+    // {
+    //     p[k] = (type)1.0; // casting to pixel_type
+    // };
 };
 
 // Set all pixel to a fixed value
 template <typename type>
 void vector_cpu<type>::assign(type value)
 {
+    // Create pointer
     int size = this->size();
     type * p = this->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p[k] = value;
@@ -386,6 +438,8 @@ void vector_cpu<type>::random(float min, float max)
     std::uniform_real_distribution<> uniform(min, max);
     int size = this->size();
     type * p = this->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p[k] = (type)uniform(gen); // casting to pixel_type
@@ -395,6 +449,28 @@ void vector_cpu<type>::random(float min, float max)
 // ===========================================
 // Overloading operators
 // ===========================================
+template <typename type>
+vector_cpu<type> & vector_cpu<type>::operator = (const vector_cpu & input)
+{
+    copy_(input);
+    return *this;
+};
+
+template <typename type>
+vector_cpu<type> & vector_cpu<type>::operator = (std::initializer_list<type> list)
+{
+    this->clear();
+    this->resize(list.size());
+
+    type * d = this->data();
+    const type * p = list.begin();
+    for(int k=0; k<list.size(); k++)
+    {
+        *(d+k) = *(p+k);
+    };
+    return *this;
+};
+
 template <typename type>
 typename vector_cpu<type>::pointer vector_cpu<type>::operator = (const vector_cpu<type>::pointer input)
 {
@@ -410,9 +486,10 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator + (const vector_cp
 
     // Create pointers
     type * p1 = this->data();
-    const type * p2 = input.data();
+    type * p2 = input.data();
     type * p3 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p3[k] = p1[k] + p2[k];
@@ -429,9 +506,10 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator - (const vector_cp
 
     // Create pointers
     type * p1 = this->data();
-    const type * p2 = input.data();
+    type * p2 = input.data();
     type * p3 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p3[k] = p1[k] - p2[k];
@@ -448,9 +526,10 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator * (const vector_cp
 
     // Create pointers
     type * p1 = this->data();
-    const type * p2 = input.data();
+    type * p2 = input.data();
     type * p3 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p3[k] = p1[k] * p2[k];
@@ -467,9 +546,10 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator / (const vector_cp
 
     // Create pointers
     type * p1 = this->data();
-    const type * p2 = input.data();
+    type * p2 = input.data();
     type * p3 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p3[k] = p1[k] / p2[k];
@@ -486,9 +566,10 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator ^ (const vector_cp
 
     // Create pointers
     type * p1 = this->data();
-    const type * p2 = input.data();
+    type * p2 = input.data();
     type * p3 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p3[k] = pow(p1[k],p2[k]);
@@ -504,7 +585,8 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator + (type scalar)
     vector_cpu<type>::pointer output = this->mimic(); // init a image with same poperties
     type * p1 = this->data();
     type * p2 = output->data();
-
+    
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p2[k] = p1[k] + scalar;
@@ -520,6 +602,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator - (type scalar)
     type * p1 = this->data();
     type * p2 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p2[k] = p1[k] - scalar;
@@ -535,6 +618,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator * (type scalar)
     type * p1 = this->data();
     type * p2 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p2[k] = p1[k] * scalar;
@@ -550,6 +634,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator / (type scalar)
     type * p1 = this->data();
     type * p2 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p2[k] = p1[k] / scalar;
@@ -565,6 +650,7 @@ typename vector_cpu<type>::pointer vector_cpu<type>::operator ^ (type scalar)
     type * p1 = this->data();
     type * p2 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p2[k] = pow(p1[k],scalar);
@@ -584,9 +670,10 @@ typename vector_cpu<type>::pointer operator - (type scalar, const vector_cpu<typ
 {
     int size = input.size();
     typename vector_cpu<type>::pointer output = input.mimic(); // init a image with same poperties
-    const type * p1 = input.data();
+    type * p1 = input.data();
     type * p2 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p2[k] = scalar - p1[k];
@@ -605,9 +692,10 @@ typename vector_cpu<type>::pointer operator / (type scalar, const vector_cpu<typ
 {
     int size = input.size();
     typename vector_cpu<type>::pointer output = input.mimic(); // init a image with same poperties
-    const type * p1 = input.data();
+    type * p1 = input.data();
     type * p2 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p2[k] = scalar / p1[k];
@@ -620,14 +708,233 @@ typename vector_cpu<type>::pointer operator ^ (type scalar, const vector_cpu<typ
 {
     int size = input.size();
     typename vector_cpu<type>::pointer output = input.mimic(); // init a image with same poperties
-    const type * p1 = input.data();
+    type * p1 = input.data();
     type * p2 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p2[k] = pow(scalar, p1[k]);
     };
     return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator == (const vector_cpu<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size);
+
+    // Create pointers
+    type * p1 = this->data();
+    type * p2 = input.data();
+    type * p3 = output->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p3[k] = (p1[k] == p2[k]);
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator > (const vector_cpu<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size);
+
+    // Create pointers
+    type * p1 = this->data();
+    type * p2 = input.data();
+    type * p3 = output->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p3[k] = (p1[k] > p2[k]);
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator < (const vector_cpu<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size);
+
+    // Create pointers
+    type * p1 = this->data();
+    type * p2 = input.data();
+    type * p3 = output->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p3[k] = (p1[k] < p2[k]);
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator >= (const vector_cpu<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size);
+
+    // Create pointers
+    type * p1 = this->data();
+    type * p2 = input.data();
+    type * p3 = output->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p3[k] = (p1[k] >= p2[k]);
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator <= (const vector_cpu<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size);
+
+    // Create pointers
+    type * p1 = this->data();
+    type * p2 = input.data();
+    type * p3 = output->data();
+
+    #pragma omp parallel for if (size >= IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p3[k] = (p1[k] <= p2[k]);
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator == (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size); // init a image with same size
+    type * p1 = this->data();
+    type * p2 = output->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p2[k] = (p1[k] == scalar);
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator > (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size); // init a image with same size
+    type * p1 = this->data();
+    type * p2 = output->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p2[k] = (p1[k] > scalar);
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator < (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size); // init a image with same size
+    type * p1 = this->data();
+    type * p2 = output->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p2[k] = (p1[k] < scalar);
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator >= (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size); // init a image with same size
+    type * p1 = this->data();
+    type * p2 = output->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p2[k] = (p1[k] >= scalar);
+    };
+    return output;
+};
+
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::operator <= (type scalar)
+{
+    int size = this->size();
+    auto output = vector_cpu<type>::new_pointer(size); // init a image with same size
+    type * p1 = this->data();
+    type * p2 = output->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        p2[k] = (p1[k] <= scalar);
+    };
+    return output;
+};
+
+template <typename type>
+void vector_cpu<type>::replace(const vector_cpu<type> & idxs, const vector_cpu<type> & input)
+{
+    assert_size(idxs);
+    assert_size(input);
+    int size = this->size();
+
+    // Create pointers
+    type * p1 = idxs.data();
+    type * p2 = this->data();
+    type * p3 = input->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        if(p1[k]) p2[k] = p3[k];
+    };
+    return;
+};
+
+template <typename type>
+void vector_cpu<type>::replace(const vector_cpu<type> & idxs, type value)
+{
+    assert_size(idxs);
+    int size = this->size();
+
+    // Create pointers
+    type * p1 = idxs.data();
+    type * p2 = this->data();
+
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<size; k++)
+    {
+        if(p1[k]) p2[k] = value;
+    };
+    return;
 };
 
 // ===========================================
@@ -641,6 +948,8 @@ type vector_cpu<type>::min()
     int size = this->size();
 
     if (size > 0) { x = p1[0]; };
+
+    #pragma omp parallel for reduction(min:x)
     for(int k=1; k<size; k++)
     {
         x = std::min(x,p1[k]);
@@ -656,6 +965,8 @@ type vector_cpu<type>::max()
     int size = this->size();
 
     if (size > 0) { x = p1[0]; };
+
+    #pragma omp parallel for reduction(max:x)
     for(int k=1; k<size; k++)
     {
         x = std::max(x,p1[k]);
@@ -670,6 +981,7 @@ type vector_cpu<type>::sum()
     type * p1 = this->data();
     int size = this->size();    
 
+    #pragma omp parallel for reduction(+:x)
     for(int k=0; k<size; k++)
     {
         x += p1[k];
@@ -699,9 +1011,10 @@ type vector_cpu<type>::dot(const vector_cpu<type> & input)
 
     type x = 0;
     type * p1 = this->data();
-    const type * p2 = input.data();
+    type * p2 = input.data();
     int size = this->size();
 
+    #pragma omp parallel for reduction(+:x)
     for(int k=0; k<size; k++)
     {
         x += p1[k]*p2[k];
@@ -732,6 +1045,7 @@ typename vector_cpu<type_cast>::pointer vector_cpu<type>::cast()
     type * p1 = this->data();
     type_cast * p2 = output->data();
 
+    #pragma omp parallel for if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         p2[k] = (type_cast)p1[k];
@@ -750,6 +1064,8 @@ void vector_cpu<type>::pad(typename vector_cpu<type>::pointer input, typename ve
         int start0 = pre[0]; int start1 = pre[1];
         int end0 = post[0]; int end1 = post[1];
         int wo = w + start0 + end0;
+
+        #pragma omp parallel for collapse(2) if (w*h > IMART_OPENMP_VECTOR_MIN_SIZE)
         for(int j = 0; j < h; j++)
         {
             for(int i = 0; i < w; i++)
@@ -766,6 +1082,8 @@ void vector_cpu<type>::pad(typename vector_cpu<type>::pointer input, typename ve
         int end0 = post[0]; int end1 = post[1]; int end2 = post[2];
         int wo = w + start0 + end0;
         int ho = h + start1 + end1;
+
+        #pragma omp parallel for collapse(3) if (w*h*l > IMART_OPENMP_VECTOR_MIN_SIZE)
         for (int k = 0; k < l; k++)
         {
             for(int j = 0; j < h; j++)
@@ -793,6 +1111,8 @@ void vector_cpu<type>::unpad(typename vector_cpu<type>::pointer input, typename 
         int start0 = pre[0]; int start1 = pre[1];
         int end0 = post[0]; int end1 = post[1];
         int wo = w + start0 + end0;
+
+        #pragma omp parallel for collapse(2) if (w*h > IMART_OPENMP_VECTOR_MIN_SIZE)
         for(int j = 0; j < h; j++)
         {
             for(int i = 0; i < w; i++)
@@ -808,6 +1128,8 @@ void vector_cpu<type>::unpad(typename vector_cpu<type>::pointer input, typename 
         int end0 = post[0]; int end1 = post[1]; int end2 = post[2];
         int wo = w + start0 + end0;
         int ho = h + start1 + end1;
+
+        #pragma omp parallel for collapse(3) if (w*h*l > IMART_OPENMP_VECTOR_MIN_SIZE)
         for (int k = 0; k < l; k++)
         {
             for(int j = 0; j < h; j++)
@@ -840,8 +1162,9 @@ void vector_cpu<type>::affine_2d(typename vector_cpu<type>::pointer xi,
     type a2 = pp[2]; type a3 = pp[3];
     type t0 = pp[4]; type t1 = pp[5];
 
-    // #pragma omp parallel for
     int sz = xo->size();
+
+    #pragma omp parallel for if (sz > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int i = 0; i < sz; i++)
     {
         pxo[i] = a0*px[i] + a1*py[i] + t0;
@@ -873,8 +1196,9 @@ void vector_cpu<type>::affine_3d(typename vector_cpu<type>::pointer xi,
     type a6 = pp[6]; type a7 = pp[7]; type a8 = pp[8];
     type t0 = pp[9]; type t1 = pp[10]; type t2 = pp[11];
 
-    // #pragma omp parallel for
     int sz = xo->size();
+
+    #pragma omp parallel for if (sz > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int i = 0; i < sz; i++)
     {
         pxo[i] = a0*px[i] + a1*py[i] + a2*pz[i] + t0;
@@ -901,8 +1225,9 @@ void vector_cpu<type>::affine_sod_2d(typename vector_cpu<type>::pointer xo,
     double d0 = sod[4]; double d1 = sod[5];
     double d2 = sod[6]; double d3 = sod[7];
 
-    // #pragma omp parallel for
     int sz = xo->size();
+
+    #pragma omp parallel for if (sz > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int i = 0; i < sz; i++)
     {
         pxo[i] = d0*s0*px[i] + d1*s1*py[i] + o0;
@@ -934,8 +1259,9 @@ void vector_cpu<type>::affine_sod_3d(typename vector_cpu<type>::pointer xo,
     double d3 = sod[9]; double d4 = sod[10]; double d5 = sod[11];
     double d6 = sod[12]; double d7 = sod[13]; double d8 = sod[14];
 
-    // #pragma omp parallel for
     int sz = xo->size();
+
+    #pragma omp parallel for if (sz > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int i = 0; i < sz; i++)
     {
         pxo[i] = d0*s0*px[i] + d1*s1*py[i] + d2*s2*pz[i] + o0;
@@ -960,7 +1286,8 @@ void vector_cpu<type>::dfield_2d(typename vector_cpu<type>::pointer xi, typename
     type * pyo = yo->data();
 
     int sz = xo->size();
-    // #pragma omp parallel for
+
+    #pragma omp parallel for if (sz > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int i = 0; i < sz; i++)
     {
         pxo[i] = pxi[i] + px[i];
@@ -987,7 +1314,8 @@ void vector_cpu<type>::dfield_3d(typename vector_cpu<type>::pointer xi, typename
     type * pzo = zo->data();
 
     int sz = xi->size();
-    // #pragma omp parallel for
+
+    #pragma omp parallel for if (sz > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int i = 0; i < sz; i++)
     {
         pxo[i] = pxi[i] + px[i];
@@ -1011,7 +1339,7 @@ std::vector<typename vector_cpu<type>::pointer> vector_cpu<type>::grid2(int w, i
     double d0 = sod[4]; double d1 = sod[5];
     double d2 = sod[6]; double d3 = sod[7];
 
-    // #pragma omp parallel for
+    #pragma omp parallel for collapse(2) if (w*h > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int j = 0; j < h; j++)
     {
         for(int i = 0; i < w; i++)
@@ -1049,7 +1377,7 @@ std::vector<typename vector_cpu<type>::pointer> vector_cpu<type>::grid3(int w, i
     double d3 = sod[9]; double d4 = sod[10]; double d5 = sod[11];
     double d6 = sod[12]; double d7 = sod[13]; double d8 = sod[14];
 
-    // #pragma omp parallel for
+    #pragma omp parallel for collapse(3) if (w*h*l > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k = 0; k < l; k++)
     {
         for(int j = 0; j < h; j++)
@@ -1090,6 +1418,7 @@ void vector_cpu<type>::nearest2( typename vector_cpu<type>::pointer xo,
     type * pimgr = imgr->data();
     type * pimgo = imgo->data();
 
+    #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int j = 0; j < n1; j++)
     {
         for(int i = 0; i < n0; i++)
@@ -1121,6 +1450,7 @@ void vector_cpu<type>::nearest3( typename vector_cpu<type>::pointer xo,
     type * pimgr = imgr->data();
     type * pimgo = imgo->data();
 
+    #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k = 0; k < n2; k++)
     {
         for(int j = 0; j < n1; j++)
@@ -1139,6 +1469,73 @@ void vector_cpu<type>::nearest3( typename vector_cpu<type>::pointer xo,
     };
 };
 
+// function
+// template <typename type>
+// type ilinear2(int idx, type * pxo, type * pyo, type * pimgr, type * pimgo)
+// {
+
+// };
+
+// class
+template <typename type>
+class ilinear2
+{
+public:
+    // variables
+    type zero = 0.01;
+    int w; int h;
+    type * px; type * py; type * ref; type * out;
+
+    ilinear2(int ww, int hh, type * pxo, type * pyo, type * pimgr, type * pimgo)
+    {
+        w = ww; h = hh;
+        px = pxo; py = pyo; ref = pimgr; out = pimgo;
+    }
+
+    void interpolate(int idx)
+    {
+        // type xt = px[idx];
+        // int x = floor(xt);
+        // if (x < 0 || x > w) return; // outside x
+
+        // type yt = py[idx];
+        // int y = floor(yt);
+        // if (y < 0 || y > h) return; // outside y
+
+        type xt = px[idx];
+        int x = floor(xt);
+        type yt = py[idx];
+        int y = floor(yt);
+
+        if(x >= 0 && x < w && y >= 0 && y < h)
+        {
+            type dx = xt - (type)x;
+            type dy = yt - (type)y;
+            if (dx < zero && dy < zero)
+            {
+                out[idx] = ref[x+y*w];
+            }
+            else if (dy < zero || y >= h - 1) // same y
+            {
+                out[idx] = ref[x+y*w]*(1-dx) + ref[x+1+y*w]*(dx);
+            }
+            else if (dx < zero || x >= w - 1) // same x
+            {
+                out[idx] = ref[x+y*w]*(1-dy) + ref[x+(y+1)*w]*(dy);
+            }
+            else
+            {
+                // compute case x & y
+                type dxdy = dx*dy;
+                type r = ref[x+y*w]*(1-dx-dy+dxdy) + ref[x+1+y*w]*(dx-dxdy) + ref[x+(y+1)*w]*(dy-dxdy) + ref[x+1+(y+1)*w]*dxdy;
+                out[idx] = r;
+            };
+        };
+    };
+};
+
+
+// optimized
 template <typename type>
 void vector_cpu<type>::linear2( typename vector_cpu<type>::pointer xo, 
                                 typename vector_cpu<type>::pointer yo,
@@ -1154,28 +1551,295 @@ void vector_cpu<type>::linear2( typename vector_cpu<type>::pointer xo,
     type * pimgr = imgr->data();
     type * pimgo = imgo->data();
 
+    ilinear2<type> lin2(w, h, pxo, pyo, pimgr, pimgo);
+
+    #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int j = 0; j < n1; j++)
     {
         for(int i = 0; i < n0; i++)
         {
-            type xt = pxo[i + j*n0];
-            type yt = pyo[i + j*n0];
-            int x = floor(xt);
-            int y = floor(yt);
+            int idx = i + j*n0;
+            lin2.interpolate(idx);
+        };
+    };
+};
 
-            if(x >= 0 && x < w && y >= 0 && y < h - 1)
+// template <typename type>
+// void vector_cpu<type>::linear2( typename vector_cpu<type>::pointer xo, 
+//                                 typename vector_cpu<type>::pointer yo,
+//                                 typename vector_cpu<type>::pointer imgr,
+//                                 typename vector_cpu<type>::pointer imgo,
+//                                 std::vector<int> ref_size, std::vector<int> out_size)
+// {
+//     int n0 = out_size[0]; int n1 = out_size[1];
+//     int w = ref_size[0]; int h = ref_size[1];
+
+//     type * pxo = xo->data();
+//     type * pyo = yo->data();
+//     type * pimgr = imgr->data();
+//     type * pimgo = imgo->data();
+
+//     #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
+//     for(int j = 0; j < n1; j++)
+//     {
+//         for(int i = 0; i < n0; i++)
+//         {
+//             type xt = pxo[i + j*n0];
+//             type yt = pyo[i + j*n0];
+//             int x = floor(xt);
+//             int y = floor(yt);
+
+//             if(x >= 0 && x < w - 1 && y >= 0 && y < h - 1)
+//             {
+//                 type dx = xt - (type)x;
+//                 type dy = yt - (type)y;
+//                 type dxdy = dx*dy;
+//                 type r = pimgr[x+y*w]*(1-dx-dy+dxdy) + pimgr[x+1+y*w]*(dx-dxdy) + pimgr[x+(y+1)*w]*(dy-dxdy) + pimgr[x+1+(y+1)*w]*dxdy;
+//                 pimgo[i + j*n0] = r;
+//             }
+//             else if(x >= 0 && x < w - 1 && y == h - 1) // border case
+//             {
+//                 type dx = xt - (type)x;
+//                 type r = pimgr[x+y*w]*(1-dx) + pimgr[x+1+y*w]*(dx);
+//                 pimgo[i + j*n0] = r;
+//             }
+//             else if(x >= 0 && x == w - 1 && y < h - 1) // border case
+//             {
+//                 type dy = yt - (type)y;
+//                 type r = pimgr[x+y*w]*(1-dy) + pimgr[x+(y+1)*w]*(dy);
+//                 pimgo[i + j*n0] = r;
+//             };
+//         };
+//     };
+// };
+
+// template <typename type>
+// void vector_cpu<type>::linear2( typename vector_cpu<type>::pointer xo, 
+//                                 typename vector_cpu<type>::pointer yo,
+//                                 typename vector_cpu<type>::pointer imgr,
+//                                 typename vector_cpu<type>::pointer imgo,
+//                                 std::vector<int> ref_size, std::vector<int> out_size)
+// {
+//     int n0 = out_size[0]; int n1 = out_size[1];
+//     int w = ref_size[0]; int h = ref_size[1];
+
+//     type * pxo = xo->data();
+//     type * pyo = yo->data();
+//     type * pimgr = imgr->data();
+//     type * pimgo = imgo->data();
+
+//     #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
+//     for(size_t j = 0; j < n1; j++)
+//     {
+//         for(size_t i = 0; i < n0; i++)
+//         {
+//             size_t p = i + j*n0;
+//             type xt = pxo[p];
+//             type yt = pyo[p];
+//             size_t x = floor(xt);
+//             size_t y = floor(yt);
+
+//             if(x >= 0 && x < w && y >= 0 && y < h - 1)
+//             {
+//                 type dx = xt - (type)x;
+//                 type dy = yt - (type)y;
+//                 type dxdy = dx*dy;
+//                 type r = pimgr[x+y*w]*(1-dx-dy+dxdy) + pimgr[x+1+y*w]*(dx-dxdy) + pimgr[x+(y+1)*w]*(dy-dxdy) + pimgr[x+1+(y+1)*w]*dxdy;
+//                 pimgo[p] = r;
+//             }
+//             else if(x >= 0 && x < w && y == h - 1) // border case
+//             {
+//                 type dx = xt - (type)x;
+//                 type r = pimgr[x+y*w]*(1-dx) + pimgr[x+1+y*w]*(dx);
+//                 pimgo[p] = r;
+//             };
+//         };
+//     };
+// };
+
+
+// template <typename type>
+// void vector_cpu<type>::linear2_test( typename vector_cpu<type>::pointer xo, 
+//                                 typename vector_cpu<type>::pointer yo,
+//                                 typename vector_cpu<type>::pointer imgr,
+//                                 typename vector_cpu<type>::pointer imgo,
+//                                 std::vector<int> ref_size, std::vector<double> & sod, type defaultv)
+// {
+//     int w = ref_size[0]; int h = ref_size[1];
+//     type * px = xo->data();
+//     type * py = yo->data();
+//     type * pimgr = imgr->data();
+//     type * pimgo = imgo->data();
+
+//     double s0 = sod[0]; double s1 = sod[1];
+//     double o0 = sod[2]; double o1 = sod[3];
+//     double d0 = sod[4]; double d1 = sod[5];
+//     double d2 = sod[6]; double d3 = sod[7];
+
+//     int sz = xo->size();
+
+//     #pragma omp parallel for if (sz > IMART_OPENMP_VECTOR_MIN_SIZE)
+//     for(size_t i = 0; i < sz; i++)
+//     {
+//         type xt = d0*s0*px[i] + d1*s1*py[i] + o0;
+//         type yt = d2*s0*px[i] + d3*s1*py[i] + o1;
+//         size_t x = floor(xt);
+//         size_t y = floor(yt);
+
+//         if(x >= 0 && x < w && y >= 0 && y < h - 1)
+//         {
+//             type dx = xt - (type)x;
+//             type dy = yt - (type)y;
+//             type dxdy = dx*dy;
+//             type r = pimgr[x+y*w]*(1-dx-dy+dxdy) + pimgr[x+1+y*w]*(dx-dxdy) + pimgr[x+(y+1)*w]*(dy-dxdy) + pimgr[x+1+(y+1)*w]*dxdy;
+//             pimgo[i] = r;
+//         }
+//         else if(x >= 0 && x < w && y == h - 1) // border case
+//         {
+//             type dx = xt - (type)x;
+//             type r = pimgr[x+y*w]*(1-dx) + pimgr[x+1+y*w]*(dx);
+//             pimgo[i] = r;
+//         }
+//         else
+//         {
+//             pimgo[i] = defaultv;
+//         };
+//     };
+// };
+
+// template <typename type>
+// void vector_cpu<type>::linear2_test( typename vector_cpu<type>::pointer xo, 
+//                                 typename vector_cpu<type>::pointer yo,
+//                                 typename vector_cpu<type>::pointer imgr,
+//                                 typename vector_cpu<type>::pointer imgo,
+//                                 std::vector<int> ref_size, std::vector<double> & sod, type defaultv)
+// {
+//     size_t w = ref_size[0]; size_t h = ref_size[1];
+//     type * px = xo->data();
+//     type * py = yo->data();
+//     type * pimgr = imgr->data();
+//     type * pimgo = imgo->data();
+
+//     double s0 = sod[0]; double s1 = sod[1];
+//     double o0 = sod[2]; double o1 = sod[3];
+//     double d0 = sod[4]; double d1 = sod[5];
+//     double d2 = sod[6]; double d3 = sod[7];
+
+//     int sz = xo->size();
+
+//     #pragma omp parallel for if (sz > IMART_OPENMP_VECTOR_MIN_SIZE)
+//     for(size_t i = 0; i < sz; i++)
+//     {
+//         type xt = d0*s0*px[i] + d1*s1*py[i] + o0;
+//         type yt = d2*s0*px[i] + d3*s1*py[i] + o1;
+//         size_t x = floor(xt);
+//         size_t y = floor(yt);
+
+//         if(x >= 0 && x < w && y >= 0 && y < h - 1)
+//         {
+//             type dx = xt - (type)x;
+//             type dy = yt - (type)y;
+//             type dxdy = dx*dy;
+//             size_t addr = x+y*w;
+//             // type a[4] = {pimgr[addr], pimgr[addr+1], pimgr[addr+w], pimgr[addr+1+w]};
+//             // type r = a[0]*(1-dx-dy+dxdy) + a[1]*(dx-dxdy) + a[2]*(dy-dxdy) + a[3]*dxdy;
+//             type r = pimgr[addr]*(1-dx-dy+dxdy) + pimgr[addr+1]*(dx-dxdy) + pimgr[addr+w]*(dy-dxdy) + pimgr[addr+1+w]*dxdy;
+//             pimgo[i] = r;
+//         }
+//         else if(x >= 0 && x < w && y == h - 1) // border case
+//         {
+//             type dx = xt - (type)x;
+//             type r = pimgr[x+y*w]*(1-dx) + pimgr[x+1+y*w]*(dx);
+//             pimgo[i] = r;
+//         }
+//         else
+//         {
+//             pimgo[i] = defaultv;
+//         };
+//         // pimgo[i] = defaultv;
+//     };
+// };
+
+template <typename type>
+class ilinear3
+{
+public:
+    // variables
+    type zero = 0.01;
+    int w; int h; int l;
+    type * px; type * py; type * pz; type * ref; type * out;
+
+    ilinear3(int ww, int hh, int ll, type * pxo, type * pyo, type * pzo, type * pimgr, type * pimgo)
+    {
+        w = ww; h = hh; l = ll;
+        px = pxo; py = pyo; pz = pzo; ref = pimgr; out = pimgo;
+    }
+
+    void interpolate(int idx)
+    {
+        type xt = px[idx];
+        type yt = py[idx];
+        type zt = pz[idx];
+        int x = floor(xt);
+        int y = floor(yt);
+        int z = floor(zt);
+        if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l)
+        {
+            type dx = xt - (type)x;
+            type dy = yt - (type)y;
+            type dz = zt - (type)z;
+            if (dx <= zero && dy <= zero && dz <= zero)
             {
-                type dx = xt - (type)x;
-                type dy = yt - (type)y;
-                type dxdy = dx*dy;
-                type r = pimgr[x+y*w]*(1-dx-dy+dxdy) + pimgr[x+1+y*w]*(dx-dxdy) + pimgr[x+(y+1)*w]*(dy-dxdy) + pimgr[x+1+(y+1)*w]*dxdy;
-                pimgo[i + j*n0] = r;
+                out[idx] = ref[x+y*w+z*w*h];
             }
-            else if(x >= 0 && x < w && y == h - 1) // border case
+            else if (dz <= zero || z >= l - 1) // same z
+            {   
+                if (dy <= zero || y >= h - 1) // same y
+                {
+                    out[idx] = ref[x+y*w+z*w*h]*(1-dx) + ref[x+1+y*w+z*w*h]*(dx);
+                }
+                else if (dx <= zero || x >= w - 1) // same x
+                {
+                    out[idx] = ref[x+y*w+z*w*h]*(1-dy) + ref[x+(y+1)*w+z*w*h]*(dy);
+                }
+                else
+                {
+                    // compute case x & y
+                    type dxdy = dx*dy;
+                    type r = ref[x+y*w+z*w*h]*(1-dx-dy+dxdy) + ref[x+1+y*w+z*w*h]*(dx-dxdy) + ref[x+(y+1)*w+z*w*h]*(dy-dxdy) + ref[x+1+(y+1)*w+z*w*h]*dxdy;
+                    out[idx] = r;
+                };
+            }
+            else if (dy <= zero || y >= h - 1) // same y
             {
-                type dx = xt - (type)x;
-                type r = pimgr[x+y*w]*(1-dx) + pimgr[x+1+y*w]*(dx);
-                pimgo[i + j*n0] = r;
+                if (dx <= zero || x >= w - 1) // same x
+                {
+                    out[idx] = ref[x+y*w+z*w*h]*(1-dz) + ref[x+y*w+(z+1)*w*h]*(dz);
+                    return;
+                }
+                else
+                {
+                    // compute case x & z
+                    type dxdz = dx*dz;
+                    type r = ref[x+y*w+z*w*h]*(1-dx-dz+dxdz) + ref[x+1+y*w+z*w*h]*(dx-dxdz) + ref[x+y*w+(z+1)*w*h]*(dz-dxdz) + ref[x+1+y*w+(z+1)*w*h]*dxdz;
+                    out[idx] = r;
+                };
+            }
+            else if (dx <= zero || x >= w - 1) // same x
+            {
+                // compute case y & z
+                type dydz = dy*dz;
+                type r = ref[x+y*w+z*w*h]*(1-dy-dz+dydz) + ref[x+(y+1)*w+z*w*h]*(dy-dydz) + ref[x+y*w+(z+1)*w*h]*(dz-dydz) + ref[x+(y+1)*w+(z+1)*w*h]*dydz;
+                out[idx] = r;
+            }
+            else
+            {
+                // compute case x & y & z
+                type dxdy = dx*dy;
+                type rv = ref[x+y*w+z*w*h]*(1-dx-dy+dxdy) + ref[x+1+y*w+z*w*h]*(dx-dxdy) + ref[x+(y+1)*w+z*w*h]*(dy-dxdy) + ref[x+1+(y+1)*w+z*w*h]*dxdy;
+                type rw = ref[x+y*w+(z+1)*w*h]*(1-dx-dy+dxdy) + ref[x+1+y*w+(z+1)*w*h]*(dx-dxdy) + ref[x+(y+1)*w+(z+1)*w*h]*(dy-dxdy) + ref[x+1+(y+1)*w+(z+1)*w*h]*dxdy;
+                type r = rv*(1-dz) + rw*dz;
+                out[idx] = r;
             };
         };
     };
@@ -1198,6 +1862,156 @@ void vector_cpu<type>::linear3( typename vector_cpu<type>::pointer xo,
     type * pimgr = imgr->data();
     type * pimgo = imgo->data();
 
+    ilinear3<type> lin3(w, h, l, pxo, pyo, pzo, pimgr, pimgo);
+
+    #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k = 0; k < n2; k++)
+    {
+        for(int j = 0; j < n1; j++)
+        {
+            for(int i = 0; i < n0; i++)
+            {
+                int idx = i + j*n0 + k*n0*n1;
+                lin3.interpolate(idx);
+            };
+        };
+    };
+};
+
+// template <typename type>
+// void vector_cpu<type>::linear3( typename vector_cpu<type>::pointer xo, 
+//                                 typename vector_cpu<type>::pointer yo,
+//                                 typename vector_cpu<type>::pointer zo,
+//                                 typename vector_cpu<type>::pointer imgr,
+//                                 typename vector_cpu<type>::pointer imgo,
+//                                 std::vector<int> ref_size, std::vector<int> out_size)
+// {
+//     int n0 = out_size[0]; int n1 = out_size[1]; int n2 = out_size[2];
+//     int w = ref_size[0]; int h = ref_size[1]; int l = ref_size[2];
+
+//     type * pxo = xo->data();
+//     type * pyo = yo->data();
+//     type * pzo = zo->data();
+//     type * pimgr = imgr->data();
+//     type * pimgo = imgo->data();
+
+//     #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
+//     for(int k = 0; k < n2; k++)
+//     {
+//         for(int j = 0; j < n1; j++)
+//         {
+//             for(int i = 0; i < n0; i++)
+//             {
+//                 type xt = pxo[i + j*n0 + k*n0*n1];
+//                 type yt = pyo[i + j*n0 + k*n0*n1];
+//                 type zt = pzo[i + j*n0 + k*n0*n1];
+//                 int x = floor(xt);
+//                 int y = floor(yt);
+//                 int z = floor(zt);
+//                 if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l - 1)
+//                 {
+//                     type dx = xt - (type)x;
+//                     type dy = yt - (type)y;
+//                     type dxdy = dx*dy;
+//                     type rv = pimgr[x+y*w+z*w*h]*(1-dx-dy+dxdy) + pimgr[x+1+y*w+z*w*h]*(dx-dxdy) + pimgr[x+(y+1)*w+z*w*h]*(dy-dxdy) + pimgr[x+1+(y+1)*w+z*w*h]*dxdy;
+//                     type rw = pimgr[x+y*w+(z+1)*w*h]*(1-dx-dy+dxdy) + pimgr[x+1+y*w+(z+1)*w*h]*(dx-dxdy) + pimgr[x+(y+1)*w+(z+1)*w*h]*(dy-dxdy) + pimgr[x+1+(y+1)*w+(z+1)*w*h]*dxdy;
+//                     type dz = zt - (type)z;
+//                     type r = rv*(1-dz) + rw*dz;
+//                     pimgo[i + j*n0 + k*n0*n1] = r;
+//                 }
+//                 else if(x >= 0 && x < w && y >= 0 && y < h && z == l - 1) // border case
+//                 {
+//                     type dx = xt - (type)x;
+//                     type dy = yt - (type)y;
+//                     type dxdy = dx*dy;
+//                     type rv = pimgr[x+y*w+z*w*h]*(1-dx-dy+dxdy) + pimgr[x+1+y*w+z*w*h]*(dx-dxdy) + pimgr[x+(y+1)*w+z*w*h]*(dy-dxdy) + pimgr[x+1+(y+1)*w+z*w*h]*dxdy;
+//                     pimgo[i + j*n0 + k*n0*n1] = rv;
+//                 };
+//             };
+//         };
+//     };
+// };
+
+template <typename type>
+type cubic(type p[4], type x) 
+{
+    return p[1] + 0.5 * x*(p[2] - p[0] + x*(2.0*p[0] - 5.0*p[1] + 4.0*p[2] - p[3] + x*(3.0*(p[1] - p[2]) + p[3] - p[0])));
+};
+
+template <typename type>
+void vector_cpu<type>::cubic2(  typename vector_cpu<type>::pointer xo, 
+                                typename vector_cpu<type>::pointer yo,
+                                typename vector_cpu<type>::pointer imgr,
+                                typename vector_cpu<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    int n0 = out_size[0]; int n1 = out_size[1];
+    int w = ref_size[0]; int h = ref_size[1];
+
+    type * pxo = xo->data();
+    type * pyo = yo->data();
+    type * pimgr = imgr->data();
+    type * pimgo = imgo->data();
+
+    #pragma omp parallel for if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int j = 0; j < n1; j++)
+    {
+        for(int i = 0; i < n0; i++)
+        {
+            type xt = pxo[i + j*n0];
+            type yt = pyo[i + j*n0];
+            int x = floor(xt);
+            int y = floor(yt);
+
+            if(x >= 1 && x < w - 2 && y >= 1 && y < h - 2)
+            {
+                type dx = xt - (type)x;
+                type dy = yt - (type)y;
+
+                type r0[4] = {pimgr[x-1+(y-1)*w], pimgr[x+(y-1)*w], pimgr[x+1+(y-1)*w], pimgr[x+2+(y-1)*w]};
+                type r1[4] = {pimgr[x-1+(y)*w]  , pimgr[x+(y)*w]  , pimgr[x+1+(y)*w]  , pimgr[x+2+(y)*w]};
+                type r2[4] = {pimgr[x-1+(y+1)*w], pimgr[x+(y+1)*w], pimgr[x+1+(y+1)*w], pimgr[x+2+(y+1)*w]};
+                type r3[4] = {pimgr[x-1+(y+2)*w], pimgr[x+(y+2)*w], pimgr[x+1+(y+2)*w], pimgr[x+2+(y+2)*w]};
+                
+                type r[4] = {cubic(r0, dx), cubic(r1, dx), cubic(r2, dx), cubic(r3, dx) };
+                pimgo[i + j*n0] = cubic(r, dy);
+            }
+            else if(x >= 0 && x < w && y >= 0 && y < h - 1) //linear interpolation otherwise
+            {
+                type dx = xt - (type)x;
+                type dy = yt - (type)y;
+                type dxdy = dx*dy;
+                type r = pimgr[x+y*w]*(1-dx-dy+dxdy) + pimgr[x+1+y*w]*(dx-dxdy) + pimgr[x+(y+1)*w]*(dy-dxdy) + pimgr[x+1+(y+1)*w]*dxdy;
+                pimgo[i + j*n0] = r;
+            }
+            else if(x >= 0 && x < w && y == h - 1) // border case
+            {
+                type dx = xt - (type)x;
+                type r = pimgr[x+y*w]*(1-dx) + pimgr[x+1+y*w]*(dx);
+                pimgo[i + j*n0] = r;
+            };
+        };
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::cubic3(  typename vector_cpu<type>::pointer xo, 
+                                typename vector_cpu<type>::pointer yo,
+                                typename vector_cpu<type>::pointer zo,
+                                typename vector_cpu<type>::pointer imgr,
+                                typename vector_cpu<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    int n0 = out_size[0]; int n1 = out_size[1]; int n2 = out_size[2];
+    int w = ref_size[0]; int h = ref_size[1]; int l = ref_size[2];
+
+    type * pxo = xo->data();
+    type * pyo = yo->data();
+    type * pzo = zo->data();
+    type * pimgr = imgr->data();
+    type * pimgo = imgo->data();
+
+    #pragma omp parallel for if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k = 0; k < n2; k++)
     {
         for(int j = 0; j < n1; j++)
@@ -1210,7 +2024,40 @@ void vector_cpu<type>::linear3( typename vector_cpu<type>::pointer xo,
                 int x = floor(xt);
                 int y = floor(yt);
                 int z = floor(zt);
-                if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l - 1)
+                if(x >= 1 && x < w - 2 && y >= 1 && y < h - 2 && z >= 1 && z < l - 2)
+                {
+                    type dx = xt - (type)x;
+                    type dy = yt - (type)y;
+                    type dz = zt - (type)z;
+
+                    type r00[4] = {pimgr[x-1+(y-1)*w+(z-1)*w*h], pimgr[x+(y-1)*w+(z-1)*w*h], pimgr[x+1+(y-1)*w+(z-1)*w*h], pimgr[x+2+(y-1)*w+(z-1)*w*h]};
+                    type r01[4] = {pimgr[x-1+(y)*w+(z-1)*w*h]  , pimgr[x+(y)*w+(z-1)*w*h]  , pimgr[x+1+(y)*w+(z-1)*w*h]  , pimgr[x+2+(y)*w+(z-1)*w*h]};
+                    type r02[4] = {pimgr[x-1+(y+1)*w+(z-1)*w*h], pimgr[x+(y+1)*w+(z-1)*w*h], pimgr[x+1+(y+1)*w+(z-1)*w*h], pimgr[x+2+(y+1)*w+(z-1)*w*h]};
+                    type r03[4] = {pimgr[x-1+(y+2)*w+(z-1)*w*h], pimgr[x+(y+2)*w+(z-1)*w*h], pimgr[x+1+(y+2)*w+(z-1)*w*h], pimgr[x+2+(y+2)*w+(z-1)*w*h]};
+                    type rx0[4] = {cubic(r00, dx), cubic(r01, dx), cubic(r02, dx), cubic(r03, dx)};
+
+                    type r10[4] = {pimgr[x-1+(y-1)*w+z*w*h], pimgr[x+(y-1)*w+z*w*h], pimgr[x+1+(y-1)*w+z*w*h], pimgr[x+2+(y-1)*w+z*w*h]};
+                    type r11[4] = {pimgr[x-1+(y)*w+z*w*h]  , pimgr[x+(y)*w+z*w*h]  , pimgr[x+1+(y)*w+z*w*h]  , pimgr[x+2+(y)*w+z*w*h]};
+                    type r12[4] = {pimgr[x-1+(y+1)*w+z*w*h], pimgr[x+(y+1)*w+z*w*h], pimgr[x+1+(y+1)*w+z*w*h], pimgr[x+2+(y+1)*w+z*w*h]};
+                    type r13[4] = {pimgr[x-1+(y+2)*w+z*w*h], pimgr[x+(y+2)*w+z*w*h], pimgr[x+1+(y+2)*w+z*w*h], pimgr[x+2+(y+2)*w+z*w*h]};
+                    type rx1[4] = {cubic(r10, dx), cubic(r11, dx), cubic(r12, dx), cubic(r13, dx)};
+
+                    type r20[4] = {pimgr[x-1+(y-1)*w+(z+1)*w*h], pimgr[x+(y-1)*w+(z+1)*w*h], pimgr[x+1+(y-1)*w+(z+1)*w*h], pimgr[x+2+(y-1)*w+(z+1)*w*h]};
+                    type r21[4] = {pimgr[x-1+(y)*w+(z+1)*w*h]  , pimgr[x+(y)*w+(z+1)*w*h]  , pimgr[x+1+(y)*w+(z+1)*w*h]  , pimgr[x+2+(y)*w+(z+1)*w*h]};
+                    type r22[4] = {pimgr[x-1+(y+1)*w+(z+1)*w*h], pimgr[x+(y+1)*w+(z+1)*w*h], pimgr[x+1+(y+1)*w+(z+1)*w*h], pimgr[x+2+(y+1)*w+(z+1)*w*h]};
+                    type r23[4] = {pimgr[x-1+(y+2)*w+(z+1)*w*h], pimgr[x+(y+2)*w+(z+1)*w*h], pimgr[x+1+(y+2)*w+(z+1)*w*h], pimgr[x+2+(y+2)*w+(z+1)*w*h]};
+                    type rx2[4] = {cubic(r20, dx), cubic(r21, dx), cubic(r22, dx), cubic(r23, dx)};
+
+                    type r30[4] = {pimgr[x-1+(y-1)*w+(z+2)*w*h], pimgr[x+(y-1)*w+(z+2)*w*h], pimgr[x+1+(y-1)*w+(z+2)*w*h], pimgr[x+2+(y-1)*w+(z+2)*w*h]};
+                    type r31[4] = {pimgr[x-1+(y)*w+(z+2)*w*h]  , pimgr[x+(y)*w+(z+2)*w*h]  , pimgr[x+1+(y)*w+(z+2)*w*h]  , pimgr[x+2+(y)*w+(z+2)*w*h]};
+                    type r32[4] = {pimgr[x-1+(y+1)*w+(z+2)*w*h], pimgr[x+(y+1)*w+(z+2)*w*h], pimgr[x+1+(y+1)*w+(z+2)*w*h], pimgr[x+2+(y+1)*w+(z+2)*w*h]};
+                    type r33[4] = {pimgr[x-1+(y+2)*w+(z+2)*w*h], pimgr[x+(y+2)*w+(z+2)*w*h], pimgr[x+1+(y+2)*w+(z+2)*w*h], pimgr[x+2+(y+2)*w+(z+2)*w*h]};
+                    type rx3[4] = {cubic(r30, dx), cubic(r31, dx), cubic(r32, dx), cubic(r33, dx)};
+
+                    type ry[4] = {cubic(rx0, dy), cubic(rx1, dy), cubic(rx2, dy), cubic(rx3, dy)};
+                    pimgo[i + j*n0 + k*n0*n1] = cubic(ry, dz);
+                }
+                else if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l - 1) // linear interpolation otherwise
                 {
                     type dx = xt - (type)x;
                     type dy = yt - (type)y;
@@ -1234,6 +2081,7 @@ void vector_cpu<type>::linear3( typename vector_cpu<type>::pointer xo,
     };
 };
 
+#ifdef IMART_WITH_FFTW
 template <typename type>
 void vector_cpu<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward)
 {
@@ -1285,31 +2133,35 @@ void vector_cpu<type>::fft(std::vector<pointer> & input, std::vector<pointer> & 
         };
     }
 };
+#endif
 
 template <typename type>
 void vector_cpu<type>::gradientx(typename vector_cpu<type>::pointer imgr,
                                  typename vector_cpu<type>::pointer imgo,
                                  std::vector<int> ref_size)
 {
+    type a = 0.5; // finite difference scalar
     type * pimgr = imgr->data();
     type * pimgo = imgo->data();
 
     if (ref_size.size() == 2)
     {
         int n0 = ref_size[0]; int n1 = ref_size[1];
+        #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
         for(int j = 0; j < n1; j++)
         {
             for(int i = 0; i < n0; i++)
             {
                 if(i == 0)          pimgo[i + j*n0] = pimgr[i+1 + j*n0] - pimgr[i + j*n0];
                 else if (i == n0-1) pimgo[i + j*n0] = pimgr[i + j*n0] - pimgr[i-1 + j*n0];
-                else      pimgo[i + j*n0] = 0.5*pimgr[i+1 + j*n0] - 0.5*pimgr[i-1 + j*n0];
+                else      pimgo[i + j*n0] = a*pimgr[i+1 + j*n0] - a*pimgr[i-1 + j*n0];
             };
         };
     }
     else if (ref_size.size() == 3)
     {
-        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[1];
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[2];
+        #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
         for(int k = 0; k < n2; k++)
         {
             for(int j = 0; j < n1; j++)
@@ -1318,7 +2170,7 @@ void vector_cpu<type>::gradientx(typename vector_cpu<type>::pointer imgr,
                 {
                     if(i == 0)          pimgo[i + j*n0 + k*n0*n1] = pimgr[i+1 + j*n0 + k*n0*n1] - pimgr[i + j*n0 + k*n0*n1];
                     else if (i == n0-1) pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + k*n0*n1] - pimgr[i-1 + j*n0 + k*n0*n1];
-                    else      pimgo[i + j*n0 + k*n0*n1] = 0.5*pimgr[i+1 + j*n0 + k*n0*n1] - 0.5*pimgr[i-1 + j*n0 + k*n0*n1];
+                    else      pimgo[i + j*n0 + k*n0*n1] = a*pimgr[i+1 + j*n0 + k*n0*n1] - a*pimgr[i-1 + j*n0 + k*n0*n1];
                 };
             };
         };
@@ -1330,25 +2182,28 @@ void vector_cpu<type>::gradienty(typename vector_cpu<type>::pointer imgr,
                                  typename vector_cpu<type>::pointer imgo,
                                  std::vector<int> ref_size)
 {
+    type a = 0.5; // finite difference scalar
     type * pimgr = imgr->data();
     type * pimgo = imgo->data();
 
     if (ref_size.size() == 2)
     {
         int n0 = ref_size[0]; int n1 = ref_size[1];
+        #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
         for(int j = 0; j < n1; j++)
         {
             for(int i = 0; i < n0; i++)
             {
                 if(j == 0)          pimgo[i + j*n0] = pimgr[i + (j+1)*n0] - pimgr[i + j*n0];
                     else if (j == n1-1) pimgo[i + j*n0] = pimgr[i + j*n0] - pimgr[i + (j-1)*n0];
-                    else    pimgo[i + j*n0] = 0.5*pimgr[i + (j+1)*n0] - 0.5*pimgr[i + (j-1)*n0];
+                    else    pimgo[i + j*n0] = a*pimgr[i + (j+1)*n0] - a*pimgr[i + (j-1)*n0];
             };
         };
     }
     else if (ref_size.size() == 3)
     {
-        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[1];
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[2];
+        #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
         for(int k = 0; k < n2; k++)
         {
             for(int j = 0; j < n1; j++)
@@ -1357,7 +2212,7 @@ void vector_cpu<type>::gradienty(typename vector_cpu<type>::pointer imgr,
                 {
                     if(j == 0)          pimgo[i + j*n0 + k*n0*n1] = pimgr[i + (j+1)*n0 + k*n0*n1] - pimgr[i + j*n0 + k*n0*n1];
                     else if (j == n1-1) pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + k*n0*n1] - pimgr[i + (j-1)*n0 + k*n0*n1];
-                    else    pimgo[i + j*n0 + k*n0*n1] = 0.5*pimgr[i + (j+1)*n0 + k*n0*n1] - 0.5*pimgr[i + (j-1)*n0 + k*n0*n1];
+                    else    pimgo[i + j*n0 + k*n0*n1] = a*pimgr[i + (j+1)*n0 + k*n0*n1] - a*pimgr[i + (j-1)*n0 + k*n0*n1];
                 };
             };
         };
@@ -1369,12 +2224,14 @@ void vector_cpu<type>::gradientz(typename vector_cpu<type>::pointer imgr,
                                  typename vector_cpu<type>::pointer imgo,
                                  std::vector<int> ref_size)
 {
+    type a = 0.5; // finite difference scalar
     type * pimgr = imgr->data();
     type * pimgo = imgo->data();
 
     if (ref_size.size() == 3)
     {
-        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[1];
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[2];
+        #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
         for(int k = 0; k < n2; k++)
         {
             for(int j = 0; j < n1; j++)
@@ -1383,7 +2240,7 @@ void vector_cpu<type>::gradientz(typename vector_cpu<type>::pointer imgr,
                 {
                     if(k == 0)          pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + (k+1)*n0*n1] - pimgr[i + j*n0 + k*n0*n1];
                     else if (k == n2-1) pimgo[i + j*n0 + k*n0*n1] = pimgr[i + j*n0 + k*n0*n1] - pimgr[i + j*n0 + (k-1)*n0*n1];
-                    else    pimgo[i + j*n0 + k*n0*n1] = 0.5*pimgr[i + j*n0 + (k+1)*n0*n1] - 0.5*pimgr[i + j*n0 + (k-1)*n0*n1];
+                    else    pimgo[i + j*n0 + k*n0*n1] = a*pimgr[i + j*n0 + (k+1)*n0*n1] - a*pimgr[i + j*n0 + (k-1)*n0*n1];
                 };
             };
         };
@@ -1405,7 +2262,7 @@ void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
     if (ref_size.size() == 2)
     {
         int n0 = ref_size[0]; int n1 = ref_size[1];
-        
+        #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
         for(int j = off; j < n1-off; j++)
         {
             for(int i = off; i < n0-off; i++)
@@ -1415,7 +2272,7 @@ void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
                 {
                     for (int q = 0; q < kwidth; q++)
                     {
-                        sum += pimgr[i+p-off + (j+q-off)*n0] * pkrnl[p*kwidth + q];
+                        sum += pimgr[i+q-off + (j+p-off)*n0] * pkrnl[p*kwidth + q];
                     };
                 };
                 pimgo[i + j*n0] = sum;
@@ -1424,8 +2281,9 @@ void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
     }
     else if (ref_size.size() == 3)
     {
-        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[1];
-        
+        // printf("n0: %4d, n1: %4d, n2: %4d\n", n0, n1, n2);
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[2];
+        #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
         for(int k = off; k < n2-off; k++)
         {
             for(int j = off; j < n1-off; j++)
@@ -1439,7 +2297,7 @@ void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
                         {
                             for (int q = 0; q < kwidth; q++)
                             {
-                                sum += pimgo[i+p-off + (j+q-off)*n0 + (k-off)*n0*n1] * pkrnl[r*kwidth*kwidth + p*kwidth + q];
+                                sum += pimgr[i+q-off + (j+p-off)*n0 + (k+r-off)*n0*n1] * pkrnl[r*kwidth*kwidth + p*kwidth + q];
                             };
                         };
                     };

@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-18 14:04:03
+* @Last Modified time: 2021-01-18 10:23:54
 */
 
 
@@ -23,6 +23,7 @@ int main()
     // ============================================
     // Create small imame
     image<double> image0(10,5);
+    image0.set_origin(std::vector<double>{-5.0, 10.0});
 
     grid<double> x0;
     std::cout << "a\n" ;
@@ -33,6 +34,12 @@ int main()
 
     x0.print();
     x0.print_data();
+    x0.ptr()[0]->print();
+
+    // auto xp1 = grid<double>::new_pointer(x0);
+    // xp1->print();
+    // xp1->print_data();
+
 
     // ============================================
     //      Testing image_3d meshgrid
@@ -64,10 +71,6 @@ int main()
     // image_2d<float> image2(1000,200);
 
     // image2.meshgrid();
-
-    auto xp1 = grid<double>::new_pointer(x0);
-    xp1->print();
-    xp1->print_data();
 
 
     return 0;

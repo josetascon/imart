@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-31 23:48:19
+* @Last Modified time: 2021-01-27 06:47:32
 */
 
 // std libs
@@ -24,7 +24,6 @@ int main()
     using type = float;
     // using type = double;
     
-
     // ============================================
     //          Testing metric
     // ============================================
@@ -51,8 +50,8 @@ int main()
     // std::cout << "min: " << img_moving->min() << std::endl;
     // std::cout << "max: " << img_moving->max() << std::endl;
 
-    *img_fixed = normalize<type>(*img_fixed);
-    *img_moving = normalize<type>(*img_moving);
+    // *img_fixed = normalize<type>(*img_fixed);
+    // *img_moving = normalize<type>(*img_moving);
 
     // img_fixed->print();
     // img_fixed->print_data();
@@ -60,37 +59,32 @@ int main()
     // img_moving->print();
     // img_moving->print_data();
 
-    auto trfm = dfield<type,vector_cpu<type>>::new_pointer(img_moving);
+    auto trfm = dfield<type,vector_cpu<type>>::new_pointer(img_fixed);
+    trfm->set_sigma_elastic(2.0);
     // trfm->print();
     // trfm->print_data();
 
     auto demons1 = demons<type,vector_cpu<type>>::new_pointer(img_fixed, img_moving, trfm);
     auto opt = gradient_descent<type,vector_cpu<type>>::new_pointer();
+    // opt->set_tolerance(1e-5);
 
     auto registro = registration<type,vector_cpu<type>>::new_pointer(img_fixed, img_moving, trfm);
     registro->set_metric(demons1);
     registro->set_optimizer(opt);
-
+    // registro->set_levels_iterations(std::vector<int>{300,200,100});
+    // registro->set_plot(true);
     registro->apply();
 
-
-    auto moving_warped = demons1->warped_moving();
+    auto transformation = registro->get_transform();
+    auto interpolation = ilinear_cpu<type>::new_pointer(img_moving);
+    auto x0 = grid_cpu<type>::new_pointer(img_fixed);
+    auto moving_warped = interpolation->apply(transformation->apply(x0));
+    // moving_warped->print();
     // moving_warped->print_data();
 
     auto moving_cast = image_cpu<intype>::new_pointer();
-    cast((*moving_warped)*(type(255)), *moving_cast);
-
-    // auto output = image_cpu<intype>::new_pointer();
-    // *output = normalize<intype>(*moving_cast, min, max);
-
-    // auto moving = (*moving_warped)*(type(255));
-    // moving.print_data();
-    
-    // cast(*moving, *output);
-    // cast(*moving_warped, *output);
-    // output->print_data();
+    cast(*moving_warped, *moving_cast);
     moving_cast->write("./multilevel_demons_warped_cpu.png");
-    // output->write("./demons_warped.png");
 
 
     return 0;

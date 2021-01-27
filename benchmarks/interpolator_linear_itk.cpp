@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-13 14:27:18
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-03 21:18:38
+* @Last Modified time: 2021-01-24 00:21:04
 */
 
 #include <iostream>
@@ -47,6 +47,7 @@ static void bm_ilinear_cpu_2d(benchmark::State& state)
         // This code gets timed
         x1 = taffine->apply(x0);
         image1 = interp0->apply(x1);
+        // image1 = interp0->apply_test(x1);
         
     };
     // x1.print_data();
@@ -287,21 +288,27 @@ static void bm_ilinear_itk_3d(benchmark::State& state)
 
 static void CustomArguments2d(benchmark::internal::Benchmark* b)
 {
-    for (int i = 8; i <= 8000; i = 10*i)
-        b->Args({i});
+    // for (int i = 8; i <= 8000; i = 10*i)
+    //     b->Args({i});
+    std::vector<int> list = {10,20,40,80,100,200,400,800,1000,2000,4000,8000};
+    for(int i = 0; i < list.size(); i++)
+        b->Args({list[i]});
 };
 
 static void CustomArguments3d(benchmark::internal::Benchmark* b)
 {
-    for (int i = 4; i <= 400; i = 10*i)
-        b->Args({i});
+    // for (int i = 4; i <= 400; i = 10*i)
+    //     b->Args({i});
+    std::vector<int> list = {10,20,40,80,100,200,400,800};
+    for(int i = 0; i < list.size(); i++)
+        b->Args({list[i]});
 };
 
 BENCHMARK(bm_ilinear_cpu_2d)->Apply(CustomArguments2d);
-BENCHMARK(bm_ilinear_gpu_2d)->Apply(CustomArguments2d);
+// BENCHMARK(bm_ilinear_gpu_2d)->Apply(CustomArguments2d);
 BENCHMARK(bm_ilinear_itk_2d)->Apply(CustomArguments2d);
 BENCHMARK(bm_ilinear_cpu_3d)->Apply(CustomArguments3d);
-BENCHMARK(bm_ilinear_gpu_3d)->Apply(CustomArguments3d);
+// BENCHMARK(bm_ilinear_gpu_3d)->Apply(CustomArguments3d);
 BENCHMARK(bm_ilinear_itk_3d)->Apply(CustomArguments3d);
 
 

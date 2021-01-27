@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-13 14:27:18
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-07-30 16:55:20
+* @Last Modified time: 2020-09-21 14:51:16
 */
 
 // std libs
@@ -15,6 +15,7 @@
 
 // local headers
 #include "../src/image.h"
+#include "../src/image_utils.h"
 
 using namespace imart;
 

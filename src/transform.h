@@ -17,8 +17,8 @@
 // local libs
 #include "space_object.h"
 #include "image.h"
-#include "grid.h"
 #include "image_utils.h"
+#include "grid.h"
 
 namespace imart
 {
@@ -43,6 +43,9 @@ protected:
 
     ptr_vector_image parameters;
     ptr_vector_image inverse_parameters;
+
+    std::vector<double> sigma;
+    std::vector<int> kernel;
 
     // ===========================================
     // Functions
@@ -77,11 +80,16 @@ public:
     ptr_vector_image get_parameters_vector() const;
     ptr_vector_image get_inverse_parameters_vector() const;
 
+    std::vector<double> get_sigma() const;
+    std::vector<int> get_kernel() const;
+
     // ===========================================
     // Set Functions
     // ===========================================
     void set_parameters(typename image<type,container>::pointer params, int n = 0);
     void set_parameters_vector(ptr_vector_image params);
+    void set_sigma(std::vector<double> s);
+    void set_kernel(std::vector<int> k);
     virtual void change_size(std::vector<int> sz);
 
     // ===========================================
@@ -104,7 +112,7 @@ public:
     // Initialization Functions
     // ===========================================
     virtual void identity(); // parameters that do nothing when transform is applied
-    virtual transform<type,container> inverse(); // parameters that do nothing when transform is applied
+    virtual typename transform<type,container>::pointer inverse(); // parameters that do nothing when transform is applied
 
     // ===========================================
     // Functions
@@ -116,6 +124,12 @@ public:
     std::vector<type> operator () (std::vector<type> & point);
     // grid<type,container> operator () (const grid<type,container> & input);
     typename grid<type,container>::pointer operator () (typename grid<type,container>::pointer input);
+
+    virtual void fluid();
+    virtual void elastic();
+
+    virtual void read(std::string file_name);
+    virtual void write(std::string file_name);
 };
 
 template<typename type>
@@ -124,9 +138,15 @@ using transform_cpu = transform<type,vector_cpu<type>>;
 template<typename type>
 using transform_gpu = transform<type,vector_ocl<type>>;
 
+#ifdef IMART_WITH_OPENCL
+template<typename type>
+using transform_ocl = transform<type,vector_ocl<type>>;
+#endif
+
+#ifdef IMART_WITH_CUDA
 template<typename type>
 using transform_cuda = transform<type,vector_cuda<type>>;
-
+#endif
 
 // ===========================================
 //          Functions of Class transform
@@ -212,6 +232,8 @@ void transform<type,container>::clone_(const transform<type,container> & input)
         (*parameters)[i]->clone_(*(input.get_parameters(i)));
         (*inverse_parameters)[i]->clone_(*(input.get_inverse_parameters(i)));
     };
+    sigma = input.get_sigma();
+    kernel = input.get_kernel();
 };
 
 template <typename type, typename container>
@@ -226,6 +248,8 @@ void transform<type,container>::copy_(const transform<type,container> & input)
         (*parameters)[i]->copy_(*(input.get_parameters(i)));
         (*inverse_parameters)[i]->copy_(*(input.get_inverse_parameters(i)));
     };
+    sigma = input.get_sigma();
+    kernel = input.get_kernel();
 };
 
 template <typename type, typename container>
@@ -240,6 +264,8 @@ void transform<type,container>::mimic_(const transform<type,container> & input)
         (*parameters)[i]->zeros();
         (*inverse_parameters)[i]->mimic_(*(input.get_inverse_parameters(i)));
     };
+    sigma = input.get_sigma();
+    kernel = input.get_kernel();
 };
 
 // ===========================================
@@ -269,6 +295,18 @@ typename transform<type,container>::ptr_vector_image transform<type,container>::
     return inverse_parameters;
 };
 
+template <typename type, typename container>
+std::vector<double> transform<type,container>::get_sigma() const
+{
+    return sigma;
+};
+
+template <typename type, typename container>
+std::vector<int> transform<type,container>::get_kernel() const
+{
+    return kernel;
+};
+
 // ===========================================
 // Set Functions
 // ===========================================
@@ -283,6 +321,18 @@ template <typename type, typename container>
 void transform<type,container>::set_parameters_vector(typename transform<type,container>::ptr_vector_image params)
 {
     parameters = params;
+};
+
+template <typename type, typename container>
+void transform<type,container>::set_sigma(std::vector<double> s)
+{
+    sigma = s;
+};
+
+template <typename type, typename container>
+void transform<type,container>::set_kernel(std::vector<int> k)
+{
+    kernel = k;
 };
 
 template <typename type, typename container>
@@ -310,6 +360,9 @@ std::string transform<type,container>::info(std::string msg)
     ss << object::info(title);
     ss << "Data type: \t\t" << (*parameters)[0]->get_type() << std::endl;
     ss << "Group of parameters: \t" << parameters->size() << std::endl;
+    ss << "Size: \t\t\t[ ";
+    for(int i = 0; i < this->size.size(); i++) { ss << this->size[i] << " "; };
+    ss << "]" << std::endl;
     ss << "Number parameters: \t" << (*parameters)[0]->get_total_elements() << std::endl;
     ss << "Parameters pointer: \t" << parameters;// << std::endl;
     for(int i = 0; i < parameters->size(); i++)
@@ -362,11 +415,13 @@ void transform<type,container>::inverse_()
 };
 
 template <typename type, typename container>
-transform<type,container> transform<type,container>::inverse()
+typename transform<type,container>::pointer transform<type,container>::inverse()
 {
     inverse_(); // update, compute in case of parameter update
     typename transform<type,container>::ptr_vector_image params = get_inverse_parameters_vector();
-    transform<type,container> tr(this->dim, params);
+    // auto tr = transform<type,container>::new_pointer(this->dim, params);
+    auto tr = this->mimic();
+    tr->set_parameters_vector(params);
     return tr;
 };
 
@@ -474,6 +529,30 @@ template <typename type, typename container>
 typename grid<type,container>::pointer transform<type,container>::operator() (typename grid<type,container>::pointer input)
 {
     return apply(input);
+};
+
+template <typename type, typename container>
+void transform<type,container>::fluid()
+{
+    ;
+};
+
+template <typename type, typename container>
+void transform<type,container>::elastic()
+{
+    ;
+};
+
+template <typename type, typename container>
+void transform<type,container>::read(std::string file_name)
+{
+    ;
+};
+
+template <typename type, typename container>
+void transform<type,container>::write(std::string file_name)
+{
+    ;
 };
 
 }; //end namespace

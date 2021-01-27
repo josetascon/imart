@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-07-31 12:03:15
+* @Last Modified time: 2020-09-21 14:49:17
 */
 
 // std libs
@@ -12,10 +12,7 @@
 // local libs
 #include "../src/image.h"
 #include "../src/grid.h"
-#include "../src/affine.h"
-#include "../src/ilinear.h"
-#include "../src/ssd.h"
-#include "../src/gradient_descent.h"
+#include "../src/image_utils.h"
 
 using namespace imart;
 

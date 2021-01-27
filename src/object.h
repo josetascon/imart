@@ -12,10 +12,13 @@
 #include <iostream>     // std::cout
 #include <vector>       // std::vector
 #include <sstream>      // std::stringstream
-#include <typeinfo>     // operator typeids
+// #include <typeinfo>     // operator typeids
 
 // local libs
+#include "config.h"     // precompiler definitions
 #include "inherit.h"
+#include "utils/type.h"
+#include "utils/assertion.h"
 
 namespace imart
 {

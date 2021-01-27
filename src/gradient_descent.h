@@ -8,11 +8,7 @@
 #ifndef __GRADIENT_DESCENT_H__
 #define __GRADIENT_DESCENT_H__
 
-#include "image.h"
-#include "transform.h"
-#include "metric.h"
 #include "optimizer.h"
-#include "utils/timer.h"
 
 namespace imart
 {
@@ -120,12 +116,17 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
     typename transform<type,container>::pointer tr_best = tr_base->mimic();
 
     // tr_base->print("transform base");
+    // tr_base->get_parameters(0)->print("x");
+    // tr_base->get_parameters(1)->print("y");
+    // tr_base->get_parameters(2)->print("z");
+
     // tr_base->print_data("transform base");
     // tr_derive->print("transform derive");
     // tr_derive->print_data("transform derive");
     // *tr_base = *tr_base - *tr_derive;
 
     int d = method->get_fixed()->get_dimension();
+    type N = type(method->get_fixed()->get_total_elements());
     termination = "max iterations";
     double diff = 0.0;
 
@@ -134,36 +135,52 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
 
     while( iterations < max_iterations )
     {
-        // std::cout << "Cost:" << std::endl;
-        current_cost = method->cost();
-
-        // auto output = image<unsigned char>::new_pointer();
-        // auto tmp = method->warped_moving();
-        // cast((*tmp)*(type(255)),*output);
-        // output->write("./out" + std::to_string(iterations) + ".png");
-
-        
         // std::cout << "Derivative:" << std::endl;
         tr_derive = method->derivative();
         // tr_derive->print_data("gradient");
+
+        // std::cout << "Cost:" << std::endl;
+        current_cost = method->cost();
+        
+        // Fluid regularization of transform
+        // std::cout << "Fluid:" << std::endl;
+        tr_derive->fluid();
+
+        // Max update
+        // method->max_scale(tr_derive);
         
         // std::cout << "Update:" << std::endl;
-        // *tr_base = *tr_base - (*tr_derive)*(*scales)*step;
+        // *tr_base = *tr_derive;
         *tr_base = *tr_base - (*tr_derive)*step;
         // tr_base->print_data("transform update");
 
-        if (method->get_name() == "demons")
-        {
-            type sigma = method->get_sigma();
-            int kwidth = method->get_kernel_width();
-            // printf("sigma = %.1f, k = %i\n", sigma, kwidth);
-            for(int i = 0; i < tr_base->get_dimension(); i++)
-                tr_base->set_parameters( gaussian_filter(tr_base->get_parameters(i),sigma,kwidth), i );
-        };
+        // Elastic regularization of transform
+        // std::cout << "Elastic:" << std::endl;
+        tr_base->elastic();
 
+        // Method regularization
+        // std::cout << "Regularize:" << std::endl;
+        method->regularize();
+
+        // if (method->get_name() == "demons")
+        // {
+        //     type sigma = method->get_sigma();
+        //     int kwidth = method->get_kernel_width();
+        //     // printf("sigma = %.1f, k = %i\n", sigma, kwidth);
+        //     for(int i = 0; i < tr_base->get_dimension(); i++)
+        //         tr_base->set_parameters( gaussian_filter(tr_base->get_parameters(i),sigma,kwidth), i );
+        // };
+
+        // CONTINUE ****** Max tr_base allowed
+        // tr_base = expfield(tr_base)
+
+        // std::cout << "Diff:" << std::endl;
         diff = abs(previous_cost - current_cost);
         t.lap();
-        printf( "iteration: %4d  cost: %7.3e  diff: %7.3e  time: %7.3f\n", iterations, current_cost, diff, t.get_elapsed() );
+        printf( "iteration: %4d  cost: %7.3e  diff: %7.3e  perf: %7.1e  time: %7.3f\n", iterations, current_cost, diff, t.get_elapsed()*(1e6)/N,  t.get_elapsed() );
+
+        // if (method->get_plot()) method->plot();
+        // sleep(1);
         // std::cout << std::showpoint << std::setprecision(4);
         // std::cout << "iteration: " << std::setw(4) << iterations << "  cost: " << std::setw(4) <<  current_cost;
         // std::cout << "  diff: " << std::setw(4) << diff << "  time:" << std::setw(4) << t.get_elapsed() << std::endl;
@@ -189,6 +206,12 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
         {
             termination = "max unchaged";
             break;
+        };
+
+        if (method->fault())
+        {
+            termination = method->fault_info();
+            // break;
         };
 
         previous_cost = current_cost;

@@ -91,6 +91,7 @@ public:
     // Print Functions
     // ===========================================
     virtual std::string info(std::string msg);
+    void print_device_name();
 
     // ===========================================
     // Functions
@@ -136,6 +137,7 @@ void opencl_object::init()
     // Get the devices in the computer
     std::vector<cl::Device> devices;
     _error_ = _platform_.getDevices(CL_DEVICE_TYPE_GPU, &devices);
+    // _error_ = _platform_.getDevices(CL_DEVICE_TYPE_CPU, &devices); // if cpu is desired
     imart_assert_cl(_error_, "Error getting devices");
     assert(devices.size() > 0);
     _device_ = devices.front();
@@ -242,6 +244,32 @@ void opencl_object::set_kernel(std::string kernel_name)
     status_kernel = true;
 };
 
+// ===========================================
+// Print Functions
+// ===========================================
+std::string opencl_object::info(std::string msg)
+{
+    std::stringstream ss;
+    std::string title = "OpenCL Object Information";
+    if (msg != "") { title = msg; };
+    // Summary of the optimizer information
+    ss << object::info(title);
+    // if(status_init)
+    // if(status_program)
+    // if(status_kernel)
+    return ss.str();
+};
+
+void opencl_object::print_device_name()
+{
+    assert(status_init);
+    auto device_name = _device_.getInfo<CL_DEVICE_NAME>();
+    std::cout << "OpenCL Device:\t" << device_name << std::endl;
+};
+
+// ===========================================
+// Functions
+// ===========================================
 void opencl_object::program(std::string code, std::string kernel_name)
 {
     set_program(code);
@@ -312,19 +340,6 @@ void opencl_object::execute(std::vector<int> & dims)
     // std::cout << "Kernel error" << _error_ << std::endl;
     imart_assert_cl(_error_, "Error while running the kernel.");
     // assert(_error_ == 0);
-};
-
-std::string opencl_object::info(std::string msg)
-{
-    std::stringstream ss;
-    std::string title = "OpenCL Object Information";
-    if (msg != "") { title = msg; };
-    // Summary of the optimizer information
-    ss << object::info(title);
-    // if(status_init)
-    // if(status_program)
-    // if(status_kernel)
-    return ss.str();
 };
 
 }; //end namespace

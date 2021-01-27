@@ -2,94 +2,140 @@
 * @Author: jose
 * @Date:   2019-11-13 14:27:18
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-22 12:54:03
+* @Last Modified time: 2020-09-04 10:35:41
 */
 
 #include <iostream>
 #include <benchmark/benchmark.h>
 
 // local headers
-#include "../src/vector_vcl.h"
-#include "../src/vector_ocl.h"
+#include "../src/image.h"
 
 using namespace imart;
 
 // Function to be timed
-static void scalar_operation_vcl_vector(benchmark::State& state)
+static void scalar_add_image_cpu_2d(benchmark::State& state)
 {
     // Perform setup here
     using type = float;     //4 Bytes
     int N = state.range(0); 
 
-    typename vector_vcl<type>::pointer input = vector_vcl<type>::new_pointer(N,2.0);
-    typename vector_vcl<type>::pointer out;
-    type scalar = 1.0;
+    image_cpu<type> img1(N,N);
+    image_cpu<type> img2(N,N);
+    type scalar = 2.0;
+    img1.ones();
+    img2.zeros();
 
     for (auto _ : state)
     {
         // This code gets timed
-        int size = input->size();
-        vector_vcl<type>::pointer vscale = vector_vcl<type>::new_pointer(size,scalar);
-        vector_vcl<type>::pointer output = vector_vcl<type>::new_pointer(size);
-        output = input->operator+(*vscale);
-        out = output;
+        img2 = img1 + scalar;
     };
-    // std::cout<< out->operator[](50) << "\n"; // check result with index 50
 };
 
-static void scalar_operation_vcl_kernel(benchmark::State& state)
+static void scalar_add_image_gpu_2d(benchmark::State& state)
 {
     // Perform setup here
     using type = float;     //4 Bytes
     int N = state.range(0); 
 
-    typename vector_vcl<type>::pointer input = vector_vcl<type>::new_pointer(N,2.0);
-    typename vector_vcl<type>::pointer out;
-    type scalar = 1.0;
+    image_gpu<type> img1(N,N);
+    image_gpu<type> img2(N,N);
+    type scalar = 2.0;
+    img1.ones();
+    img2.zeros();
 
     for (auto _ : state)
     {
         // This code gets timed
-        int size = input->size();
-        typename vector_vcl<type>::pointer output = vector_vcl<type>::new_pointer(size);
-        std::string str_kernel = kernel_scalar( string_type<type>(), "+");
-        viennacl::ocl::program & prog = viennacl::ocl::current_context().add_program(str_kernel, "kernel_scalar");
-        viennacl::ocl::kernel & kkk = prog.get_kernel("kernel_scalar");
-        viennacl::ocl::enqueue(kkk(*input, *output, scalar));
-        out = output;
+        img2 = img1 + scalar;
     };
-    // std::cout<< out->operator[](50) << "\n"; // check result with index 50
 };
 
-static void scalar_operation_ocl_kernel(benchmark::State& state)
+static void scalar_add_image_cuda_2d(benchmark::State& state)
 {
     // Perform setup here
     using type = float;     //4 Bytes
     int N = state.range(0); 
 
-    typename vector_ocl<type>::pointer input = vector_ocl<type>::new_pointer(N,2.0);
-    typename vector_ocl<type>::pointer out;
-    type scalar = 1.0;
+    image_cuda<type> img1(N,N);
+    image_cuda<type> img2(N,N);
+    type scalar = 2.0;
+    img1.ones();
+    img2.zeros();
 
     for (auto _ : state)
     {
         // This code gets timed
-        int size = input->size();
-        typename vector_ocl<type>::pointer output = vector_ocl<type>::new_pointer(size);
-        std::string str_kernel = kernel_scalar( string_type<type>(), "+");
-        cl_manager.program(str_kernel, "kernel_scalar");
-        cl_manager.arguments(*(input->get_buffer()), *(output->get_buffer()), scalar);
-        cl_manager.execute(size);
-        out = output;
+        img2 = img1 + scalar;
     };
-    // std::cout<< out->operator[](50) << "\n"; // check result with index 50
+};
+
+static void scalar_add_image_cpu_3d(benchmark::State& state)
+{
+    // Perform setup here
+    using type = float;     //4 Bytes
+    int N = state.range(0); 
+
+    image_cpu<type> img1(N,N,N);
+    image_cpu<type> img2(N,N,N);
+    type scalar = 2.0;
+    img1.ones();
+    img2.zeros();
+
+    for (auto _ : state)
+    {
+        // This code gets timed
+        img2 = img1 + scalar;
+    };
+};
+
+static void scalar_add_image_gpu_3d(benchmark::State& state)
+{
+    // Perform setup here
+    using type = float;     //4 Bytes
+    int N = state.range(0); 
+
+    image_gpu<type> img1(N,N,N);
+    image_gpu<type> img2(N,N,N);
+    type scalar = 2.0;
+    img1.ones();
+    img2.zeros();
+
+    for (auto _ : state)
+    {
+        // This code gets timed
+        img2 = img1 + scalar;
+    };
+};
+
+static void scalar_add_image_cuda_3d(benchmark::State& state)
+{
+    // Perform setup here
+    using type = float;     //4 Bytes
+    int N = state.range(0); 
+
+    image_cuda<type> img1(N,N,N);
+    image_cuda<type> img2(N,N,N);
+    type scalar = 2.0;
+    img1.ones();
+    img2.zeros();
+
+    for (auto _ : state)
+    {
+        // This code gets timed
+        img2 = img1 + scalar;
+    };
 };
 
 
 // Register the function as a benchmark
-BENCHMARK(scalar_operation_vcl_vector)->RangeMultiplier(10)->Range(10, pow(10,8));
-BENCHMARK(scalar_operation_vcl_kernel)->RangeMultiplier(10)->Range(10, pow(10,8));
-BENCHMARK(scalar_operation_ocl_kernel)->RangeMultiplier(10)->Range(10, pow(10,8));
+BENCHMARK(scalar_add_image_cpu_2d)->RangeMultiplier(10)->Range(10, 10000);
+BENCHMARK(scalar_add_image_gpu_2d)->RangeMultiplier(10)->Range(10, 10000);
+BENCHMARK(scalar_add_image_cuda_2d)->RangeMultiplier(10)->Range(10, 10000);
+BENCHMARK(scalar_add_image_cpu_3d)->RangeMultiplier(10)->Range(10, 400);
+BENCHMARK(scalar_add_image_gpu_3d)->RangeMultiplier(10)->Range(10, 400);
+BENCHMARK(scalar_add_image_cuda_3d)->RangeMultiplier(10)->Range(10, 400);
 
 
 // Run the benchmark

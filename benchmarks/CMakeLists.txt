@@ -25,6 +25,9 @@ target_link_libraries( image_copy_functions ${bench_targets} )
 add_executable( image_scalar_cpu_vs_gpu image_scalar_cpu_vs_gpu.cpp )
 target_link_libraries( image_scalar_cpu_vs_gpu ${bench_targets} )
 
+add_executable( image_vector_cpu_vs_gpu image_vector_cpu_vs_gpu.cpp )
+target_link_libraries( image_vector_cpu_vs_gpu ${bench_targets} )
+
 add_executable( image_reduction_cpu_vs_gpu image_reduction_cpu_vs_gpu.cpp )
 target_link_libraries( image_reduction_cpu_vs_gpu ${bench_targets} )
 
@@ -46,18 +49,21 @@ target_link_libraries( interpolator_nearest_cpu_vs_gpu ${bench_targets} )
 add_executable( interpolator_nearest_itk interpolator_nearest_itk.cpp )
 target_link_libraries( interpolator_nearest_itk ${bench_targets} )
 
-add_executable( interpolator_linear_cpu_vs_gpu interpolator_linear_cpu_vs_gpu.cpp )
-target_link_libraries( interpolator_linear_cpu_vs_gpu ${bench_targets} )
+add_executable( interpolator_linear_cpu interpolator_linear_cpu.cpp )
+target_link_libraries( interpolator_linear_cpu ${bench_targets} )
 
 add_executable( interpolator_linear_itk interpolator_linear_itk.cpp )
 target_link_libraries( interpolator_linear_itk ${bench_targets} )
+
+add_executable( interpolator_linear_opencl interpolator_linear_opencl.cpp )
+target_link_libraries( interpolator_linear_opencl ${bench_targets} )
+
+add_executable( interpolator_linear_cuda interpolator_linear_cuda.cpp )
+target_link_libraries( interpolator_linear_cuda ${bench_targets} )
 
 add_executable( metric_ssd_cpu_vs_gpu metric_ssd_cpu_vs_gpu.cpp )
 target_link_libraries( metric_ssd_cpu_vs_gpu ${bench_targets} )
 
 add_executable( interpolator_nearest_cpu_gpu_cuda interpolator_nearest_cpu_gpu_cuda.cpp )
 target_link_libraries( interpolator_nearest_cpu_gpu_cuda ${bench_targets} )
-
-add_executable( interpolator_linear_cpu_gpu_cuda interpolator_linear_cpu_gpu_cuda.cpp )
-target_link_libraries( interpolator_linear_cpu_gpu_cuda ${bench_targets} )
 

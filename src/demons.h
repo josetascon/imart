@@ -36,9 +36,14 @@ public:
 
     using inherit<demons<type,container>, metric<type,container>>::inherit;
 
-    double sigma;
-    int kernel_width;
-    void init_sigma();
+    // double sigma;
+    // int kernel_width;
+    // void init_sigma();
+
+protected:
+    void optical_flow(std::shared_ptr<image<type,container>> img_fixed, 
+                      std::shared_ptr<image<type,container>> img_moving, 
+                      std::shared_ptr< std::vector< std::shared_ptr < image<type,container> >>> param );
 
 public:
     // ===========================================
@@ -46,33 +51,33 @@ public:
     // ===========================================
     // Constructors
     demons() : inherit<demons<type,container>, metric<type,container>>()
-          { this->class_name = "demons"; init_sigma(); };
+          { this->class_name = "demons"; };//init_sigma(); };
 
     demons(int d) : inherit<demons<type,container>, metric<type,container>>(d)
-               { this->class_name = "demons"; init_sigma(); };
+               { this->class_name = "demons"; };//init_sigma(); };
 
     demons(typename image<type,container>::pointer fixed_image, 
         typename image<type,container>::pointer moving_image)
         : inherit<demons<type,container>, metric<type,container>>(fixed_image, moving_image)
-        { this->class_name = "demons"; init_sigma(); };
+        { this->class_name = "demons"; };//init_sigma(); };
 
     demons(typename image<type,container>::pointer fixed_image, 
         typename image<type,container>::pointer moving_image,
         typename transform<type,container>::pointer transformd)
         : inherit<demons<type,container>, metric<type,container>>(fixed_image, moving_image, transformd)
-        { this->class_name = "demons"; init_sigma(); };
+        { this->class_name = "demons"; };//init_sigma(); };
 
     // ===========================================
     // Get Functions
     // ===========================================
-    double get_sigma() const;
-    int get_kernel_width() const;
+    // double get_sigma() const;
+    // int get_kernel_width() const;
 
     // ===========================================
     // Set Functions
     // ===========================================
-    void set_sigma(double s);
-    void set_kernel_width(int k); // automatically assign based on sigma, this is manual modification
+    // void set_sigma(double s);
+    // void set_kernel_width(int k); // automatically assign based on sigma, this is manual modification
 
     // ===========================================
     // Functions
@@ -81,6 +86,10 @@ public:
     type cost();
     // !calculate derivative
     typename transform<type,container>::pointer derivative();
+    // !regularize
+    // void regularize();
+    // // !max scale
+    // void max_scale();
 };
 
 template<typename type>
@@ -89,53 +98,19 @@ using demons_cpu = demons<type,vector_cpu<type>>;
 template<typename type>
 using demons_gpu = demons<type,vector_ocl<type>>;
 
+#ifdef IMART_WITH_OPENCL
+template<typename type>
+using demons_ocl = demons<type,vector_ocl<type>>;
+#endif
+
+#ifdef IMART_WITH_CUDA
+template<typename type>
+using demons_cuda = demons<type,vector_cuda<type>>;
+#endif
 
 // ===========================================
-//      Functions of Class metric
+//      Functions of Class demons
 // ===========================================
-
-// ===========================================
-// Functions
-// ===========================================
-template <typename type, typename container>
-void demons<type,container>::init_sigma()
-{
-    sigma = 2.0;
-    kernel_width = int(ceil(3*sigma));
-    if (kernel_width%2 == 0) kernel_width -= 1;
-};
-
-// ===========================================
-// Get Functions
-// ===========================================
-template <typename type, typename container>
-double demons<type,container>::get_sigma() const
-{
-    return sigma;
-};
-
-template <typename type, typename container>
-int demons<type,container>::get_kernel_width() const
-{
-    return kernel_width;
-};
-
-// ===========================================
-// Set Functions
-// ===========================================
-template <typename type, typename container>
-void demons<type,container>::set_sigma(double s)
-{
-    sigma = s;
-    kernel_width = int(ceil(3*sigma));
-    if (kernel_width%2 == 0) kernel_width -= 1;
-};
-
-template <typename type, typename container>
-void demons<type,container>::set_kernel_width(int k)
-{
-    kernel_width = k;
-};
 
 // ===========================================
 // Functions
@@ -152,7 +127,8 @@ type demons<type,container>::cost()
     // moving_prime->print("dem mov");
     type N = (type)fixed->get_total_elements();
     image<type,container> ssd_ = *fixed - *moving_prime;
-    cost_value = (0.5/N)*( (ssd_^2).sum() );
+    cost_value = (0.5/N)*( (ssd_*ssd_).sum() );
+    // printf("cost: %7.3e\n", cost_value);
     // std::cout << "end cost" << std::endl;
     return cost_value;
 };
@@ -165,61 +141,214 @@ typename transform<type,container>::pointer demons<type,container>::derivative()
     typename transform<type,container>::pointer trfm = transformation->mimic();
     
     // mimic parameters
+    // std::cout << "Params:" << std::endl;
     auto param = std::make_shared< std::vector< typename image<type,container>::pointer >>(d);
     for(int i = 0; i < d; i++)
     {
-        (*param)[i] = image<type,container>::new_pointer();
+        (*param)[i] = image<type,container>::new_pointer(d);
         (*param)[i]->mimic_(*(transformation->get_parameters(i)));
-    }
-    
-    // moving prime already computed
+    };
+    // moving prime already computed (at initialization or when cost function)
     // auto moving_prime = this->warped_moving();        // consider store this to avoid compute again
-    type sigma = 2.0;
-    type low = 1e-6;
-
-    auto dif = (*moving_prime - *fixed);
-    auto dif_sq = dif*dif;
-
+    
+    // std::cout << "Optical Flow:" << std::endl;
     if (transformation->get_name() == "dfield")
     {
-        // std::cout << "der 1" << std::endl;
-        // Computing gradient
-        auto grad = gradient(moving_prime);
-
-        // dimensional data
-        auto gx = *grad[0];
-        auto gy = *grad[1];
-        
-        if (d == 2)
-        {
-            // compute mag
-            auto mag_sq = (gx*gx + gy*gy);
-
-            // write parameters
-            *((*param)[0]) = (dif*gx)/(mag_sq + dif_sq + low);
-            *((*param)[1]) = (dif*gy)/(mag_sq + dif_sq + low);
-
-            // type sigma = 2.0;
-            // (*param)[0] = gaussian_filter((*param)[0],sigma,3);
-            // (*param)[1] = gaussian_filter((*param)[1],sigma,3);
-        }
-        else if (d == 3)
-        {
-            // z
-            auto gz = *grad[2];
-            // compute mag
-            auto mag_sq = (gx*gx + gy*gy + gz*gz);
-            
-            // write parameters
-            *((*param)[0]) = dif*gx/(mag_sq + dif_sq + low);
-            *((*param)[1]) = dif*gy/(mag_sq + dif_sq + low);
-            *((*param)[2]) = dif*gz/(mag_sq + dif_sq + low);
-        };
+        optical_flow(fixed, moving_prime, param);
     };
 
     trfm->set_parameters_vector( param );
     return trfm;
 };
+
+template <typename type, typename container>
+void demons<type,container>::optical_flow(std::shared_ptr<image<type,container>> img_fixed, 
+                                          std::shared_ptr<image<type,container>> img_moving, 
+                                          std::shared_ptr< std::vector< std::shared_ptr < image<type,container> >>> param )
+{
+    // std::cout << "Init flow:" << std::endl;
+    int d = img_fixed->get_dimension();
+    type low = 1e-7;    // value considered as 0
+
+    auto dif = (*img_moving - *img_fixed);
+    auto dif_sq = dif*dif;
+    
+    // Computing gradient
+    // std::cout << "Gradient:" << std::endl;
+    auto grad = gradient(img_moving);
+
+    // dimensional data
+    auto gx = *grad[0];
+    auto gy = *grad[1];
+    
+    if (d == 2)
+    {
+        // compute mag
+        auto mag_sq = (gx*gx + gy*gy);
+
+        // scale parameter based on optical flow
+        auto scale = dif/(mag_sq + dif_sq);
+        scale.replace(mag_sq <= low,0.0);   // remove 0 division
+        scale.replace(dif_sq <= low,0.0);   // remove 0 division
+
+        // update depends of space and orientation
+        type spacex = img_fixed->get_spacing()[0]*img_fixed->get_direction()[0];
+        type spacey = img_fixed->get_spacing()[1]*img_fixed->get_direction()[3];
+
+        // demons derivative of dfield
+        auto ux = scale*gx*spacex;
+        auto uy = scale*gy*spacey;
+
+        // no update where image is empty
+        ux.replace(*img_fixed <= low, 0.0);
+        ux.replace(*img_moving <= low, 0.0);
+        uy.replace(*img_fixed <= low, 0.0);
+        uy.replace(*img_moving <= low, 0.0);
+
+        // return parameters
+        *((*param)[0]) = ux;
+        *((*param)[1]) = uy;
+    }
+    else if (d == 3)
+    {
+        // z
+        auto gz = *grad[2];
+        // compute mag
+        auto mag_sq = (gx*gx + gy*gy + gz*gz);
+
+        // scale parameter based on optical flow
+        auto scale = dif/(mag_sq + dif_sq);
+        scale.replace(mag_sq <= low,0.0);   // remove 0 division
+        scale.replace(dif_sq <= low,0.0);   // remove 0 division
+
+        // update depends of space and orientation
+        type spacex = img_fixed->get_spacing()[0]*img_fixed->get_direction()[0];
+        type spacey = img_fixed->get_spacing()[1]*img_fixed->get_direction()[4];
+        type spacez = img_fixed->get_spacing()[2]*img_fixed->get_direction()[8];
+
+        // demons derivative of dfield
+        // std::cout << "Scale:" << std::endl;
+        auto ux = scale*gx*spacex;
+        auto uy = scale*gy*spacey;
+        auto uz = scale*gz*spacez;
+
+        // no update where image is empty
+        ux.replace(*img_fixed <= low, 0.0);
+        ux.replace(*img_moving <= low, 0.0);
+        uy.replace(*img_fixed <= low, 0.0);
+        uy.replace(*img_moving <= low, 0.0);
+        uz.replace(*img_fixed <= low, 0.0);
+        uz.replace(*img_moving <= low, 0.0);
+
+        // return parameters
+        *((*param)[0]) = ux;
+        *((*param)[1]) = uy;
+        *((*param)[2]) = uz;
+
+        // std::cout << "End flow:" << std::endl;
+    };
+    return;
+};
+
+// template <typename type, typename container>
+// typename transform<type,container>::pointer demons<type,container>::derivative()
+// {
+//     int d = fixed->get_dimension();
+//     // transform
+//     typename transform<type,container>::pointer trfm = transformation->mimic();
+    
+//     // mimic parameters
+//     auto param = std::make_shared< std::vector< typename image<type,container>::pointer >>(d);
+//     for(int i = 0; i < d; i++)
+//     {
+//         (*param)[i] = image<type,container>::new_pointer();
+//         (*param)[i]->mimic_(*(transformation->get_parameters(i)));
+//     };
+//     // moving prime already computed
+//     // auto moving_prime = this->warped_moving();        // consider store this to avoid compute again
+    
+//     type low = 1e-7;    // value considered as 0
+
+//     auto dif = (*moving_prime - *fixed);
+//     auto dif_sq = dif*dif;
+
+//     if (transformation->get_name() == "dfield")
+//     {
+//         // Computing gradient
+//         auto grad = gradient(moving_prime);
+
+//         // dimensional data
+//         auto gx = *grad[0];
+//         auto gy = *grad[1];
+        
+//         if (d == 2)
+//         {
+//             // compute mag
+//             auto mag_sq = (gx*gx + gy*gy);
+
+//             // scale parameter based on optical flow
+//             auto scale = dif/(mag_sq + dif_sq);
+//             scale.replace(mag_sq <= low,0.0);   // remove 0 division
+//             scale.replace(dif_sq <= low,0.0);   // remove 0 division
+
+//             // update depends of space and orientation
+//             type spacex = fixed->get_spacing()[0]*fixed->get_direction()[0];
+//             type spacey = fixed->get_spacing()[1]*fixed->get_direction()[3];
+
+//             // demons derivative of dfield
+//             auto ux = scale*gx*spacex;
+//             auto uy = scale*gy*spacey;
+
+//             // no update where image is empty
+//             ux.replace(*fixed <= low, 0.0);
+//             ux.replace(*moving_prime <= low, 0.0);
+//             uy.replace(*fixed <= low, 0.0);
+//             uy.replace(*moving_prime <= low, 0.0);
+
+//             // return parameters
+//             *((*param)[0]) = ux;
+//             *((*param)[1]) = uy;
+//         }
+//         else if (d == 3)
+//         {
+//             // z
+//             auto gz = *grad[2];
+//             // compute mag
+//             auto mag_sq = (gx*gx + gy*gy + gz*gz);
+
+//             // scale parameter based on optical flow
+//             auto scale = dif/(mag_sq + dif_sq);
+//             scale.replace(mag_sq <= low,0.0);   // remove 0 division
+//             scale.replace(dif_sq <= low,0.0);   // remove 0 division
+
+//             // update depends of space and orientation
+//             type spacex = fixed->get_spacing()[0]*fixed->get_direction()[0];
+//             type spacey = fixed->get_spacing()[1]*fixed->get_direction()[4];
+//             type spacez = fixed->get_spacing()[2]*fixed->get_direction()[8];
+
+//             // demons derivative of dfield
+//             auto ux = scale*gx*spacex;
+//             auto uy = scale*gy*spacey;
+//             auto uz = scale*gz*spacez;
+
+//             // no update where image is empty
+//             ux.replace(*fixed <= low, 0.0);
+//             ux.replace(*moving_prime <= low, 0.0);
+//             uy.replace(*fixed <= low, 0.0);
+//             uy.replace(*moving_prime <= low, 0.0);
+//             uz.replace(*fixed <= low, 0.0);
+//             uz.replace(*moving_prime <= low, 0.0);
+
+//             // return parameters
+//             *((*param)[0]) = ux;
+//             *((*param)[1]) = uy;
+//             *((*param)[2]) = uz;
+//         };
+//     };
+
+//     trfm->set_parameters_vector( param );
+//     return trfm;
+// };
 
 }; //end namespace
 

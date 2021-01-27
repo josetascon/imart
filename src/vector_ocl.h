@@ -11,6 +11,7 @@
 // std libs
 #include <iostream>     // std::cout
 #include <vector>       // std::vector
+#include <random>       // std::random
 #include <cassert>      // assert
 
 // opencl libs
@@ -21,14 +22,19 @@
 #include "object.h"
 #include "kernels.h"
 #include "opencl_object.h"
-#include "vector_cpu.h"
+#include "utils/type.h"
 #include "utils/timer.h"
-
 
 namespace imart
 {
 
 opencl_object cl_manager; // manager of vector ocl;
+
+// imart function to check opencl device
+void imart_opencl_device_name()
+{
+    cl_manager.print_device_name();
+};
 
 // Class object
 template <typename type>
@@ -148,6 +154,22 @@ public:
     template<typename type_>
     friend typename vector_ocl<type_>::pointer operator ^ (type_ scalar, const vector_ocl<type_> & input);
 
+    // Conditions 
+    pointer operator == (const vector_ocl<type> & input);
+    pointer operator > (const vector_ocl<type> & input);
+    pointer operator < (const vector_ocl<type> & input);
+    pointer operator >= (const vector_ocl<type> & input);
+    pointer operator <= (const vector_ocl<type> & input);
+
+    pointer operator == (type scalar);
+    pointer operator > (type scalar);
+    pointer operator < (type scalar); // std::shared_ptr<vector_ocl<type>>
+    pointer operator >= (type scalar);
+    pointer operator <= (type scalar);
+
+    void replace(const vector_ocl<type> & idxs, const vector_ocl<type> & input);
+    void replace(const vector_ocl<type> & idxs, type value);
+
     // ===========================================
     // Reduction functions
     // ===========================================
@@ -205,6 +227,13 @@ public:
                         typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
                         std::vector<int> ref_size, std::vector<int> out_size);
     static void linear3( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo,
+                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
+
+    static void cubic2( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo,
+                        typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
+                        std::vector<int> ref_size, std::vector<int> out_size);
+    static void cubic3( typename vector_ocl<type>::pointer xo, typename vector_ocl<type>::pointer yo, typename vector_ocl<type>::pointer zo,
                         typename vector_ocl<type>::pointer imgr, typename vector_ocl<type>::pointer imgo,
                         std::vector<int> ref_size, std::vector<int> out_size);
 
@@ -445,11 +474,26 @@ void vector_ocl<type>::assign(type value)
 template <typename type>
 void vector_ocl<type>::random(float min, float max)
 {
-    std::string str_kernel = kernel_random( string_type<type>(), min, max);
-    // // std::cout << str_kernel << std::endl;
-    cl_manager.program(str_kernel, "kernel_random");
-    cl_manager.arguments(*buffer);
-    cl_manager.execute(_size_);
+    // std::string str_kernel = kernel_random( string_type<type>(), min, max);
+    // // // std::cout << str_kernel << std::endl;
+    // cl_manager.program(str_kernel, "kernel_random");
+    // cl_manager.arguments(*buffer);
+    // cl_manager.execute(_size_);
+
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    // std::default_random_engine gen(rd()); //Standard random generator()
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> uniform(min, max);
+    int size = this->size();
+    std::vector<type> vec(size);
+    type * p = vec.data();
+    
+    for(int k=0; k<size; k++)
+    {
+        p[k] = (type)uniform(gen); // casting to pixel_type
+    };
+
+    read_ram(vec.data(),size);
 };
 
 // ===========================================
@@ -664,6 +708,171 @@ typename vector_ocl<type>::pointer operator ^ (type scalar, const vector_ocl<typ
     cl_manager.arguments(*(input.get_buffer()), *(output->get_buffer()), scalar);
     cl_manager.execute(size);
     return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator == (const vector_ocl<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+
+    std::string str_kernel = kernel_vector( string_type<type>(), "==");
+    cl_manager.program(str_kernel, "kernel_vector");
+    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator > (const vector_ocl<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+
+    std::string str_kernel = kernel_vector( string_type<type>(), ">");
+    cl_manager.program(str_kernel, "kernel_vector");
+    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator < (const vector_ocl<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+
+    std::string str_kernel = kernel_vector( string_type<type>(), "<");
+    cl_manager.program(str_kernel, "kernel_vector");
+    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator >= (const vector_ocl<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+
+    std::string str_kernel = kernel_vector( string_type<type>(), ">=");
+    cl_manager.program(str_kernel, "kernel_vector");
+    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator <= (const vector_ocl<type> & input)
+{
+    assert_size(input);
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+
+    std::string str_kernel = kernel_vector( string_type<type>(), "<=");
+    cl_manager.program(str_kernel, "kernel_vector");
+    cl_manager.arguments(*buffer, *(input.get_buffer()), *(output->get_buffer()));
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator == (type scalar)
+{
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+    
+    std::string str_kernel = kernel_scalar( string_type<type>(), "==", false);  // function = true
+    // std::cout << str_kernel << std::endl;
+    cl_manager.program(str_kernel, "kernel_scalar");
+    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator > (type scalar)
+{
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+    
+    std::string str_kernel = kernel_scalar( string_type<type>(), ">", false);  // function = true
+    cl_manager.program(str_kernel, "kernel_scalar");
+    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator < (type scalar)
+{
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+    
+    std::string str_kernel = kernel_scalar( string_type<type>(), "<", false);  // function = true
+    cl_manager.program(str_kernel, "kernel_scalar");
+    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator >= (type scalar)
+{
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+    
+    std::string str_kernel = kernel_scalar( string_type<type>(), ">=", false);  // function = true
+    cl_manager.program(str_kernel, "kernel_scalar");
+    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+typename vector_ocl<type>::pointer vector_ocl<type>::operator <= (type scalar)
+{
+    int size = this->size();
+    auto output = vector_ocl<type>::new_pointer(size);
+    
+    std::string str_kernel = kernel_scalar( string_type<type>(), "<=", false);  // function = true
+    cl_manager.program(str_kernel, "kernel_scalar");
+    cl_manager.arguments(*buffer, *(output->get_buffer()), scalar);
+    cl_manager.execute(size);
+    return output;
+};
+
+template <typename type>
+void vector_ocl<type>::replace(const vector_ocl<type> & idxs, const vector_ocl<type> & input)
+{
+    assert_size(idxs);
+    assert_size(input);
+    int size = this->size();
+
+    std::string str_kernel = kernel_replace( string_type<type>(), false);
+    // std::cout << str_kernel << std::endl;
+    cl_manager.program(str_kernel, "kernel_replace");
+    cl_manager.arguments(*(idxs.get_buffer()), *buffer, *(input.get_buffer()));
+    cl_manager.execute(size);
+    return;
+};
+
+template <typename type>
+void vector_ocl<type>::replace(const vector_ocl<type> & idxs, type value)
+{
+    assert_size(idxs);
+    int size = this->size();
+
+    std::string str_kernel = kernel_replace( string_type<type>(), true);
+    // std::cout << str_kernel << std::endl;
+    cl_manager.program(str_kernel, "kernel_replace");
+    cl_manager.arguments( *(idxs.get_buffer()), *buffer, value );
+    cl_manager.execute(size);
+    return;
 };
 
 // ===========================================
@@ -1095,6 +1304,39 @@ void vector_ocl<type>::linear3( typename vector_ocl<type>::pointer xo,
     std::string str_kernel = kernel_linear_interpolation_3d( string_type<type>() );
     // std::cout << str_kernel << std::endl;
     cl_manager.program(str_kernel, "kernel_linear_interpolation_3d");
+    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), *(zo->get_buffer()),
+                        *(imgr->get_buffer()), *(imgo->get_buffer()),
+                        ref_size[0], ref_size[1], ref_size[2]);
+    cl_manager.execute(out_size); // multidimensional NDRange
+};
+
+template <typename type>
+void vector_ocl<type>::cubic2(  typename vector_ocl<type>::pointer xo, 
+                                typename vector_ocl<type>::pointer yo,
+                                typename vector_ocl<type>::pointer imgr,
+                                typename vector_ocl<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    std::string str_kernel = kernel_cubic_interpolation_2d( string_type<type>() );
+    // std::cout << str_kernel << std::endl;
+    cl_manager.program(str_kernel, "kernel_cubic_interpolation_2d");
+    cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), 
+                        *(imgr->get_buffer()), *(imgo->get_buffer()),
+                        ref_size[0], ref_size[1]);
+    cl_manager.execute(out_size); // multidimensional NDRange
+};
+
+template <typename type>
+void vector_ocl<type>::cubic3( typename vector_ocl<type>::pointer xo, 
+                                typename vector_ocl<type>::pointer yo,
+                                typename vector_ocl<type>::pointer zo,
+                                typename vector_ocl<type>::pointer imgr,
+                                typename vector_ocl<type>::pointer imgo,
+                                std::vector<int> ref_size, std::vector<int> out_size)
+{
+    std::string str_kernel = kernel_cubic_interpolation_3d( string_type<type>() );
+    // std::cout << str_kernel << std::endl;
+    cl_manager.program(str_kernel, "kernel_cubic_interpolation_3d");
     cl_manager.arguments(*(xo->get_buffer()), *(yo->get_buffer()), *(zo->get_buffer()),
                         *(imgr->get_buffer()), *(imgo->get_buffer()),
                         ref_size[0], ref_size[1], ref_size[2]);

@@ -77,6 +77,11 @@ public:
     ptr_vector_image get_grid() const;
 
     // ===========================================
+    // Set Functions
+    // ===========================================
+    void set_grid(ptr_vector_image coordinates);
+
+    // ===========================================
     // Print Functions
     // ===========================================
     std::string info(std::string msg = "");
@@ -101,9 +106,15 @@ using grid_cpu = grid<type,vector_cpu<type>>;
 template<typename type>
 using grid_gpu = grid<type,vector_ocl<type>>;
 
+#ifdef IMART_WITH_OPENCL
+template<typename type>
+using grid_ocl = grid<type,vector_ocl<type>>;
+#endif
+
+#ifdef IMART_WITH_CUDA
 template<typename type>
 using grid_cuda = grid<type,vector_cuda<type>>;
-
+#endif
 
 // ===========================================
 //      Functions of Class grid
@@ -242,6 +253,15 @@ template <typename type, typename container>
 typename image<type,container>::pointer * grid<type,container>::ptr() const
 {
     return xyz->data();
+};
+
+// ===========================================
+// Set Functions
+// ===========================================
+template <typename type, typename container>
+void grid<type,container>::set_grid(typename grid<type,container>::ptr_vector_image coordinates)
+{
+    xyz = coordinates;
 };
 
 // ===========================================

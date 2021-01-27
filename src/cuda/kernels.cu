@@ -153,6 +153,96 @@ __global__ void kernel_pow(const type * vin1, const type * vin2, type * vout, in
     if (i < n) vout[i] = pow( vin1[i], vin2[i] );
 };
 
+template <typename type>
+__global__ void kernel_equal(const type * vin1, const type * vin2, type * vout, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = (vin1[i] == vin2[i]);
+};
+
+template <typename type>
+__global__ void kernel_greater(const type * vin1, const type * vin2, type * vout, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = (vin1[i] > vin2[i]);
+};
+
+template <typename type>
+__global__ void kernel_less(const type * vin1, const type * vin2, type * vout, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = (vin1[i] < vin2[i]);
+};
+
+template <typename type>
+__global__ void kernel_greater_equal(const type * vin1, const type * vin2, type * vout, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = vin1[i] >= vin2[i];
+};
+
+template <typename type>
+__global__ void kernel_less_equal(const type * vin1, const type * vin2, type * vout, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = vin1[i] <= vin2[i];
+};
+
+template <typename type>
+__global__ void kernel_equal_scalar(const type * vin, type * vout, type scalar, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = (vin[i] == scalar);
+};
+
+template <typename type>
+__global__ void kernel_greater_scalar(const type * vin, type * vout, type scalar, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = (vin[i] > scalar);
+};
+
+template <typename type>
+__global__ void kernel_less_scalar(const type * vin, type * vout, type scalar, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = (vin[i] < scalar);
+};
+
+template <typename type>
+__global__ void kernel_greater_equal_scalar(const type * vin, type * vout, type scalar, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = (vin[i] >= scalar);
+};
+
+template <typename type>
+__global__ void kernel_less_equal_scalar(const type * vin, type * vout, type scalar, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) vout[i] = (vin[i] <= scalar);
+};
+
+template <typename type>
+__global__ void kernel_replace(const type * idxs, const type * vin, type * vout, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n)
+    {
+        if (idxs[i]) vout[i] = vin[i];
+    };
+};
+
+template <typename type>
+__global__ void kernel_replace_scalar(const type * idxs, type * vout, type value, int n)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n)
+    {
+        if (idxs[i]) vout[i] = value;
+    };
+};
+
 // ===========================================
 // Reduction Kernels
 // ===========================================
@@ -511,11 +601,240 @@ __global__ void kernel_linear_interpolation_2d( const type * xo, const type * yo
 
     if (i < n0 && j < n1)
     {
+        type zero = 0.01;
+        int idx = i + j*n0;
+        type xt = xo[idx];
+        type yt = yo[idx];
+        int x = floor(xt);
+        int y = floor(yt);
+        if(x >= 0 && x < w && y >= 0 && y < h)
+        {
+            type dx = xt - (type)x;
+            type dy = yt - (type)y;
+            if (dx < zero && dy < zero)
+            {
+                imgo[idx] = imgr[x+y*w];
+            }
+            else if (dy < zero || y >= h - 1) // same y
+            {
+                imgo[idx] = imgr[x+y*w]*(1-dx) + imgr[x+1+y*w]*(dx);
+            }
+            else if (dx < zero || x >= w - 1) // same x
+            {
+                imgo[idx] = imgr[x+y*w]*(1-dy) + imgr[x+(y+1)*w]*(dy);
+            }
+            else
+            {
+                // compute case x & y
+                type dxdy = dx*dy;
+                type r = imgr[x+y*w]*(1-dx-dy+dxdy) + imgr[x+1+y*w]*(dx-dxdy) + imgr[x+(y+1)*w]*(dy-dxdy) + imgr[x+1+(y+1)*w]*dxdy;
+                imgo[idx] = r;
+            };
+        };
+    };
+};
+
+// template <typename type>
+// __global__ void kernel_linear_interpolation_2d( const type * xo, const type * yo,
+//                                                 const type * imgr, type * imgo,
+//                                                 int w, int h,   //img ref width and height
+//                                                 int n0, int n1) //img out dims
+// {
+//     int i = blockDim.x * blockIdx.x + threadIdx.x;
+//     int j = blockDim.y * blockIdx.y + threadIdx.y;
+
+//     if (i < n0 && j < n1)
+//     {
+//         type xt = xo[i + j*n0];
+//         type yt = yo[i + j*n0];
+//         int x = floor(xt);
+//         int y = floor(yt);
+//         if(x >= 0 && x < w && y >= 0 && y < h - 1)
+//         {
+//             // __shared__ iv[4];
+//             type iv[4] = {imgr[x+y*w], imgr[x+1+y*w], imgr[x+(y+1)*w], imgr[x+1+(y+1)*w]};
+//             type dx = xt - (type)x;
+//             type dy = yt - (type)y;
+//             type dxdy = dx*dy;
+//             type r = iv[0]*(1-dx-dy+dxdy) + iv[1]*(dx-dxdy) + iv[2]*(dy-dxdy) + iv[3]*dxdy;
+//             imgo[i + j*n0] = r;
+//         }
+//         else if(x >= 0 && x < w && y == h - 1) // border case
+//         {
+//             type iv[2] = {imgr[x+y*w], imgr[x+1+y*w]};
+//             type dx = xt - (type)x;
+//             type r = iv[0]*(1-dx) + iv[1]*(dx);
+//             imgo[i + j*n0] = r;
+//         };
+//     };
+// };
+
+template <typename type>
+__global__ void kernel_linear_interpolation_3d( const type * xo, const type * yo, const type * zo,
+                                                const type * imgr, type * imgo,
+                                                int w, int h, int l, //img ref width, height and length
+                                                int n0, int n1, int n2)
+{
+    int i = (blockIdx.x * blockDim.x) + threadIdx.x;
+    int j = (blockIdx.y * blockDim.y) + threadIdx.y;
+    int k = (blockIdx.z * blockDim.z) + threadIdx.z;
+
+    if (i < n0 && j < n1 && k < n2)
+    {
+        type zero = 0.01;
+        int idx = i + j*n0 + k*n0*n1;
+        type xt = xo[idx];
+        type yt = yo[idx];
+        type zt = zo[idx];
+        int x = floor(xt);
+        int y = floor(yt);
+        int z = floor(zt);
+        if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l)
+        {
+            type dx = xt - (type)x;
+            type dy = yt - (type)y;
+            type dz = zt - (type)z;
+            if (dx <= zero && dy <= zero && dz <= zero)
+            {
+                imgo[idx] = imgr[x+y*w+z*w*h];
+            }
+            else if (dz <= zero || z >= l - 1) // same z
+            {   
+                if (dy <= zero || y >= h - 1) // same y
+                {
+                    imgo[idx] = imgr[x+y*w+z*w*h]*(1-dx) + imgr[x+1+y*w+z*w*h]*(dx);
+                }
+                else if (dx <= zero || x >= w - 1) // same x
+                {
+                    imgo[idx] = imgr[x+y*w+z*w*h]*(1-dy) + imgr[x+(y+1)*w+z*w*h]*(dy);
+                }
+                else
+                {
+                    // compute case x & y
+                    type dxdy = dx*dy;
+                    type r = imgr[x+y*w+z*w*h]*(1-dx-dy+dxdy) + imgr[x+1+y*w+z*w*h]*(dx-dxdy) + imgr[x+(y+1)*w+z*w*h]*(dy-dxdy) + imgr[x+1+(y+1)*w+z*w*h]*dxdy;
+                    imgo[idx] = r;
+                };
+            }
+            else if (dy <= zero || y >= h - 1) // same y
+            {
+                if (dx <= zero || x >= w - 1) // same x
+                {
+                    imgo[idx] = imgr[x+y*w+z*w*h]*(1-dz) + imgr[x+y*w+(z+1)*w*h]*(dz);
+                }
+                else
+                {
+                    // compute case x & z
+                    type dxdz = dx*dz;
+                    type r = imgr[x+y*w+z*w*h]*(1-dx-dz+dxdz) + imgr[x+1+y*w+z*w*h]*(dx-dxdz) + imgr[x+y*w+(z+1)*w*h]*(dz-dxdz) + imgr[x+1+y*w+(z+1)*w*h]*dxdz;
+                    imgo[idx] = r;
+                };
+            }
+            else if (dx <= zero || x >= w - 1) // same x
+            {
+                // compute case y & z
+                type dydz = dy*dz;
+                type r = imgr[x+y*w+z*w*h]*(1-dy-dz+dydz) + imgr[x+(y+1)*w+z*w*h]*(dy-dydz) + imgr[x+y*w+(z+1)*w*h]*(dz-dydz) + imgr[x+(y+1)*w+(z+1)*w*h]*dydz;
+                imgo[idx] = r;
+            }
+            else
+            {
+                // compute case x & y & z
+                type dxdy = dx*dy;
+                type rv = imgr[x+y*w+z*w*h]*(1-dx-dy+dxdy) + imgr[x+1+y*w+z*w*h]*(dx-dxdy) + imgr[x+(y+1)*w+z*w*h]*(dy-dxdy) + imgr[x+1+(y+1)*w+z*w*h]*dxdy;
+                type rw = imgr[x+y*w+(z+1)*w*h]*(1-dx-dy+dxdy) + imgr[x+1+y*w+(z+1)*w*h]*(dx-dxdy) + imgr[x+(y+1)*w+(z+1)*w*h]*(dy-dxdy) + imgr[x+1+(y+1)*w+(z+1)*w*h]*dxdy;
+                type r = rv*(1-dz) + rw*dz;
+                imgo[idx] = r;
+            };
+        };
+    };
+};
+
+// template <typename type>
+// __global__ void kernel_linear_interpolation_3d( const type * xo, const type * yo, const type * zo,
+//                                                 const type * imgr, type * imgo,
+//                                                 int w, int h, int l, //img ref width, height and length
+//                                                 int n0, int n1, int n2)
+// {
+//     int i = (blockIdx.x * blockDim.x) + threadIdx.x;
+//     int j = (blockIdx.y * blockDim.y) + threadIdx.y;
+//     int k = (blockIdx.z * blockDim.z) + threadIdx.z;
+
+//     if (i < n0 && j < n1 && k < n2)
+//     {
+//         type xt = xo[i + j*n0 + k*n0*n1];
+//         type yt = yo[i + j*n0 + k*n0*n1];
+//         type zt = zo[i + j*n0 + k*n0*n1];
+//         int x = floor(xt);
+//         int y = floor(yt);
+//         int z = floor(zt);
+//         if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l-1)
+//         {
+//             type iv[4] = {imgr[x+y*w+z*w*h], imgr[x+1+y*w+z*w*h], imgr[x+(y+1)*w+z*w*h], imgr[x+1+(y+1)*w+z*w*h]};
+//             type iw[4] = {imgr[x+y*w+(z+1)*w*h], imgr[x+1+y*w+(z+1)*w*h], imgr[x+(y+1)*w+(z+1)*w*h], imgr[x+1+(y+1)*w+(z+1)*w*h]};
+//             type dx = xt - (type)x;
+//             type dy = yt - (type)y;
+//             type dxdy = dx*dy;
+//             type rv = iv[0]*(1-dx-dy+dxdy) + iv[1]*(dx-dxdy) + iv[2]*(dy-dxdy) + iv[3]*dxdy;
+//             type rw = iw[0]*(1-dx-dy+dxdy) + iw[1]*(dx-dxdy) + iw[2]*(dy-dxdy) + iw[3]*dxdy;
+//             type dz = zt - (type)z;
+//             type r = rv*(1-dz) + rw*dz;
+//             imgo[i + j*n0 + k*n0*n1] = r;
+//         }
+//         else if(x >= 0 && x < w && y >= 0 && y < h && z == l-1) // border case
+//         {
+//             type iv[4] = {imgr[x+y*w+z*w*h], imgr[x+1+y*w+z*w*h], imgr[x+(y+1)*w+z*w*h], imgr[x+1+(y+1)*w+z*w*h]};
+//             type dx = xt - (type)x;
+//             type dy = yt - (type)y;
+//             type dxdy = dx*dy;
+//             type rv = iv[0]*(1-dx-dy+dxdy) + iv[1]*(dx-dxdy) + iv[2]*(dy-dxdy) + iv[3]*dxdy;
+//             imgo[i + j*n0 + k*n0*n1] = rv;
+//         };
+//     };
+// };
+
+
+// template <typename type>
+// __device__ void cubic(type p[4], type * x, type * out) 
+// {
+//     out[0] = p[1] + 0.5 * x[0]*(p[2] - p[0] + x[0]*(2.0*p[0] - 5.0*p[1] + 4.0*p[2] - p[3] + x[0]*(3.0*(p[1] - p[2]) + p[3] - p[0])));
+// };
+
+template <typename type>
+__device__ type cubic(type p[4], type x) 
+{
+    return p[1] + 0.5 * x*(p[2] - p[0] + x*(2.0*p[0] - 5.0*p[1] + 4.0*p[2] - p[3] + x*(3.0*(p[1] - p[2]) + p[3] - p[0])));
+};
+
+template <typename type>
+__global__ void kernel_cubic_interpolation_2d( const type * xo, const type * yo,
+                                                const type * imgr, type * imgo,
+                                                int w, int h,   //img ref width and height
+                                                int n0, int n1) //img out dims
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    int j = blockDim.y * blockIdx.y + threadIdx.y;
+
+    if (i < n0 && j < n1)
+    {
         type xt = xo[i + j*n0];
         type yt = yo[i + j*n0];
         int x = floor(xt);
         int y = floor(yt);
-        if(x >= 0 && x < w && y >= 0 && y < h - 1)
+        if(x >= 1 && x < w - 2 && y >= 1 && y < h - 2)
+        {
+            type dx = xt - (type)x;
+            type dy = yt - (type)y;
+
+            type r0[4] = {imgr[x-1+(y-1)*w], imgr[x+(y-1)*w], imgr[x+1+(y-1)*w], imgr[x+2+(y-1)*w]};
+            type r1[4] = {imgr[x-1+(y)*w]  , imgr[x+(y)*w]  , imgr[x+1+(y)*w]  , imgr[x+2+(y)*w]};
+            type r2[4] = {imgr[x-1+(y+1)*w], imgr[x+(y+1)*w], imgr[x+1+(y+1)*w], imgr[x+2+(y+1)*w]};
+            type r3[4] = {imgr[x-1+(y+2)*w], imgr[x+(y+2)*w], imgr[x+1+(y+2)*w], imgr[x+2+(y+2)*w]};
+
+            type r[4] = {cubic(r0, dx), cubic(r1, dx), cubic(r2, dx), cubic(r3, dx) };
+            imgo[i + j*n0] = cubic(r, dy);
+        }
+        else if(x >= 0 && x < w && y >= 0 && y < h - 1)
         {
             // __shared__ iv[4];
             type iv[4] = {imgr[x+y*w], imgr[x+1+y*w], imgr[x+(y+1)*w], imgr[x+1+(y+1)*w]};
@@ -536,7 +855,7 @@ __global__ void kernel_linear_interpolation_2d( const type * xo, const type * yo
 };
 
 template <typename type>
-__global__ void kernel_linear_interpolation_3d( const type * xo, const type * yo, const type * zo,
+__global__ void kernel_cubic_interpolation_3d( const type * xo, const type * yo, const type * zo,
                                                 const type * imgr, type * imgo,
                                                 int w, int h, int l, //img ref width, height and length
                                                 int n0, int n1, int n2)
@@ -553,7 +872,40 @@ __global__ void kernel_linear_interpolation_3d( const type * xo, const type * yo
         int x = floor(xt);
         int y = floor(yt);
         int z = floor(zt);
-        if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l-1)
+        if(x >= 1 && x < w - 2 && y >= 1 && y < h - 2 && z >= 1 && z < l - 2)
+        {
+            type dx = xt - (type)x;
+            type dy = yt - (type)y;
+            type dz = zt - (type)z;
+
+            type r00[4] = {imgr[x-1+(y-1)*w+(z-1)*w*h], imgr[x+(y-1)*w+(z-1)*w*h], imgr[x+1+(y-1)*w+(z-1)*w*h], imgr[x+2+(y-1)*w+(z-1)*w*h]};
+            type r01[4] = {imgr[x-1+(y)*w+(z-1)*w*h]  , imgr[x+(y)*w+(z-1)*w*h]  , imgr[x+1+(y)*w+(z-1)*w*h]  , imgr[x+2+(y)*w+(z-1)*w*h]};
+            type r02[4] = {imgr[x-1+(y+1)*w+(z-1)*w*h], imgr[x+(y+1)*w+(z-1)*w*h], imgr[x+1+(y+1)*w+(z-1)*w*h], imgr[x+2+(y+1)*w+(z-1)*w*h]};
+            type r03[4] = {imgr[x-1+(y+2)*w+(z-1)*w*h], imgr[x+(y+2)*w+(z-1)*w*h], imgr[x+1+(y+2)*w+(z-1)*w*h], imgr[x+2+(y+2)*w+(z-1)*w*h]};
+            type rx0[4] = {cubic(r00, dx), cubic(r01, dx), cubic(r02, dx), cubic(r03, dx)};
+
+            type r10[4] = {imgr[x-1+(y-1)*w+z*w*h], imgr[x+(y-1)*w+z*w*h], imgr[x+1+(y-1)*w+z*w*h], imgr[x+2+(y-1)*w+z*w*h]};
+            type r11[4] = {imgr[x-1+(y)*w+z*w*h]  , imgr[x+(y)*w+z*w*h]  , imgr[x+1+(y)*w+z*w*h]  , imgr[x+2+(y)*w+z*w*h]};
+            type r12[4] = {imgr[x-1+(y+1)*w+z*w*h], imgr[x+(y+1)*w+z*w*h], imgr[x+1+(y+1)*w+z*w*h], imgr[x+2+(y+1)*w+z*w*h]};
+            type r13[4] = {imgr[x-1+(y+2)*w+z*w*h], imgr[x+(y+2)*w+z*w*h], imgr[x+1+(y+2)*w+z*w*h], imgr[x+2+(y+2)*w+z*w*h]};
+            type rx1[4] = {cubic(r10, dx), cubic(r11, dx), cubic(r12, dx), cubic(r13, dx)};
+
+            type r20[4] = {imgr[x-1+(y-1)*w+(z+1)*w*h], imgr[x+(y-1)*w+(z+1)*w*h], imgr[x+1+(y-1)*w+(z+1)*w*h], imgr[x+2+(y-1)*w+(z+1)*w*h]};
+            type r21[4] = {imgr[x-1+(y)*w+(z+1)*w*h]  , imgr[x+(y)*w+(z+1)*w*h]  , imgr[x+1+(y)*w+(z+1)*w*h]  , imgr[x+2+(y)*w+(z+1)*w*h]};
+            type r22[4] = {imgr[x-1+(y+1)*w+(z+1)*w*h], imgr[x+(y+1)*w+(z+1)*w*h], imgr[x+1+(y+1)*w+(z+1)*w*h], imgr[x+2+(y+1)*w+(z+1)*w*h]};
+            type r23[4] = {imgr[x-1+(y+2)*w+(z+1)*w*h], imgr[x+(y+2)*w+(z+1)*w*h], imgr[x+1+(y+2)*w+(z+1)*w*h], imgr[x+2+(y+2)*w+(z+1)*w*h]};
+            type rx2[4] = {cubic(r20, dx), cubic(r21, dx), cubic(r22, dx), cubic(r23, dx)};
+
+            type r30[4] = {imgr[x-1+(y-1)*w+(z+2)*w*h], imgr[x+(y-1)*w+(z+2)*w*h], imgr[x+1+(y-1)*w+(z+2)*w*h], imgr[x+2+(y-1)*w+(z+2)*w*h]};
+            type r31[4] = {imgr[x-1+(y)*w+(z+2)*w*h]  , imgr[x+(y)*w+(z+2)*w*h]  , imgr[x+1+(y)*w+(z+2)*w*h]  , imgr[x+2+(y)*w+(z+2)*w*h]};
+            type r32[4] = {imgr[x-1+(y+1)*w+(z+2)*w*h], imgr[x+(y+1)*w+(z+2)*w*h], imgr[x+1+(y+1)*w+(z+2)*w*h], imgr[x+2+(y+1)*w+(z+2)*w*h]};
+            type r33[4] = {imgr[x-1+(y+2)*w+(z+2)*w*h], imgr[x+(y+2)*w+(z+2)*w*h], imgr[x+1+(y+2)*w+(z+2)*w*h], imgr[x+2+(y+2)*w+(z+2)*w*h]};
+            type rx3[4] = {cubic(r30, dx), cubic(r31, dx), cubic(r32, dx), cubic(r33, dx)};
+
+            type ry[4] = {cubic(rx0, dy), cubic(rx1, dy), cubic(rx2, dy), cubic(rx3, dy)};
+            imgo[i + j*n0 + k*n0*n1] = cubic(ry, dz);
+        }
+        else if(x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < l-1)
         {
             type iv[4] = {imgr[x+y*w+z*w*h], imgr[x+1+y*w+z*w*h], imgr[x+(y+1)*w+z*w*h], imgr[x+1+(y+1)*w+z*w*h]};
             type iw[4] = {imgr[x+y*w+(z+1)*w*h], imgr[x+1+y*w+(z+1)*w*h], imgr[x+(y+1)*w+(z+1)*w*h], imgr[x+1+(y+1)*w+(z+1)*w*h]};
@@ -694,7 +1046,7 @@ __global__ void kernel_convolution_3d( const type * imgr, const type * kern, //k
             {
                 for (int q = 0; q < kwidth; q++)
                 {
-                    sum += imgr[i+p-off + (j+q-off)*n0 + (k-off)*n0*n1] * kern[r*kwidth*kwidth + p*kwidth + q];
+                    sum += imgr[i+q-off + (j+p-off)*n0 + (k+r-off)*n0*n1] * kern[r*kwidth*kwidth + p*kwidth + q];
                 };
             };
         };
@@ -912,8 +1264,140 @@ void cuda_kernel_pow( std::vector<int> & grid, std::vector<int> & block,
     dim3 grd(grid[0]);
     dim3 blk(block[0]);
     kernel_pow<<<grd,blk>>>(vin1, vin2, vout, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel pow" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel pow" );
+};
+
+template <typename type>
+void cuda_kernel_equal( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_equal<<<grd,blk>>>(vin1, vin2, vout, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel equal" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel equal" );
+};
+
+template <typename type>
+void cuda_kernel_greater( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_greater<<<grd,blk>>>(vin1, vin2, vout, n);
     imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel" );
     imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel" );
+};
+
+template <typename type>
+void cuda_kernel_less( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_less<<<grd,blk>>>(vin1, vin2, vout, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel" );
+};
+
+template <typename type>
+void cuda_kernel_greater_equal( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_greater_equal<<<grd,blk>>>(vin1, vin2, vout, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel greater equal" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel greater equal" );
+};
+
+template <typename type>
+void cuda_kernel_less_equal( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin1, const type * vin2, type * vout, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_less_equal<<<grd,blk>>>(vin1, vin2, vout, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel less equal" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel less equal" );
+};
+
+template <typename type>
+void cuda_kernel_equal_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_equal_scalar<<<grd,blk>>>(vin, vout, scalar, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel equal scalar" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel equal scalar" );
+};
+
+template <typename type>
+void cuda_kernel_greater_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_greater_scalar<<<grd,blk>>>(vin, vout, scalar, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel greater scalar" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel greater scalar" );
+};
+
+template <typename type>
+void cuda_kernel_less_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_less_scalar<<<grd,blk>>>(vin, vout, scalar, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel less scalar" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel less scalar" );
+};
+
+template <typename type>
+void cuda_kernel_greater_equal_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_greater_equal_scalar<<<grd,blk>>>(vin, vout, scalar, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel greater equal scalar" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel greater equal scalar" );
+};
+
+template <typename type>
+void cuda_kernel_less_equal_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * vin, type * vout, type scalar, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_less_equal_scalar<<<grd,blk>>>(vin, vout, scalar, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel less equal scalar" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel less equal scalar" );
+};
+
+template <typename type>
+void cuda_kernel_replace( std::vector<int> & grid, std::vector<int> & block, 
+                          const type * idxs, const type * vin, type * vout, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_replace<<<grd,blk>>>(idxs, vin, vout, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel replace" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel replace" );
+};
+
+template <typename type>
+void cuda_kernel_replace_scalar( std::vector<int> & grid, std::vector<int> & block, 
+                          const type * idxs, type * vout, type value, int n)
+{
+    dim3 grd(grid[0]);
+    dim3 blk(block[0]);
+    kernel_replace_scalar<<<grd,blk>>>(idxs, vout, value, n);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel replace" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel replace" );
 };
 
 
@@ -1176,6 +1660,34 @@ void cuda_kernel_linear_interpolation_3d( std::vector<int> & grid, std::vector<i
 };
 
 template <typename type>
+void cuda_kernel_cubic_interpolation_2d( std::vector<int> & grid, std::vector<int> & block,
+                                          const type * xo, const type * yo,
+                                          const type * imgr, type * imgo,
+                                          int w, int h,   //img ref width and height
+                                          int n0, int n1) //img out dims
+{
+    dim3 grd(grid[0],grid[1]);
+    dim3 blk(block[0],block[1]);
+    kernel_cubic_interpolation_2d<<<grd,blk>>>(xo, yo, imgr, imgo, w, h, n0, n1);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel cubic interpolation 2d" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel cubic interpolation 2d" );
+};
+
+template <typename type>
+void cuda_kernel_cubic_interpolation_3d( std::vector<int> & grid, std::vector<int> & block,
+                                          const type * xo, const type * yo, const type * zo,
+                                          const type * imgr, type * imgo,
+                                          int w, int h, int l, //img ref width, height and length
+                                          int n0, int n1, int n2)
+{
+    dim3 grd(grid[0],grid[1],grid[2]);
+    dim3 blk(block[0],block[1],block[2]);
+    kernel_cubic_interpolation_3d<<<grd,blk>>>(xo, yo, zo, imgr, imgo, w, h, l, n0, n1, n2);
+    imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel cubic interpolation 3d" );
+    imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel cubic interpolation 3d" );
+};
+
+template <typename type>
 void cuda_kernel_gradientx( std::vector<int> & grid, std::vector<int> & block,
                             const type * imgr, type * imgo, 
                             int n0, int n1, int n2)
@@ -1368,6 +1880,43 @@ template void cuda_kernel_pow_scalar<float>( std::vector<int> & grid, std::vecto
 template void cuda_kernel_pow_scalar_inv<float>( std::vector<int> & grid, std::vector<int> & block, 
                                              const float * vin, float * vout, float scalar, int n );
 
+template void cuda_kernel_equal<float>( std::vector<int> & grid, std::vector<int> & block,
+                                        const float * vin1, const float * vin2, float * vout, int n );
+
+template void cuda_kernel_greater<float>( std::vector<int> & grid, std::vector<int> & block,
+                                        const float * vin1, const float * vin2, float * vout, int n );
+
+template void cuda_kernel_less<float>( std::vector<int> & grid, std::vector<int> & block,
+                                        const float * vin1, const float * vin2, float * vout, int n );
+
+template void cuda_kernel_greater_equal<float>( std::vector<int> & grid, std::vector<int> & block,
+                                        const float * vin1, const float * vin2, float * vout, int n );
+
+template void cuda_kernel_less_equal<float>( std::vector<int> & grid, std::vector<int> & block,
+                                        const float * vin1, const float * vin2, float * vout, int n );
+
+template void cuda_kernel_equal_scalar<float>( std::vector<int> & grid, std::vector<int> & block, 
+                                        const float * vin, float * vout, float scalar, int n);
+
+template void cuda_kernel_greater_scalar<float>( std::vector<int> & grid, std::vector<int> & block, 
+                        const float * vin, float * vout, float scalar, int n);
+
+template void cuda_kernel_less_scalar<float>( std::vector<int> & grid, std::vector<int> & block, 
+                        const float * vin, float * vout, float scalar, int n);
+
+template void cuda_kernel_greater_equal_scalar<float>( std::vector<int> & grid, std::vector<int> & block, 
+                        const float * vin, float * vout, float scalar, int n);
+
+template void cuda_kernel_less_equal_scalar<float>( std::vector<int> & grid, std::vector<int> & block, 
+                        const float * vin, float * vout, float scalar, int n);
+
+template void cuda_kernel_replace<float>( std::vector<int> & grid, std::vector<int> & block, 
+                          const float * idxs, const float * vin, float * vout, int n);
+
+template void cuda_kernel_replace_scalar<float>( std::vector<int> & grid, std::vector<int> & block, 
+                          const float * idxs, float * vout, float value, int n);
+
+
 template void cuda_kernel_sum<float>( std::vector<int> & grid, std::vector<int> & block, const float * vin, float * vout, int n );
 
 template void cuda_kernel_min<float>( std::vector<int> & grid, std::vector<int> & block, const float * vin, float * vout, int n );
@@ -1453,6 +2002,18 @@ template void cuda_kernel_linear_interpolation_3d<float>( std::vector<int> & gri
                                           int w, int h, int l, //img ref width, height and length
                                           int n0, int n1, int n2);
 
+template void cuda_kernel_cubic_interpolation_2d<float>( std::vector<int> & grid, std::vector<int> & block,
+                                          const float * xo, const float * yo,
+                                          const float * imgr, float * imgo,
+                                          int w, int h,   //img ref width and height
+                                          int n0, int n1); //img out dims
+
+// template void cuda_kernel_cubic_interpolation_3d<float>( std::vector<int> & grid, std::vector<int> & block,
+//                                           const float * xo, const float * yo, const float * zo,
+//                                           const float * imgr, float * imgo,
+//                                           int w, int h, int l, //img ref width, height and length
+//                                           int n0, int n1, int n2);
+
 template void cuda_kernel_gradientx<float>( std::vector<int> & grid, std::vector<int> & block,
                             const float * imgr, float * imgo, 
                             int n0, int n1, int n2);
@@ -1522,6 +2083,42 @@ template void cuda_kernel_pow_scalar<double>( std::vector<int> & grid, std::vect
 
 template void cuda_kernel_pow_scalar_inv<double>( std::vector<int> & grid, std::vector<int> & block, 
                                              const double * vin, double * vout, double scalar, int n );
+
+template void cuda_kernel_equal<double>( std::vector<int> & grid, std::vector<int> & block,
+                                        const double * vin1, const double * vin2, double * vout, int n );
+
+template void cuda_kernel_greater<double>( std::vector<int> & grid, std::vector<int> & block,
+                                        const double * vin1, const double * vin2, double * vout, int n );
+
+template void cuda_kernel_less<double>( std::vector<int> & grid, std::vector<int> & block,
+                                        const double * vin1, const double * vin2, double * vout, int n );
+
+template void cuda_kernel_greater_equal<double>( std::vector<int> & grid, std::vector<int> & block,
+                                        const double * vin1, const double * vin2, double * vout, int n );
+
+template void cuda_kernel_less_equal<double>( std::vector<int> & grid, std::vector<int> & block,
+                                        const double * vin1, const double * vin2, double * vout, int n );
+
+template void cuda_kernel_equal_scalar<double>( std::vector<int> & grid, std::vector<int> & block, 
+                                        const double * vin, double * vout, double scalar, int n);
+
+template void cuda_kernel_greater_scalar<double>( std::vector<int> & grid, std::vector<int> & block, 
+                        const double * vin, double * vout, double scalar, int n);
+
+template void cuda_kernel_less_scalar<double>( std::vector<int> & grid, std::vector<int> & block, 
+                        const double * vin, double * vout, double scalar, int n);
+
+template void cuda_kernel_greater_equal_scalar<double>( std::vector<int> & grid, std::vector<int> & block, 
+                        const double * vin, double * vout, double scalar, int n);
+
+template void cuda_kernel_less_equal_scalar<double>( std::vector<int> & grid, std::vector<int> & block, 
+                        const double * vin, double * vout, double scalar, int n);
+
+template void cuda_kernel_replace<double>( std::vector<int> & grid, std::vector<int> & block, 
+                          const double * idxs, const double * vin, double * vout, int n);
+
+template void cuda_kernel_replace_scalar<double>( std::vector<int> & grid, std::vector<int> & block, 
+                          const double * idxs, double * vout, double value, int n);
 
 template void cuda_kernel_sum<double>( std::vector<int> & grid, std::vector<int> & block, const double * vin, double * vout, int n );
 
@@ -1607,6 +2204,18 @@ template void cuda_kernel_linear_interpolation_3d<double>( std::vector<int> & gr
                                           int w, int h, int l, //img ref width, height and length
                                           int n0, int n1, int n2);
 
+template void cuda_kernel_cubic_interpolation_2d<double>( std::vector<int> & grid, std::vector<int> & block,
+                                          const double * xo, const double * yo,
+                                          const double * imgr, double * imgo,
+                                          int w, int h,   //img ref width and height
+                                          int n0, int n1); //img out dims
+
+template void cuda_kernel_cubic_interpolation_3d<double>( std::vector<int> & grid, std::vector<int> & block,
+                                          const double * xo, const double * yo, const double * zo,
+                                          const double * imgr, double * imgo,
+                                          int w, int h, int l, //img ref width, height and length
+                                          int n0, int n1, int n2);
+
 template void cuda_kernel_gradientx<double>( std::vector<int> & grid, std::vector<int> & block,
                             const double * imgr, double * imgo, 
                             int n0, int n1, int n2);
@@ -1675,6 +2284,42 @@ template void cuda_kernel_pow_scalar<int>( std::vector<int> & grid, std::vector<
 
 template void cuda_kernel_pow_scalar_inv<int>( std::vector<int> & grid, std::vector<int> & block, 
                                              const int * vin, int * vout, int scalar, int n );
+
+template void cuda_kernel_equal<int>( std::vector<int> & grid, std::vector<int> & block,
+                                        const int * vin1, const int * vin2, int * vout, int n );
+
+template void cuda_kernel_greater<int>( std::vector<int> & grid, std::vector<int> & block,
+                                        const int * vin1, const int * vin2, int * vout, int n );
+
+template void cuda_kernel_less<int>( std::vector<int> & grid, std::vector<int> & block,
+                                        const int * vin1, const int * vin2, int * vout, int n );
+
+template void cuda_kernel_greater_equal<int>( std::vector<int> & grid, std::vector<int> & block,
+                                        const int * vin1, const int * vin2, int * vout, int n );
+
+template void cuda_kernel_less_equal<int>( std::vector<int> & grid, std::vector<int> & block,
+                                        const int * vin1, const int * vin2, int * vout, int n );
+
+template void cuda_kernel_equal_scalar<int>( std::vector<int> & grid, std::vector<int> & block, 
+                                        const int * vin, int * vout, int scalar, int n);
+
+template void cuda_kernel_greater_scalar<int>( std::vector<int> & grid, std::vector<int> & block, 
+                        const int * vin, int * vout, int scalar, int n);
+
+template void cuda_kernel_less_scalar<int>( std::vector<int> & grid, std::vector<int> & block, 
+                        const int * vin, int * vout, int scalar, int n);
+
+template void cuda_kernel_greater_equal_scalar<int>( std::vector<int> & grid, std::vector<int> & block, 
+                        const int * vin, int * vout, int scalar, int n);
+
+template void cuda_kernel_less_equal_scalar<int>( std::vector<int> & grid, std::vector<int> & block, 
+                        const int * vin, int * vout, int scalar, int n);
+
+template void cuda_kernel_replace<int>( std::vector<int> & grid, std::vector<int> & block, 
+                          const int * idxs, const int * vin, int * vout, int n);
+
+template void cuda_kernel_replace_scalar<int>( std::vector<int> & grid, std::vector<int> & block, 
+                          const int * idxs, int * vout, int value, int n);
 
 template void cuda_kernel_sum<int>( std::vector<int> & grid, std::vector<int> & block, const int * vin, int * vout, int n );
 

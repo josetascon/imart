@@ -45,6 +45,7 @@ protected:
     // ===========================================
     typename image<type,container>::pointer linear2(const typename grid<type,container>::pointer xout);
     typename image<type,container>::pointer linear3(const typename grid<type,container>::pointer xout);
+    typename image<type,container>::pointer linear2_test(const typename grid<type,container>::pointer xout);
 
 public:
     // ===========================================
@@ -60,6 +61,7 @@ public:
     // Functions
     // ===========================================
     typename image<type,container>::pointer apply(const typename grid<type,container>::pointer xout);
+    typename image<type,container>::pointer apply_test(const typename grid<type,container>::pointer xout);
 };
 
 template<typename type>
@@ -68,9 +70,15 @@ using ilinear_cpu = ilinear<type,vector_cpu<type>>;
 template<typename type>
 using ilinear_gpu = ilinear<type,vector_ocl<type>>;
 
+#ifdef IMART_WITH_OPENCL
+template<typename type>
+using ilinear_ocl = ilinear<type,vector_ocl<type>>;
+#endif
+
+#ifdef IMART_WITH_CUDA
 template<typename type>
 using ilinear_cuda = ilinear<type,vector_cuda<type>>;
-
+#endif
 
 // ===========================================
 //      Functions of Class grid
@@ -107,6 +115,43 @@ typename image<type,container>::pointer ilinear<type,container>::apply(const typ
     return a;
 };
 
+template <typename type, typename container>
+typename image<type,container>::pointer ilinear<type,container>::apply_test(const typename grid<type,container>::pointer xout)
+{
+    auto a = image<type,container>::new_pointer(xout->get_dimension());
+    if(xout->get_dimension() == 2){ a = linear2_test(xout); }
+    return a;
+};
+
+template <typename type, typename container>
+typename image<type,container>::pointer ilinear<type,container>::linear2_test(const typename grid<type,container>::pointer xout)
+{
+    assert(xout->get_dimension() == image_reference->get_dimension());
+
+    int w = xout->get_size()[0];
+    int h = xout->get_size()[1];
+
+    // setup output image
+    auto image_out = image<type,container>::new_pointer(w, h);
+    image_out->set_sod_parameters(xout->get_spacing(), xout->get_origin(), xout->get_direction());
+    // image_out->assign(_default_);
+
+    typename image<type,container>::pointer xo = (xout->ptr()[0]);   // raw pointer to
+    typename image<type,container>::pointer yo = (xout->ptr()[1]);   // input grid coordinates
+
+    // convert xout to x_reference (world to image coordinates)
+    // std::cout << "convert xout to xref" << std::endl;
+    std::vector<double> sod = image_reference->get_sod_inverse();
+    
+    // apply the interpolation algorithm (or kernel)
+    // std::cout << "linear call to container" << std::endl;
+    container::linear2_test(xo->get_data(),yo->get_data(),image_reference->get_data(),
+                image_out->get_data(), image_reference->get_size(), sod, _default_ );
+    // image_out->set_data(imgo);
+
+    return image_out;
+};
+
 
 template <typename type, typename container>
 typename image<type,container>::pointer ilinear<type,container>::linear2(const typename grid<type,container>::pointer xout)
@@ -116,6 +161,7 @@ typename image<type,container>::pointer ilinear<type,container>::linear2(const t
     int w = xout->get_size()[0];
     int h = xout->get_size()[1];
 
+    // setup output image
     auto image_out = image<type,container>::new_pointer(w, h);
     image_out->set_sod_parameters(xout->get_spacing(), xout->get_origin(), xout->get_direction());
     image_out->assign(_default_);
@@ -130,6 +176,7 @@ typename image<type,container>::pointer ilinear<type,container>::linear2(const t
     auto yro = image<type,container>::new_pointer(yo->get_size());
     container::affine_sod_2d(xo->get_data(), yo->get_data(), xro->get_data(), yro->get_data(), sod);
 
+    // apply the interpolation algorithm (or kernel)
     // std::cout << "linear call to container" << std::endl;
     container::linear2(xro->get_data(),yro->get_data(),image_reference->get_data(),
                 image_out->get_data(), image_reference->get_size(), xout->get_size() );
@@ -147,6 +194,7 @@ typename image<type,container>::pointer ilinear<type,container>::linear3(const t
     int h = xout->get_size()[1];
     int l = xout->get_size()[2];
 
+    // setup output image
     auto image_out = image<type,container>::new_pointer(w, h, l);
     image_out->set_sod_parameters(xout->get_spacing(), xout->get_origin(), xout->get_direction());
     image_out->assign(_default_);
@@ -165,6 +213,7 @@ typename image<type,container>::pointer ilinear<type,container>::linear3(const t
                              xro->get_data(), yro->get_data(), zro->get_data(), sod);
     // xro->print_data();
 
+    // apply the interpolation algorithm (or kernel)
     // std::cout << "linear call to container" << std::endl;
     container::linear3(xro->get_data(),yro->get_data(), zro->get_data(), image_reference->get_data(),
                 image_out->get_data(), image_reference->get_size(), xout->get_size() );

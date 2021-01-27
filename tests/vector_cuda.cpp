@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-06 00:00:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-27 15:12:04
+* @Last Modified time: 2020-09-07 16:32:25
 */
 
 // std libs
@@ -55,6 +55,15 @@ TYPED_TEST(test_vector_cuda, constructor)
     ASSERT_FLOAT_EQ( -5.2, vec5[0] );
     ASSERT_FLOAT_EQ( -5.2, vec5[4] );
     ASSERT_FLOAT_EQ( -5.2, vec5[9] );
+
+    vector_cuda<TypeParam> vec7{0.2, -0.2, 5.1, 8.234, -1.0};
+    ASSERT_TRUE("vector_cuda" == vec7.get_name());
+    ASSERT_EQ( 5, vec7.size() );
+    ASSERT_FLOAT_EQ( 0.2, vec7[0] );
+    ASSERT_FLOAT_EQ( -0.2, vec7[1] );
+    ASSERT_FLOAT_EQ( 5.1, vec7[2] );
+    ASSERT_FLOAT_EQ( 8.234, vec7[3] );
+    ASSERT_FLOAT_EQ( -1.0, vec7[4] );
 }
 
 // ============================================

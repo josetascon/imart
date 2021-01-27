@@ -174,8 +174,9 @@ void data_object<type,container>::mimic_(const data_object & input)
 template <typename type, typename container>
 std::string data_object<type,container>::get_type() const
 {   
-    type v;
-    return typeid(v).name();
+    // type v;
+    // return typeid(v).name();
+    return string_type<type>();
 };
 
 template <typename type, typename container>

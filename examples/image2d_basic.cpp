@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-16 13:15:21
+* @Last Modified time: 2020-09-07 15:11:19
 */
 
 // std libs
@@ -84,9 +84,9 @@ int main()
     std::cout << std::endl;
     // image1.print_ptr_count();   // testing print function, 
                                 // equivalent to the commented lines
-    // std::cout << "internal image ptr count: ";
-    // std::cout << image1.get_ptr_count();
-    // std::cout << std::endl;
+    std::cout << "internal image ptr count: ";
+    std::cout << image1.get_ptr_count();
+    std::cout << std::endl;
     std::cout << "external image ptr count: ";
     std::cout << image1.get_data().use_count();
     std::cout << std::endl;
@@ -94,7 +94,7 @@ int main()
     image1.print();
     image1.print_data();
 
-    /*
+    
     // Create medium size image 
     image_cpu<double> image2(128, 64);
 
@@ -129,7 +129,7 @@ int main()
     std::cout << image2.get_data().use_count();
     std::cout << std::endl;
     
-    /*
+    
     // Create different image objects
     std::cout << std::endl;
     std::cout << "===================== ";
@@ -137,7 +137,7 @@ int main()
     std::cout << " =====================";
     std::cout << std::endl;
     
-    std::shared_ptr<std::vector<float>> buffer = std::make_shared<std::vector<float>>(6);
+    std::shared_ptr<vector_cpu<float>> buffer = std::make_shared<vector_cpu<float>>(6);
     *buffer = {1.1, 2.1, 3.1, 4.1, 5.1, 6.1};
 
     image<float> image3(5,3);
@@ -205,7 +205,7 @@ int main()
     image5.random();
     image5.print_data("random:");
 
-
+    /*
     std::cout << std::endl;
     std::cout << "===================== ";
     std::cout << "Test class image, access elements";

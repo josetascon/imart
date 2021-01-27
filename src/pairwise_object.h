@@ -12,6 +12,7 @@
 #include "image.h"
 #include "transform.h"
 #include "interpolator.h"
+// #include "viewer.h"
 
 namespace imart
 {
@@ -31,10 +32,12 @@ protected:
     // ===========================================
     // Internal Variables
     // ===========================================
+    bool plot;
     typename image<type,container>::pointer fixed;
     typename image<type,container>::pointer moving;
     typename transform<type,container>::pointer transformation;
     typename interpolator<type,container>::pointer interpolation;
+    // typename viewer<image<type,container>>::pointer view;
 
     // ===========================================
     // Functions
@@ -60,18 +63,22 @@ public:
     // ===========================================
     // Get Functions
     // ===========================================
+    bool get_plot() const;
     typename image<type,container>::pointer get_fixed() const;
     typename image<type,container>::pointer get_moving() const;
     typename transform<type,container>::pointer get_transform() const;
     typename interpolator<type,container>::pointer get_interpolator() const;
+    // typename viewer<image<type,container>>::pointer get_viewer() const;
 
     // ===========================================
     // Set Functions
     // ===========================================
+    void set_plot(bool p);
     virtual void set_fixed(typename image<type,container>::pointer fixed_image);
     virtual void set_moving(typename image<type,container>::pointer moving_image);
     virtual void set_transform(typename transform<type,container>::pointer transformd);
     virtual void set_interpolator(typename interpolator<type,container>::pointer interpolationd);
+    // virtual void set_viewer(typename viewer<image<type,container>>::pointer viewd);
 
     // ===========================================
     // Print Functions
@@ -144,6 +151,7 @@ void pairwise_object<type,container>::init( typename image<type,container>::poin
     moving = moving_image;
     transformation = transformd;
     interpolation = interpolator<type,container>::new_pointer(moving->get_dimension());
+    // view = std::make_shared<viewer<image<type,container>>>();
     
     this->set_total_inputs(3);      //process_object::init
     this->set_total_outputs(0);     //process_object::init
@@ -156,6 +164,12 @@ void pairwise_object<type,container>::init( typename image<type,container>::poin
 // ===========================================
 // Get Functions
 // ===========================================
+template <typename type, typename container>
+bool pairwise_object<type,container>::get_plot() const
+{
+    return plot;
+};
+
 template <typename type, typename container>
 typename image<type,container>::pointer pairwise_object<type,container>::get_fixed() const
 {
@@ -180,9 +194,21 @@ typename interpolator<type,container>::pointer pairwise_object<type,container>::
     return interpolation; // single interpolator
 };
 
+// template <typename type, typename container>
+// typename viewer<image<type,container>>::pointer pairwise_object<type,container>::get_viewer() const
+// {
+//     return view;
+// };
+
 // ===========================================
 // Set Functions
 // ===========================================
+template <typename type, typename container>
+void pairwise_object<type,container>::set_plot(bool p)
+{
+    plot = p;
+};
+
 template <typename type, typename container>
 void pairwise_object<type,container>::set_fixed(typename image<type,container>::pointer fixed_image)
 {
@@ -209,6 +235,12 @@ void pairwise_object<type,container>::set_interpolator(typename interpolator<typ
 {
     interpolation = interpolationd;
 };
+
+// template <typename type, typename container>
+// void pairwise_object<type,container>::set_viewer(typename viewer<image<type,container>>::pointer viewd)
+// {
+//     view = viewd;
+// };
 
 // ===========================================
 // Print Functions

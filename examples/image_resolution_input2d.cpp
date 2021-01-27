@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-29 12:36:56
+* @Last Modified time: 2020-12-01 11:00:04
 */
 
 
@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
     // ============================================
     //              Testing GPU
     // ============================================
+#ifdef IMART_WITH_OPENCL
     auto image11 = image_gpu<unsigned short>::new_pointer(2);
     auto image12 = image_gpu<type>::new_pointer(2);
     typename image_gpu<type>::vector vimage13(num_scales);
@@ -101,10 +102,12 @@ int main(int argc, char *argv[])
         cast(*(vimage13[k]),*(vimage14[k]));
         vimage14[k]->write(outfile2 + std::to_string(k) + ".png");
     };
-
+#endif
+    
     // ============================================
     //              Testing CUDA
     // ============================================
+#ifdef IMART_WITH_CUDA
     auto image21 = image_cuda<unsigned short>::new_pointer(2);
     auto image22 = image_cuda<type>::new_pointer(2);
     typename image_cuda<type>::vector vimage23(num_scales);
@@ -135,6 +138,7 @@ int main(int argc, char *argv[])
         cast(*(vimage23[k]),*(vimage24[k]));
         vimage24[k]->write(outfile3 + std::to_string(k) + ".png");
     };
+#endif
 
     return 0;
 };

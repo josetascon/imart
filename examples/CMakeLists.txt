@@ -22,6 +22,10 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/images/lenag2.png
 #                  Build
 # ===========================================
 # Core
+option(ENABLE_SAMPLES "Enable Samples" OFF)
+
+if(ENABLE_SAMPLES)
+
 add_executable(opencl_object opencl_object.cpp)
 target_link_libraries(opencl_object ${link_targets})
 
@@ -41,14 +45,30 @@ target_link_libraries(image_gradient_kernel ${link_targets})
 # add_executable(image2d_basic image2d_basic.cpp)
 # target_link_libraries(image2d_basic ${link_targets})
 
-# add_executable(image2d_arithmetic image2d_arithmetic.cpp)
-# target_link_libraries(image2d_arithmetic ${link_targets})
+add_executable(image_assert image_assert.cpp)
+target_link_libraries(image_assert ${link_targets})
 
+endif()
+
+add_executable(image2d_arithmetic image2d_arithmetic.cpp)
+target_link_libraries(image2d_arithmetic ${link_targets})
+
+add_executable(image_read_write image_read_write.cpp)
+target_link_libraries(image_read_write ${link_targets})
+
+if(ENABLE_SAMPLES)
 # add_executable(image2d_arithmetic_gpu image2d_arithmetic_gpu.cpp)
 # target_link_libraries(image2d_arithmetic_gpu ${link_targets})
 
 # add_executable(image2d_complex image2d_complex.cpp)
 # target_link_libraries(image2d_complex ${link_targets})
+
+add_executable(image_conditions_cpu image_conditions_cpu.cpp)
+target_link_libraries(image_conditions_cpu ${link_targets})
+
+add_executable(image_conditions_gpu image_conditions_gpu.cpp)
+target_link_libraries(image_conditions_gpu ${link_targets})
+
 
 add_executable(image_utils_cpu image_utils_cpu.cpp)
 target_link_libraries(image_utils_cpu ${link_targets})
@@ -104,8 +124,20 @@ target_link_libraries(dfield_basic_cpu ${link_targets})
 add_executable(dfield_basic_gpu dfield_basic_gpu.cpp)
 target_link_libraries(dfield_basic_gpu ${link_targets})
 
+endif()
+
+add_executable(dfield_read_write_cpu dfield_read_write_cpu.cpp)
+target_link_libraries(dfield_read_write_cpu ${link_targets})
+
+add_executable(dfield_transform_input dfield_transform_input.cpp)
+target_link_libraries(dfield_transform_input ${link_targets})
+
+if(ENABLE_SAMPLES)
 add_executable(transform_operations_cpu transform_operations_cpu.cpp)
 target_link_libraries(transform_operations_cpu ${link_targets})
+
+add_executable(transform_affine_read_write transform_affine_read_write.cpp)
+target_link_libraries(transform_affine_read_write ${link_targets})
 
 # add_executable(interpolator_basic interpolator_basic.cpp)
 # target_link_libraries(interpolator_basic ${link_targets})
@@ -122,8 +154,11 @@ target_link_libraries(image_interpolator_nearest_gpu ${link_targets})
 add_executable(image_interpolator_linear_gpu image_interpolator_linear_gpu.cpp)
 target_link_libraries(image_interpolator_linear_gpu ${link_targets})
 
-add_executable(transform_affine_cpu_gpu transform_affine_cpu_gpu.cpp)
-target_link_libraries(transform_affine_cpu_gpu ${link_targets})
+add_executable(affine_ilinear_cpu_gpu_itk affine_ilinear_cpu_gpu_itk.cpp)
+target_link_libraries(affine_ilinear_cpu_gpu_itk ${link_targets})
+
+add_executable(scale_icubic_cpu_gpu_itk scale_icubic_cpu_gpu_itk.cpp)
+target_link_libraries(scale_icubic_cpu_gpu_itk ${link_targets})
 
 add_executable(transform_dfield_cpu_gpu transform_dfield_cpu_gpu.cpp)
 target_link_libraries(transform_dfield_cpu_gpu ${link_targets})
@@ -146,14 +181,19 @@ target_link_libraries(image_metric_cpu ${link_targets})
 add_executable(image_metric_gpu image_metric_gpu.cpp)
 target_link_libraries(image_metric_gpu ${link_targets})
 
+endif()
+
 add_executable(image_resolution image_resolution.cpp)
 target_link_libraries(image_resolution ${link_targets})
+# endif()
 
 add_executable(image_resolution_input2d image_resolution_input2d.cpp)
 target_link_libraries(image_resolution_input2d ${link_targets})
 
 add_executable(image_resolution_input3d image_resolution_input3d.cpp)
 target_link_libraries(image_resolution_input3d ${link_targets})
+
+if(ENABLE_SAMPLES)
 
 add_executable(image_optimizer_cpu image_optimizer_cpu.cpp)
 target_link_libraries(image_optimizer_cpu ${link_targets})
@@ -167,6 +207,11 @@ target_link_libraries(image_optimizer_demons_cpu ${link_targets})
 add_executable(image_optimizer_demons_gpu image_optimizer_demons_gpu.cpp)
 target_link_libraries(image_optimizer_demons_gpu ${link_targets})
 
+endif()
+
+add_executable(image_regularizer image_regularizer.cpp)
+target_link_libraries(image_regularizer ${link_targets})
+
 add_executable(gaussian_filter gaussian_filter.cpp)
 target_link_libraries(gaussian_filter ${link_targets})
 
@@ -176,8 +221,27 @@ target_link_libraries(registration_demons_cpu ${link_targets})
 add_executable(registration_demons_gpu registration_demons_gpu.cpp)
 target_link_libraries(registration_demons_gpu ${link_targets})
 
+add_executable(registration_demons_input registration_demons_input.cpp)
+target_link_libraries(registration_demons_input ${link_targets})
 
-if (BUILD_CUDA)
+add_executable(registration_demonsloi_input registration_demonsloi_input.cpp)
+target_link_libraries(registration_demonsloi_input ${link_targets})
+
+add_executable(registration_video registration_video.cpp)
+target_link_libraries(registration_video ${link_targets})
+
+add_executable(registration_lddmm_prototype registration_lddmm_prototype.cpp)
+target_link_libraries(registration_lddmm_prototype ${link_targets})
+
+add_executable(registration_lddmm_input registration_lddmm_input.cpp)
+target_link_libraries(registration_lddmm_input ${link_targets})
+
+if (ENABLE_OPENCL)
+    add_executable(registration_ocl_demons_input registration_ocl_demons_input.cpp)
+    target_link_libraries(registration_ocl_demons_input ${link_targets})
+endif()
+
+if (ENABLE_CUDA)
     add_executable(vector_cuda_aritmethic vector_cuda_aritmethic.cpp)
     target_link_libraries(vector_cuda_aritmethic ${link_targets})
 
@@ -212,7 +276,13 @@ if (BUILD_CUDA)
     target_link_libraries(image_optimizer_demons_cuda ${link_targets})
 
     add_executable(registration_demons_cuda registration_demons_cuda.cpp)
-target_link_libraries(registration_demons_cuda ${link_targets})
+    target_link_libraries(registration_demons_cuda ${link_targets})
+
+    add_executable(registration_cuda_demons_input registration_cuda_demons_input.cpp)
+    target_link_libraries(registration_cuda_demons_input ${link_targets})
+
+    # add_executable(registration_cuda_lddmm_prototype registration_cuda_lddmm_prototype.cpp)
+    # target_link_libraries(registration_cuda_lddmm_prototype ${link_targets})
 endif()
 
 # # 3d test
@@ -229,3 +299,7 @@ endif()
 
 # add_executable(gpu_image2d_arithmetic gpu_image2d_arithmetic.cpp)
 # target_link_libraries(gpu_image2d_arithmetic ${link_targets})
+
+# Real time
+add_executable(viewer viewer.cpp)
+target_link_libraries(viewer ${link_targets})
