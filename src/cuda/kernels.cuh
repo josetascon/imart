@@ -290,9 +290,15 @@ void cuda_kernel_convolution_3d( std::vector<int> & grid, std::vector<int> & blo
                                  const type * imgr, const type * kern, //kernel width
                                  type * imgo, int kwidth, int n0, int n1, int n2 );
 
-// template <typename type>
-// void cuda_kernel_fft_2d( std::vector<int> & grid, std::vector<int> & block,
-//                          const type * in_real, const type * in_cmplx, ) ;
+template <typename type>
+void cuda_kernel_fft_2d( std::vector<int> & grid, std::vector<int> & block,
+                         const type * in_real, const type * in_cmplx,
+                         type * out_real, type * out_cmplx, int n0, int n1, bool forward );
+
+template <typename type>
+void cuda_kernel_fft_3d( std::vector<int> & grid, std::vector<int> & block,
+                         const type * in_real, const type * in_cmplx,
+                         type * out_real, type * out_cmplx, int n0, int n1, int n2, bool forward );
 
 
 //NEW KERNELS

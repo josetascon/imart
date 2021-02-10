@@ -30,11 +30,11 @@ int main()
 
     // Create small imame
     std::string filename = "./examples/images/sinc_pad.png";
-    auto img = image_gpu<unsigned short>::new_pointer();
+    auto img = image_ocl<unsigned short>::new_pointer();
     img->read(filename);
 
-    auto image0_cast = image_gpu<type>::new_pointer();
-    auto image0 = image_gpu<type>::new_pointer();
+    auto image0_cast = image_ocl<type>::new_pointer();
+    auto image0 = image_ocl<type>::new_pointer();
     cast(*img, *image0_cast);
 
     // std::cout << "Min: " << image0_cast->min() << std::endl;
@@ -48,18 +48,18 @@ int main()
 
     auto x0 = grid<type,vector_ocl<type>>::new_pointer(*image0);
 
-    image_gpu<type>::pointer params( new image_gpu<type>{1.0, 0.2, 0.0, 1.0, -20.0, 20.0} );
+    image_ocl<type>::pointer params( new image_ocl<type>{1.0, 0.2, 0.0, 1.0, -20.0, 20.0} );
     auto taffine = affine<type,vector_ocl<type>>::new_pointer(2, params);
     // taffine->print_data();
 
-    // auto imaget = image_gpu<type>::new_pointer();
+    // auto imaget = image_ocl<type>::new_pointer();
     // auto image0_itpw = ilinear<type,vector_ocl<type>>::new_pointer(image0_cast);
     // imaget = image0_itpw->apply(taffine->apply(x0));
-    // auto img_out = image_gpu<unsigned short>::new_pointer();
+    // auto img_out = image_ocl<unsigned short>::new_pointer();
     // cast(*imaget, *img_out);
     // img_out->write("./transformed.png");
 
-    auto image1 = image_gpu<type>::new_pointer();
+    auto image1 = image_ocl<type>::new_pointer();
     auto image0_itp = ilinear<type,vector_ocl<type>>::new_pointer(image0);
     image1 = image0_itp->apply(taffine->apply(x0));
     // image0->print();
@@ -69,7 +69,7 @@ int main()
     // image1->print_data();
 
     // Gradient
-    // typename image_gpu<type>::vector grad(image0->get_dimension());
+    // typename image_ocl<type>::vector grad(image0->get_dimension());
     // grad = gradient(image0);
     // image0->print_data("i");
     // grad[0]->print();

@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-07 10:12:34
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-01-27 07:09:19
+* @Last Modified time: 2021-01-27 11:37:45
 */
 
 // std libs
@@ -14,11 +14,6 @@
 
 // local libs
 #include "../src/image.h"
-#include "../src/dfield.h"
-#include "../src/lddmm.h"
-#include "../src/gradient_descent.h"
-#include "../src/registration.h"
-#include "../src/viewer.h"
 
 using namespace imart;
 namespace po = boost::program_options;

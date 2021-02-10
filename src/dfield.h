@@ -110,8 +110,8 @@ public:
 template<typename type>
 using dfield_cpu = dfield<type,vector_cpu<type>>;
 
-template<typename type>
-using dfield_gpu = dfield<type,vector_ocl<type>>;
+// template<typename type>
+// using dfield_gpu = dfield<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>

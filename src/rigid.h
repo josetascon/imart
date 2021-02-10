@@ -58,12 +58,15 @@ public:
 template<typename type>
 using rigid_cpu = rigid<type,vector_cpu<type>>;
 
+#ifdef IMART_WITH_OPENCL
 template<typename type>
 using rigid_gpu = rigid<type,vector_ocl<type>>;
+#endif
 
+#ifdef IMART_WITH_CUDA
 template<typename type>
 using rigid_cuda = rigid<type,vector_cuda<type>>;
-
+#endif
 
 // ===========================================
 //          Functions of Class rigid

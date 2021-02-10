@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-08-29 13:11:53
+* @Last Modified time: 2021-02-10 18:39:21
 */
 
 // std libs
@@ -65,7 +65,7 @@ int main()
     // image0->print();
     // image0->print_data();
     
-    // image1->print(); 
+    // image1->print();
     // image1->print_data();
 
     // Gradient
@@ -77,10 +77,12 @@ int main()
     // grad[1]->print_data("di/dy");
 
     auto trfm = affine<type,vector_cuda<type>>::new_pointer(2);
+    // trfm->print();
     // trfm->print_data();
 
     auto ssd1 = ssd<type,vector_cuda<type>>::new_pointer(image0, image1, trfm);
-    // std::cout << ssd1->cost();
+    // ssd1->print();
+    // std::cout << ssd1->cost() << std::endl;
 
     // Affine test
     // *trfm + *taffine;
@@ -89,6 +91,7 @@ int main()
     // tt.print_data();
 
     auto opt = gradient_descent<type,vector_cuda<type>>::new_pointer();
+    // opt->print();
     opt->optimize(ssd1);
     ssd1->get_transform()->print_data();
     return 0;

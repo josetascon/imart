@@ -242,14 +242,14 @@ void cuda_object::setup(std::vector<int> & dims)
         inv_blocksy = 1/float(blocksy);
         status_three_dim = true;
     }
-    else ;    
+    else ;
 };
 
 template<typename Func, typename ...Args>
 void cuda_object::execute( Func const & function , Args const &... args )
 {
     // std::cout << "Run kernel with arguments: " << std::endl;
-    if constexpr (sizeof...(args) > 0) 
+    if constexpr (sizeof...(args) > 0)
     {
         // option 1
         // cuda_launcher launch(grid, block);

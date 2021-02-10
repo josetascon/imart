@@ -65,8 +65,8 @@ public:
 template<typename type>
 using inearest_cpu = inearest<type,vector_cpu<type>>;
 
-template<typename type>
-using inearest_gpu = inearest<type,vector_ocl<type>>;
+// template<typename type>
+// using inearest_gpu = inearest<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>

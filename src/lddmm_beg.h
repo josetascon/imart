@@ -43,8 +43,6 @@ public:
 
     ptr_field_group phi0;
     ptr_field_group phi1;
-
-    ptr_image_group det_phi1;
     
 protected:
     // Inherited variables
@@ -267,10 +265,7 @@ void lddmm<type,container>::init_fields()
 
     // initialize to be able to call cost function
     j0 = init_image_group(fixed, tsteps, false);
-    j0->at(0) = fixed->clone();
-
-    j1 = init_image_group(fixed, tsteps, false);
-    j1->at(tsteps-1) = moving->clone();
+    j0->at(tsteps-1) = fixed->clone();
 
     // learning_rate = 0.001;
     // sigma = 0.1;
@@ -344,13 +339,17 @@ type lddmm<type,container>::norm(std::vector<std::shared_ptr<image<type,containe
 template <typename type, typename container>
 type lddmm<type,container>::cost()
 {
-    type N = (type)fixed->get_total_elements();
+    // type N = (type)fixed->get_total_elements();
+    // image<type,container> ssd_ = *j0->at(tsteps-1) - *moving;
+    // cost_value = (0.5/N)*( (ssd_*ssd_).sum() );
+    // return cost_value;
+    
+    int dim = fixed->get_dimension();
+
     image<type,container> ssd_ = *j0->at(tsteps-1) - *moving;
-    // type e_intensity = (0.5/N)*( (ssd_*ssd_).sum() );
-    type e_intensity = (1/(sigma*sigma))*( (ssd_*ssd_).sum() );
+    type e_intensity = (1.0/(sigma*sigma))*( (ssd_*ssd_).sum() );
 
     type e_regularize = 0.0;
-    int dim = fixed->get_dimension();
     for(int t = 0; t < tsteps; t++)
     {
         auto vv = std::make_shared< std::vector<std::shared_ptr<image<type,container>>> >(dim);
@@ -418,11 +417,6 @@ typename lddmm<type,container>::ptr_image_group lddmm<type,container>::update_ld
 {
     //dimension
     int dim = fixed->get_dimension();
-    type N = (type)fixed->get_total_elements();
-
-    // type sigm_gf = transformation->get_sigma()[0];
-    // int kwidth = transformation->get_kernel()[0];
-    // printf("sigma %f\n", sigm_gf);
     
     // (1): Calculate new estimate of velocity
     // std::cout << "(1)" << std::endl;
@@ -431,13 +425,6 @@ typename lddmm<type,container>::ptr_image_group lddmm<type,container>::update_ld
         // v->at(t) =  v->at(t) - (dv->at(t) * learning_rate);
         auto dd = (dv->at(t) * learning_rate);
         v->at(t) = v->at(t) - dd;
-
-        // elastic
-        // if (sigm_gf > 0.0)
-        // {
-        //     for(int d = 0; d < dim; d++)
-        //         v->at(t)[d] = gaussian_filter(v->at(t)[d], sigm_gf, kwidth);
-        // };
     };
 
     // (3): calculate backward flows
@@ -466,8 +453,7 @@ typename lddmm<type,container>::ptr_image_group lddmm<type,container>::update_ld
     
     // (8): Calculate Jacobian determinant of the transformation
     // std::cout << "(8)" << std::endl;
-    // ptr_image_group det_phi1 = jacobian_determinant(phi1);
-    det_phi1 = jacobian_determinant(phi1);
+    ptr_image_group det_phi1 = jacobian_determinant(phi1);
     if (is_injectivity_violated(det_phi1))
     {
         this->fail = true;
@@ -480,25 +466,14 @@ typename lddmm<type,container>::ptr_image_group lddmm<type,container>::update_ld
     for(int t = 0; t < tsteps; t++)
     {
         auto s = *(j0->at(t)) - *(j1->at(t));
-        auto p = (*det_phi1->at(t)) * s;
-        for(int d = 0; d < dim; d++) *g->at(d) = p * (*dj0->at(t)[d]);
+        auto p = (*(det_phi1->at(t))) * s * (2 / (sigma*sigma));
+        for(int d = 0; d < dim; d++) *(g->at(d)) = p * (*(dj0->at(t)[d]));
         auto r = regularize.k(g);
-        auto r2 = r * (2.0/(sigma*sigma));
-        // auto r2 = r * (2.0*N);
-        auto v2 = v->at(t) * 2.0;
-        dv->at(t) = v2  - r2;
+        auto v_t_2 = v->at(t)*2.0;
+        dv->at(t) = v_t_2  - r;
         // de = 2 / sigma**2 * (det_phi1[t])[np.newaxis] * dj0[t] * (j0[t] - j1[t])[np.newaxis]
         // dv[t] = 2*v[t] - bregularizer.K(de)
     };
-
-    // scale
-    // type max;
-    // for(int t = 0; t < tsteps; t++)
-    // {
-
-    // };
-
-
 
     // (10) calculate norm of the gradient, stop if small
     // std::cout << "(10)" << std::endl;

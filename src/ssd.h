@@ -78,6 +78,7 @@ public:
 template <typename type, typename container>
 type ssd<type,container>::cost()
 {
+    // std::cout << "ssd cost" << std::endl;
     this->warped_moving(); // update moving_prime
     // auto moving_prime = this->warped_moving();
     // moving_prime->print_data("moving prime");

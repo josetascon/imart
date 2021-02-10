@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-07-23 10:12:24
+* @Last Modified time: 2021-02-10 16:17:33
 */
 
 
@@ -39,7 +39,7 @@ int main()
     image1->print_data();
 
     // Create small imame
-    auto image2 = image_gpu<type>::new_pointer(10,8);
+    auto image2 = image_ocl<type>::new_pointer(10,8);
     image2->set_spacing(std::vector<double>{2.0,1.5});
     image2->ones();
     

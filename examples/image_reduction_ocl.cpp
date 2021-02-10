@@ -27,7 +27,7 @@ int main()
 
     // Image 1
     type min1, max1, sum1, prod1;
-    image_gpu<type> image1(811,604);
+    image_ocl<type> image1(811,604);
     image1.ones();
     
     t1.start();
@@ -54,7 +54,7 @@ int main()
 
     // Image 2
     type min2, max2, sum2, prod2;
-    image_gpu<type> image2(201,125,153);
+    image_ocl<type> image2(201,125,153);
     image2.ones();
     // std::cout << image2(0,0,0);
     // std::cout << image2(200,200,100);
@@ -86,11 +86,11 @@ int main()
     std::cout << " =====================";
     std::cout << std::endl;
 
-    image_gpu<type> image3(5,1);
+    image_ocl<type> image3(5,1);
     *image3.get_data() = {1.0, 2.0, 3.0, 1.0, 4.0};
     
     type x;
-    image_gpu<type> result = image3*image3;
+    image_ocl<type> result = image3*image3;
     x = result.sum();
 
     type dot;

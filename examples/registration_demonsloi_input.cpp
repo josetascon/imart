@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-01-27 06:46:50
+* @Last Modified time: 2021-01-27 20:28:12
 */
 
 // std libs
@@ -166,9 +166,12 @@ int main(int argc, char *argv[])
         auto view = viewer<image_cpu<type>>::new_pointer();
         view->size(1000,400);
         view->subplot(1,3);
-        view->add_image(img_moving);
-        view->add_image(img_fixed);
-        view->add_image(moving_warped);
+        type max_gray = 255.0;
+
+        view->add_image( normalize(img_moving,    0.0, max_gray) );
+        view->add_image( normalize(img_fixed,     0.0, max_gray) );
+        view->add_image( normalize(moving_warped, 0.0, max_gray) );
+        
         view->setup();
         // view->visualize();
         view->show();

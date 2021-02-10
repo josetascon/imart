@@ -81,8 +81,8 @@ public:
 template<typename type>
 using demons_diffeomorphic_cpu = demons_diffeomorphic<type,vector_cpu<type>>;
 
-template<typename type>
-using demons_diffeomorphic_gpu = demons_diffeomorphic<type,vector_ocl<type>>;
+// template<typename type>
+// using demons_diffeomorphic_gpu = demons_diffeomorphic<type,vector_ocl<type>>;
 
 
 // ===========================================

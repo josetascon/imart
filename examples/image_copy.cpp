@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-01-27 15:51:36
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-05-11 10:09:08
+* @Last Modified time: 2021-02-10 15:46:04
 */
 
 // std libs
@@ -11,12 +11,14 @@
 
 // local libs
 #include "../src/image.h"
-#include "../src/transform_base.h"
+#include "../src/transform.h"
 
-using type = float;
+using namespace imart;
 
 int main()
 {
+    using type = float;
+
     std::cout << "===================== ";
     std::cout << "Test image, equal and duplicate functions";
     std::cout << " =====================";
@@ -28,12 +30,12 @@ int main()
     *image1.get_data() = {1.0, 0.0, 0.0, 1.0, 3.5, -1.0};
 
     image2 = image1;
-    image3.duplicate(image1);
+    image3.copy_(image1);
 
     std::cout << "Summary commands:\n";
     std::cout << "image1 = {1.0, 0.0, 0.0, 1.0, 3.5, -1.0}\n";
     std::cout << "image2 = image1\n";
-    std::cout << "image3.duplicate(image1)\n";
+    std::cout << "image3.copy_(image1)\n";
     std::cout << std::endl;
 
     image1.print_data("Image1:");
@@ -55,11 +57,11 @@ int main()
     image<type> image11(6,1);
     image<type> image12(6,1);
     *image11.get_data() = {9.0, 0.0, 0.0, 9.0, 3.5, -1.0};
-    image12.copy(image11);
+    image12.clone_(image11);
 
     std::cout << "Summary commands:\n";
     std::cout << "image11 = {9.0, 0.0, 0.0, 9.0, 3.5, -1.0}\n";
-    std::cout << "image12.copy(image11)\n";
+    std::cout << "image12.clone_(image11)\n";
     std::cout << std::endl;
 
     image11.print_data("Image11:");
@@ -71,8 +73,8 @@ int main()
     if (image11.ptr() != image12.ptr()) { std::cout << "Different pointers!\n"; };
 
     image<type>::pointer image21 = image<type>::new_pointer(6,1);
-    image_base<type>::pointer image22;
-    image22 = image21->another_pointer(image21->get_size());
+    image<type>::pointer image22;
+    image22 = image21->mimic();
 
     image21->print("Image21:");
     image22->print("Image22:");
@@ -86,17 +88,17 @@ int main()
     
     image<type>::pointer imaget1(new image<type>{1.0, 0.0, 0.0, 1.0, 0.5, -0.5});
     
-    transform_base<type> transform1(2,imaget1);
-    transform_base<type> transform2;
-    transform_base<type> transform3;
+    transform<type> transform1(2,imaget1);
+    transform<type> transform2;
+    transform<type> transform3;
 
     transform2 = transform1;
-    transform3.duplicate(transform1);
+    transform3.copy_(transform1);
 
     std::cout << "Summary commands:\n";
     std::cout << "transform1 with params = {1.0, 0.0, 0.0, 1.0, 3.5, -1.0}\n";
     std::cout << "transform2 = transform1\n";
-    std::cout << "transform3.duplicate(transform1)\n";
+    std::cout << "transform3.copy_(transform1)\n";
     std::cout << std::endl;
 
     transform1.print_data("transform1:");
@@ -109,9 +111,9 @@ int main()
     // std::cout << "Ptr count: " << imaget1->get_ptr_count() << std::endl;
     // std::cout << "Ptr count: " << imaget2->get_ptr_count() << std::endl;
 
-    image_base<type>::pointer param_t1 = transform1.get_parameters();
-    image_base<type>::pointer param_t2 = transform2.get_parameters();
-    image_base<type>::pointer param_t3 = transform3.get_parameters();
+    image<type>::pointer param_t1 = transform1.get_parameters();
+    image<type>::pointer param_t2 = transform2.get_parameters();
+    image<type>::pointer param_t3 = transform3.get_parameters();
 
     std::cout << "Transform 1 parameters (image) ptr count: " << param_t1.use_count() << "\n";    
     std::cout << "Transform 1 parameters (image) ptr value: " << param_t1.get() << "\n";
@@ -132,14 +134,14 @@ int main()
     std::cout << std::endl;
 
     image<type>::pointer imaget11(new image<type>{9.0, 0.0, 0.0, 9.0, 3.5, -1.0});
-    transform_base<type> transform11(2,imaget11);
-    transform_base<type> transform12(2);
+    transform<type> transform11(2,imaget11);
+    transform<type> transform12(2);
     
-    transform12.copy(transform11);
+    transform12.clone_(transform11);
 
     std::cout << "Summary commands:\n";
     std::cout << "transform11 with params = {9.0, 0.0, 0.0, 9.0, 3.5, -1.0}\n";
-    std::cout << "transform12.copy(transform11)\n";
+    std::cout << "transform12.clone_(transform11)\n";
     std::cout << std::endl;
     
     transform11.print_data("transform11:");
@@ -167,12 +169,12 @@ int main()
     grid<type> grid3;
 
     grid2 = grid1;
-    grid3.duplicate(grid1);
+    grid3.copy_(grid1);
 
     std::cout << "Summary commands:\n";
     std::cout << "grid1 with size(9,7), spacing(0.5,1.2), origin(-12.0,5.0)\n";
     std::cout << "grid2 = grid1\n";
-    std::cout << "grid3.duplicate(grid1)\n";
+    std::cout << "grid3.copy_(grid1)\n";
     std::cout << std::endl;
 
     grid1.print_data("grid1:");
@@ -192,11 +194,11 @@ int main()
 
     grid<type> grid11(imageg);
     grid<type> grid12(2);
-    grid12.copy(grid11);
+    grid12.clone_(grid11);
 
     std::cout << "Summary commands:\n";
     std::cout << "grid11 with size(9,7), spacing(0.5,1.2), origin(-12.0,5.0)\n";
-    std::cout << "grid12.copy(grid11)\n";
+    std::cout << "grid12.clone_(grid11)\n";
     std::cout << std::endl;
 
     grid12.print_data("grid12:");

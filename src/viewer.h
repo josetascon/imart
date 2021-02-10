@@ -194,10 +194,18 @@ vtkSmartPointer<vtkImageData> viewer<type>::imart2vtk(std::shared_ptr<type> imag
     };
     imageImport->SetDataExtentToWholeExtent();
     // TODO: modify this according to type
-    // imageImport->SetDataScalarTypeToUnsignedChar();
-    // imageImport->SetDataScalarTypeToFloat();
     imageImport->SetDataScalarTypeToDouble();
-    imageImport->SetNumberOfScalarComponents(image_pointer->get_channels());
+    // if (strcmp(image_pointer->get_type().c_str(),"unsigned_char"))
+    //     imageImport->SetDataScalarTypeToUnsignedChar();
+    // else if (strcmp(image_pointer->get_type().c_str(),"unsigned_short"))
+    //     imageImport->SetDataScalarTypeToUnsignedShort();
+    // else if (strcmp(image_pointer->get_type().c_str(),"short"))
+    //     imageImport->SetDataScalarTypeToShort();
+    // else if (strcmp(image_pointer->get_type().c_str(),"float"))
+    //     imageImport->SetDataScalarTypeToFloat();
+    // else if (strcmp(image_pointer->get_type().c_str(),"double"))
+    //     imageImport->SetDataScalarTypeToDouble();
+    // imageImport->SetNumberOfScalarComponents(image_pointer->get_channels());
     
     // std::vector<double> vec = image_pointer->get_data()->std_vector();
     // imageImport->SetImportVoidPointer(vec.data());
@@ -291,17 +299,17 @@ void viewer<type>::update_image(std::shared_ptr<type> img, int id)
         _images_[id] = img;
         _vtkimg_[id] = imart2vtk(_images_[id]);
         _actors_[id]->GetMapper()->SetInputData(_vtkimg_[id]);
-        _renders_[id]->SetViewport(_viewports_[id].data());
-        _renders_[id]->AddActor(_actors_[id]);
-        _renders_[id]->SetBackground(0,0,0); // dark
-        _renders_[id]->ResetCamera();
-        _renwin_->AddRenderer(_renders_[id]);
+        // _renders_[id]->SetViewport(_viewports_[id].data());
+        // _renders_[id]->AddActor(_actors_[id]);
+        // _renders_[id]->SetBackground(0,0,0); // dark
+        // _renders_[id]->ResetCamera();
+        // _renwin_->AddRenderer(_renders_[id]);
     }
     else
     {
         printf("[Warning][Viewer] Invalid update due to image id");
     };
-    visualize();
+    // visualize();
 };
 
 template <typename type>

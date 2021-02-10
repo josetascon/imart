@@ -127,6 +127,8 @@ public:
     virtual void copy_(const image & input);
     //! Imitate other image with a property copy
     virtual void mimic_(const image & input);
+    // !Make the data equal. This function is to hold the memory pointer
+    void equal(const image & input);
 
     // ===========================================
     // Get Functions
@@ -263,8 +265,8 @@ public:
 template<typename type>
 using image_cpu = image<type,vector_cpu<type>>;
 
-template<typename type>
-using image_gpu = image<type,vector_ocl<type>>;
+// template<typename type>
+// using image_gpu = image<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
@@ -458,6 +460,13 @@ void image<type,container>::mimic_(const image & input)
     copy_properties(input);
     space_object::mimic_(input);
     data_object<type,container>::mimic_(input);
+};
+
+template <typename type, typename container>
+void image<type,container>::equal(const image & input)
+{
+    assert_size(input);
+    this->get_data()->equal(input.get_data());
 };
 
 // template <typename type, typename container>
@@ -940,7 +949,7 @@ type image<type,container>::dot(const image & input)
 template <typename type, typename container>
 type image<type,container>::mean()
 {
-    return type(get_total_elements())*data->sum();
+    return type(1.0/get_total_elements())*data->sum();
 };
 
 template <typename type, typename container>

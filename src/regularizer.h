@@ -197,7 +197,7 @@ std::vector<std::shared_ptr<image<type,container>>> regularizer<type,container>:
         {
             for(int i = 0; i < w; i++)
             {
-                pa[i + j*w] += 2 * alpha * ((1 - cos(2 * M_PI * j / h)) + (1 - cos(2 * M_PI * i / w)));
+                pa[i + j*w] = gamma + 2 * alpha * ((1 - cos(2 * M_PI * j / h)) + (1 - cos(2 * M_PI * i / w)));
             };
         };
     }
@@ -212,7 +212,7 @@ std::vector<std::shared_ptr<image<type,container>>> regularizer<type,container>:
             {
                 for(int i = 0; i < w; i++)
                 {
-                    pa[i + j*w + k*w*h] += 2 * alpha * ((1 - cos(2 * M_PI * j / h)) + (1 - cos(2 * M_PI * i / w)) + (1 - cos(2 * M_PI * k / l)));
+                    pa[i + j*w + k*w*h] = gamma + 2 * alpha * ((1 - cos(2 * M_PI * j / h)) + (1 - cos(2 * M_PI * i / w)) + (1 - cos(2 * M_PI * k / l)));
                 };
             };
         };
@@ -222,7 +222,7 @@ std::vector<std::shared_ptr<image<type,container>>> regularizer<type,container>:
     dat->read_ram(pa, len);
     a->set_data(dat);
 
-    *a = *a + gamma;
+    // *a = *a + gamma;
     
     this->A = std::vector<std::shared_ptr<image<type,container>>>(dim);
 

@@ -102,8 +102,8 @@ public:
 template<typename type>
 using lddmm_loi_cpu = lddmm_loi<type,vector_cpu<type>>;
 
-template<typename type>
-using lddmm_loi_gpu = lddmm_loi<type,vector_ocl<type>>;
+// template<typename type>
+// using lddmm_loi_gpu = lddmm_loi<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>

@@ -24,7 +24,7 @@ int main()
     //      Testing 2d affine with points
     // ============================================
     // Create identity transform
-    auto affine1 = affine_gpu<type>::new_pointer(2);
+    auto affine1 = affine_ocl<type>::new_pointer(2);
 
     std::vector<type> point1({1.0,2.0});
     std::vector<type> point2;
@@ -42,8 +42,8 @@ int main()
     std::cout << point2[0] << " " << point2[1] << std::endl;
 
     // Create other transform
-    image_gpu<type>::pointer params2(new image_gpu<type>{1.1, 0.5, -0.5, 0.9, 2.1, -1.1});
-    auto affine2 = affine_gpu<type>::new_pointer(2,params2);
+    image_ocl<type>::pointer params2(new image_ocl<type>{1.1, 0.5, -0.5, 0.9, 2.1, -1.1});
+    auto affine2 = affine_ocl<type>::new_pointer(2,params2);
 
     std::vector<type> point3({1.0,2.0});
     std::vector<type> point4;
@@ -62,9 +62,9 @@ int main()
     // // ============================================
     // //      Testing 2d affine with grids
     // // ============================================
-    auto image0 = image_gpu<type>::new_pointer(5,3);
-    auto x0 = grid_gpu<type>::new_pointer(image0);
-    auto x1 = grid_gpu<type>::new_pointer();
+    auto image0 = image_ocl<type>::new_pointer(5,3);
+    auto x0 = grid_ocl<type>::new_pointer(image0);
+    auto x1 = grid_ocl<type>::new_pointer();
     
     x1 = affine1->apply(x0);
 
@@ -74,8 +74,8 @@ int main()
     x1 = affine2->apply(x0);
     x1->print_data("grid x1, affine 2");
 
-    image_gpu<type>::pointer params3(new image_gpu<type>{1.0, 0.0, 0.0, 1.0, 10.0, -10.0});
-    auto translation = affine_gpu<type>::new_pointer(2,params3);
+    image_ocl<type>::pointer params3(new image_ocl<type>{1.0, 0.0, 0.0, 1.0, 10.0, -10.0});
+    auto translation = affine_ocl<type>::new_pointer(2,params3);
 
     translation->print("Translation");
     translation->print_data();
@@ -87,7 +87,7 @@ int main()
     //      Testing 3d affine with points
     // ============================================
     // Create identity transform
-    auto affine11 = affine_gpu<type>::new_pointer(3);
+    auto affine11 = affine_ocl<type>::new_pointer(3);
 
     std::vector<type> point11({1.0,-2.0,8.0});
     std::vector<type> point12;
@@ -105,8 +105,8 @@ int main()
     std::cout << point12[0] << " " << point12[1] << " " << point12[2] << std::endl;
 
     // Create other transform
-    image_gpu<type>::pointer params12(new image_gpu<type>{1.1, 0.5, 0.1, -0.5, 0.9, -0.2, 0.0, 0.0, 1.0, 2.1, -1.1, 5.2});
-    auto affine12 = affine_gpu<type>::new_pointer(3,params12);
+    image_ocl<type>::pointer params12(new image_ocl<type>{1.1, 0.5, 0.1, -0.5, 0.9, -0.2, 0.0, 0.0, 1.0, 2.1, -1.1, 5.2});
+    auto affine12 = affine_ocl<type>::new_pointer(3,params12);
 
     std::vector<type> point13({1.0,2.0,3.0});
     std::vector<type> point14;
@@ -125,9 +125,9 @@ int main()
     // ============================================
     //      Testing 3d affine with grids
     // ============================================
-    auto image10 = image_gpu<type>::new_pointer(4,2,3);
-    auto x10 = grid_gpu<type>::new_pointer(image10);
-    auto x11 = grid_gpu<type>::new_pointer(3);
+    auto image10 = image_ocl<type>::new_pointer(4,2,3);
+    auto x10 = grid_ocl<type>::new_pointer(image10);
+    auto x11 = grid_ocl<type>::new_pointer(3);
     
     x11 = affine11->apply(x10);
 
@@ -137,8 +137,8 @@ int main()
     x11 = affine12->apply(x10);
     x11->print_data("grid x11, affine 12");
 
-    image_gpu<type>::pointer params13(new image_gpu<type>{1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 10.0, -10.0 , 4.5});
-    auto translation3 = affine_gpu<type>::new_pointer(3,params13);
+    image_ocl<type>::pointer params13(new image_ocl<type>{1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 10.0, -10.0 , 4.5});
+    auto translation3 = affine_ocl<type>::new_pointer(3,params13);
 
     translation3->print("Translation");
     translation3->print_data();

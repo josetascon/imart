@@ -98,8 +98,8 @@ public:
 template<typename type>
 using demons_loi_cpu = demons_loi<type,vector_cpu<type>>;
 
-template<typename type>
-using demons_loi_gpu = demons_loi<type,vector_ocl<type>>;
+// template<typename type>
+// using demons_loi_gpu = demons_loi<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>

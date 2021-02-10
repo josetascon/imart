@@ -95,8 +95,8 @@ public:
 template<typename type>
 using demons_cpu = demons<type,vector_cpu<type>>;
 
-template<typename type>
-using demons_gpu = demons<type,vector_ocl<type>>;
+// template<typename type>
+// using demons_gpu = demons<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>

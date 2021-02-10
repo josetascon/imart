@@ -81,12 +81,15 @@ public:
 template<typename type>
 using global_cpu = global<type,vector_cpu<type>>;
 
+#ifdef IMART_WITH_OPENCL
 template<typename type>
-using global_gpu = global<type,vector_ocl<type>>;
+using global_ocl = global<type,vector_ocl<type>>;
+#endif
 
+#ifdef IMART_WITH_CUDA
 template<typename type>
 using global_cuda = global<type,vector_cuda<type>>;
-
+#endif
 
 // ===========================================
 //          Functions of Class global

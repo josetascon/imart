@@ -59,8 +59,8 @@ public:
 template<typename type>
 using affine_cpu = affine<type,vector_cpu<type>>;
 
-template<typename type>
-using affine_gpu = affine<type,vector_ocl<type>>;
+// template<typename type>
+// using affine_gpu = affine<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>

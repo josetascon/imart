@@ -22,9 +22,9 @@ int main()
     //      Testing image_2d meshgrid
     // ============================================
     // Create small imame
-    image_gpu<double> image0(10,5);
+    image_ocl<double> image0(10,5);
     
-    grid_gpu<double> x0(image0);
+    grid_ocl<double> x0(image0);
     std::cout << "a\n" ;
     x0.print();
     
@@ -32,8 +32,8 @@ int main()
     std::cout << "b\n" ;
     x0.print_data();
 
-    image_gpu<double> image1(3, 5, 2);
-    grid_gpu<double> x1; // default grid in 2d
+    image_ocl<double> image1(3, 5, 2);
+    grid_ocl<double> x1; // default grid in 2d
     std::cout << "a\n" ;
     x1.print();
     

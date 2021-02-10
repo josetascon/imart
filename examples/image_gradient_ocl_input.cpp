@@ -27,10 +27,10 @@ int main()
 
     // Create small imame
     std::string filename = "./examples/images/cameraman20x16.tif";
-    auto img = image_gpu<unsigned short>::new_pointer();
+    auto img = image_ocl<unsigned short>::new_pointer();
     img->read(filename);
     
-    auto image0 = image_gpu<type>::new_pointer();
+    auto image0 = image_ocl<type>::new_pointer();
     cast(*img, *image0);
     image0->print_data("Image Input");
 
@@ -47,7 +47,7 @@ int main()
     };
 
     // ref
-    // image_gpu<type> image0_pad = pad(*image0, none, extra);
+    // image_ocl<type> image0_pad = pad(*image0, none, extra);
     // image0->print();
     // image0_pad.print();
 
@@ -55,14 +55,14 @@ int main()
     // w[0]->print_data();
 
     //pointer
-    image_gpu<type>::pointer image0_pad = pad(image0, none, extra);
+    image_ocl<type>::pointer image0_pad = pad(image0, none, extra);
     image0->print();
     image0_pad->print();
 
     auto w = fft(image0_pad);
 
 
-    typename image_gpu<type>::vector grad(image0->get_dimension());
+    typename image_ocl<type>::vector grad(image0->get_dimension());
     grad = gradient(image0);
     // image0->print_data("i");
     grad[0]->print();
