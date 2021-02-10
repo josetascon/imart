@@ -90,6 +90,7 @@ public:
     // ===========================================
     void read_ram(type * p, int size, int offset = 0);
     void write_ram(type * p, int size, int offset = 0);
+    void equal(pointer input);
 
     // ===========================================
     // Print Functions
@@ -345,6 +346,19 @@ void vector_cpu<type>::write_ram(type * p, int s, int offset)
     for(int k=0; k<s; k++)
     {
         *(p+k) = *(d+k);
+    };
+};
+
+template <typename type>
+void vector_cpu<type>::equal(pointer input)
+{
+    type * d = this->data();
+    type * p = input->data();
+    int n = input->size();
+    #pragma omp parallel for if (n > IMART_OPENMP_VECTOR_MIN_SIZE)
+    for(int k=0; k<n; k++)
+    {
+        *(d+k) = *(p+k);
     };
 };
 
@@ -2128,8 +2142,8 @@ void vector_cpu<type>::fft(std::vector<pointer> & input, std::vector<pointer> & 
     {
         for (int i = 0; i < N; i++)
         {
-            pre[i] = out[i][0]/N;
-            pim[i] = out[i][1]/N;
+            pre[i] = out[i][0];
+            pim[i] = out[i][1];
         };
     }
 };
@@ -2195,8 +2209,8 @@ void vector_cpu<type>::gradienty(typename vector_cpu<type>::pointer imgr,
             for(int i = 0; i < n0; i++)
             {
                 if(j == 0)          pimgo[i + j*n0] = pimgr[i + (j+1)*n0] - pimgr[i + j*n0];
-                    else if (j == n1-1) pimgo[i + j*n0] = pimgr[i + j*n0] - pimgr[i + (j-1)*n0];
-                    else    pimgo[i + j*n0] = a*pimgr[i + (j+1)*n0] - a*pimgr[i + (j-1)*n0];
+                else if (j == n1-1) pimgo[i + j*n0] = pimgr[i + j*n0] - pimgr[i + (j-1)*n0];
+                else    pimgo[i + j*n0] = a*pimgr[i + (j+1)*n0] - a*pimgr[i + (j-1)*n0];
             };
         };
     }

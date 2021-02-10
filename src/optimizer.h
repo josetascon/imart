@@ -113,6 +113,7 @@ void optimizer<type,container>::init()
     this->set_total_inputs(1);      //process_object::init
     this->set_total_outputs(0);     //process_object::init
 
+    // std::cout << "metric" << std::endl;
     _method_ = metric<type,container>::new_pointer();
     this->setup_input(_method_);
     this->setup_output();           // output is transformation

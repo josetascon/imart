@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-01-27 06:48:07
+* @Last Modified time: 2021-02-10 13:09:08
 */
 
 // std libs
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     // Variables
     std::string file_fixed;
     std::string file_moving;
-    std::string file_output = "./moving_lddmm_";
+    std::string file_output = "./moving_lddmm_proto_";
     bool verbose;
     bool plot, plot_per_iter;
     unsigned int dim; int iter, tsteps;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     ("opt-iterations,i", po::value<int>(&iter)->default_value(150), "Optimizer iterations")
     ("opt-tolerance,t", po::value<double>(&tolerance)->default_value(1e-7), "Optimizer tolerance")
     ("sigma_fluid,u", po::value<double>(&sigma_f)->default_value(0.0), "Deformation field sigma fluid")
-    ("sigma_elastic,e", po::value<double>(&sigma_e)->default_value(3.0), "Deformation field sigma elastic")
+    ("sigma_elastic,e", po::value<double>(&sigma_e)->default_value(1.0), "Deformation field sigma elastic")
     ("sigma_lddmm,s", po::value<double>(&sigma_l)->default_value(0.1), "LDDMM sigma")
     ("alpha_lddmm,a", po::value<double>(&alpha)->default_value(10.0), "LDDMM alpha")
     ("gamma_lddmm,g", po::value<double>(&gamma)->default_value(1.0), "LDDMM gamma")
@@ -131,6 +131,27 @@ int main(int argc, char *argv[])
     typename transform<type,vector_cpu<type>>::pointer tr_derive = tr_base->mimic();
 
     std::string termination = "iterations";
+
+    auto view = viewer<image_cpu<type>>::new_pointer();
+    if (plot_per_iter)
+    {
+        view->size(1600,800);
+        view->subplot(2,5);
+        for (int i=0; i<5; i++)
+        {
+            int p = int(tsteps/4)*i - 1;
+            if (i == 0) p = 0;
+            view->add_image(normalize(lddmm1->j1->at(p),0.0,255.0));
+        }
+        for (int i=0; i<5; i++)
+        {
+            int p = int(tsteps/4)*i - 1;
+            if (i == 0) p = 0;
+            view->add_image(normalize(lddmm1->j0->at(p),0.0,255.0));
+        }
+        view->setup();
+        view->visualize();
+    };
     
     for (int k = 0; k < iter; k++)
     {
@@ -151,41 +172,67 @@ int main(int argc, char *argv[])
             // std::cout << "determinant error" << std::endl;
         };
 
-        
+        // TODO: VIEWER ONLY WORK WITH DOUBLE. FIX
+        int c = 0;
         if (plot_per_iter)
         {
-            auto view = viewer<image_cpu<type>>::new_pointer();
-            view->size(1600,800);
-            view->subplot(2,5);
-
-            view->add_image(normalize(lddmm1->j1->at(0),0.0,255.0));
-            view->add_image(normalize(lddmm1->j1->at(7),0.0,255.0));
-            view->add_image(normalize(lddmm1->j1->at(15),0.0,255.0));
-            view->add_image(normalize(lddmm1->j1->at(23),0.0,255.0));
-            view->add_image(normalize(lddmm1->j1->at(31),0.0,255.0));
-
-            view->add_image(normalize(lddmm1->j0->at(0),0.0,255.0));
-            view->add_image(normalize(lddmm1->j0->at(7),0.0,255.0));
-            view->add_image(normalize(lddmm1->j0->at(15),0.0,255.0));
-            view->add_image(normalize(lddmm1->j0->at(23),0.0,255.0));
-            view->add_image(normalize(lddmm1->j0->at(31),0.0,255.0));
-
-            // view->add_image(lddmm1->j1->at(0));
-            // view->add_image(lddmm1->j1->at(7));
-            // view->add_image(lddmm1->j1->at(15));
-            // view->add_image(lddmm1->j1->at(23));
-            // view->add_image(lddmm1->j1->at(31));
-
-            // view->add_image(lddmm1->j0->at(0));
-            // view->add_image(lddmm1->j0->at(7));
-            // view->add_image(lddmm1->j0->at(15));
-            // view->add_image(lddmm1->j0->at(23));
-            // view->add_image(lddmm1->j0->at(31));
-            
-            view->setup();
-            // view->visualize();
-            view->show();
+            // auto view = viewer<image_cpu<type>>::new_pointer();
+            // view->size(1600,800);
+            // view->subplot(2,5);
+            for (int i=0; i<5; i++)
+            {
+                int p = int(tsteps/4)*i - 1;
+                if (i == 0) p = 0;
+                // view->add_image(normalize(lddmm1->j1->at(p),0.0,255.0));
+                view->update_image(normalize(lddmm1->j1->at(p),0.0,255.0), c);
+                c++;
+            }
+            for (int i=0; i<5; i++)
+            {
+                int p = int(tsteps/4)*i - 1;
+                if (i == 0) p = 0;
+                view->update_image(normalize(lddmm1->j0->at(p),0.0,255.0), c);
+                c++;
+            }
+            // view->setup();
+            view->visualize();
         };
+
+        
+        // if (plot_per_iter)
+        // {
+        //     auto view = viewer<image_cpu<type>>::new_pointer();
+        //     view->size(1600,800);
+        //     view->subplot(2,5);
+
+        //     view->add_image(normalize(lddmm1->j1->at(0),0.0,255.0));
+        //     view->add_image(normalize(lddmm1->j1->at(7),0.0,255.0));
+        //     view->add_image(normalize(lddmm1->j1->at(15),0.0,255.0));
+        //     view->add_image(normalize(lddmm1->j1->at(23),0.0,255.0));
+        //     view->add_image(normalize(lddmm1->j1->at(31),0.0,255.0));
+
+        //     view->add_image(normalize(lddmm1->j0->at(0),0.0,255.0));
+        //     view->add_image(normalize(lddmm1->j0->at(7),0.0,255.0));
+        //     view->add_image(normalize(lddmm1->j0->at(15),0.0,255.0));
+        //     view->add_image(normalize(lddmm1->j0->at(23),0.0,255.0));
+        //     view->add_image(normalize(lddmm1->j0->at(31),0.0,255.0));
+
+        //     // view->add_image(lddmm1->j1->at(0));
+        //     // view->add_image(lddmm1->j1->at(7));
+        //     // view->add_image(lddmm1->j1->at(15));
+        //     // view->add_image(lddmm1->j1->at(23));
+        //     // view->add_image(lddmm1->j1->at(31));
+
+        //     // view->add_image(lddmm1->j0->at(0));
+        //     // view->add_image(lddmm1->j0->at(7));
+        //     // view->add_image(lddmm1->j0->at(15));
+        //     // view->add_image(lddmm1->j0->at(23));
+        //     // view->add_image(lddmm1->j0->at(31));
+            
+        //     view->setup();
+        //     // view->visualize();
+        //     view->show();
+        // };
 
         previous_cost = current_cost;
     };
@@ -222,10 +269,21 @@ int main(int argc, char *argv[])
     }
     // }
 
+     // Save jacobian
+    std::string jfile0 = "lddmm_jac_";
+
+    lddmm1->det_phi1->at(0)->write(jfile0 + "tinit.nrrd");
+    lddmm1->det_phi1->at(tsteps-1)->write(jfile0 + "tend.nrrd");
+
     auto transformation = tr_base->clone();
     auto interpolation = ilinear_cpu<type>::new_pointer(img_moving);
     auto x0 = grid_cpu<type>::new_pointer(img_fixed);
     auto moving_warped = interpolation->apply(transformation->apply(x0));
+    
+    transformation->print();
+    x0->print();
+    moving_warped->print();
+
 
     // auto moving_warped = lddmm1->warped_moving();
     // moving_warped->print();
@@ -255,10 +313,11 @@ int main(int argc, char *argv[])
         auto view = viewer<image_cpu<type>>::new_pointer();
         view->size(1000,400);
         view->subplot(1,3);
+        type max_gray = 255.0;
 
-        view->add_image( normalize(img_moving,0.0,255.0)    );
-        view->add_image( normalize(img_fixed,0.0,255.0)     );
-        view->add_image( normalize(moving_warped,0.0,255.0) );
+        view->add_image( normalize(img_moving,    0.0, max_gray) );
+        view->add_image( normalize(img_fixed,     0.0, max_gray) );
+        view->add_image( normalize(moving_warped, 0.0, max_gray) );
         // view->add_image(img_moving);
         // view->add_image(img_fixed);
         // view->add_image(moving_warped);

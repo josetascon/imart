@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-06 00:00:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-09-07 16:32:25
+* @Last Modified time: 2021-02-10 19:12:35
 */
 
 // std libs
@@ -358,7 +358,7 @@ TYPED_TEST(test_vector_cuda, scalar_operations)
     ASSERT_FLOAT_EQ( 2.0, vec5->operator[](8) );
     ASSERT_FLOAT_EQ( 2.0, vec5->operator[](21) );
 }
-/*
+
 // ============================================
 //          Testing Reduction Operations
 // ============================================
@@ -459,7 +459,7 @@ TYPED_TEST(test_vector_cuda, auxialiary_functions)
     ASSERT_FLOAT_EQ( 0.0, vec14->operator[](0) );
     ASSERT_FLOAT_EQ( 1/double(size-1), vec14->operator[](1) );
     ASSERT_FLOAT_EQ( 1.0, vec14->operator[](size-1) );
-}*/
+}
 
 int main(int argc, char **argv)
 {

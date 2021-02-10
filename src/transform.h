@@ -135,8 +135,8 @@ public:
 template<typename type>
 using transform_cpu = transform<type,vector_cpu<type>>;
 
-template<typename type>
-using transform_gpu = transform<type,vector_ocl<type>>;
+// template<typename type>
+// using transform_gpu = transform<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>

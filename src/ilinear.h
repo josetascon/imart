@@ -67,8 +67,8 @@ public:
 template<typename type>
 using ilinear_cpu = ilinear<type,vector_cpu<type>>;
 
-template<typename type>
-using ilinear_gpu = ilinear<type,vector_ocl<type>>;
+// template<typename type>
+// using ilinear_gpu = ilinear<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
@@ -166,6 +166,8 @@ typename image<type,container>::pointer ilinear<type,container>::linear2(const t
     image_out->set_sod_parameters(xout->get_spacing(), xout->get_origin(), xout->get_direction());
     image_out->assign(_default_);
 
+    if (w < 1 || h < 1) return image_out;
+
     typename image<type,container>::pointer xo = (xout->ptr()[0]);   // raw pointer to
     typename image<type,container>::pointer yo = (xout->ptr()[1]);   // input grid coordinates
 
@@ -198,6 +200,8 @@ typename image<type,container>::pointer ilinear<type,container>::linear3(const t
     auto image_out = image<type,container>::new_pointer(w, h, l);
     image_out->set_sod_parameters(xout->get_spacing(), xout->get_origin(), xout->get_direction());
     image_out->assign(_default_);
+
+    if (w < 1 || h < 1 || l < 1) return image_out;
 
     typename image<type,container>::pointer xo = (xout->ptr()[0]);   // raw pointer to
     typename image<type,container>::pointer yo = (xout->ptr()[1]);   // input grid coordinates

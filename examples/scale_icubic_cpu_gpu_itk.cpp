@@ -74,15 +74,15 @@ int main(int argc, char *argv[])
     // ============================================
     //              Testing GPU
     // ============================================
-    auto image11 = image_gpu<unsigned char>::new_pointer(2);
-    auto image12 = image_gpu<type>::new_pointer(2);
-    typename image_gpu<type>::vector vimage13(num_scales);
-    typename image_gpu<unsigned char>::vector vimage14(num_scales);
+    auto image11 = image_ocl<unsigned char>::new_pointer(2);
+    auto image12 = image_ocl<type>::new_pointer(2);
+    typename image_ocl<type>::vector vimage13(num_scales);
+    typename image_ocl<unsigned char>::vector vimage14(num_scales);
 
     for(int k = 0; k < num_scales; k++)
     {
-        vimage13[k] = image_gpu<type>::new_pointer(2);
-        vimage14[k] = image_gpu<unsigned char>::new_pointer(2);
+        vimage13[k] = image_ocl<type>::new_pointer(2);
+        vimage14[k] = image_ocl<unsigned char>::new_pointer(2);
     }
 
     image11->read(argv[1]);
@@ -96,11 +96,11 @@ int main(int argc, char *argv[])
 
     // single test
     // auto imagea = mresolution->apply(2.0);
-    // auto imageo = image_gpu<unsigned char>::new_pointer(2);
+    // auto imageo = image_ocl<unsigned char>::new_pointer(2);
     // cast(*imagea,*imageo);
     // imageo->write("./out_res_2d_cpu.png");
     
-    std::string outfile11 = "./scaleup_icubic_gpu";
+    std::string outfile11 = "./scaleup_icubic_ocl";
     for(int k = 0; k < num_scales; k++)
     {
         vimage13[k] = mresolution_cpu1->apply(pow(2.0,-1.0*(k+1)));

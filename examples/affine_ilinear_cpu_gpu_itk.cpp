@@ -51,23 +51,23 @@ int main(int argc, char *argv[])
     image14->write("output_cpu.png");
 
     //GPU
-    auto image21 = image_gpu<unsigned short>::new_pointer();
-    auto image22 = image_gpu<type>::new_pointer();
-    auto image23 = image_gpu<type>::new_pointer();
-    auto image24 = image_gpu<unsigned short>::new_pointer();
+    auto image21 = image_ocl<unsigned short>::new_pointer();
+    auto image22 = image_ocl<type>::new_pointer();
+    auto image23 = image_ocl<type>::new_pointer();
+    auto image24 = image_ocl<unsigned short>::new_pointer();
     
     image21->read(argv[1]);
     cast(*image21, *image22);
-    auto xgpu = grid_gpu<type>::new_pointer(image22);
+    auto xgpu = grid_ocl<type>::new_pointer(image22);
 
-    // image_gpu<type>::pointer params2( new image_gpu<type>({0.95, -0.1, 0.05, 0.9, 20, 0.0}) );
-    image_gpu<type>::pointer params2( new image_gpu<type>({2.0, 0.0, 0.0, 1.0, 0.0, 0.0}) );
+    // image_ocl<type>::pointer params2( new image_ocl<type>({0.95, -0.1, 0.05, 0.9, 20, 0.0}) );
+    image_ocl<type>::pointer params2( new image_ocl<type>({2.0, 0.0, 0.0, 1.0, 0.0, 0.0}) );
     auto taffine2 = affine<type,vector_ocl<type>>::new_pointer(2, params2);
     auto interp2 = ilinear<type,vector_ocl<type>>::new_pointer(image22);
 
     image23 = interp2->apply(taffine2->apply(xgpu));
     cast(*image23, *image24);
-    image24->write("output_gpu.png");
+    image24->write("output_ocl.png");
 
     // ITK
     // Image

@@ -1249,19 +1249,20 @@ void vector_cuda<type>::cubic3( typename vector_cuda<type>::pointer xo,
 template <typename type>
 void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> sz, bool forward)
 {
-    std::cout << "CUDA FFT not implemented yet" << std::endl;
-    // if(sz.size() == 2)
-    // {
-    //     cuda_manager.setup(sz);
-    //     cuda_manager.execute( cuda_kernel_fft_2d<type>,  );
-        
-    // }
-    // else if (sz.size() == 3)
-    // {
-    //     cuda_manager.setup(sz);
-    //     cuda_manager.execute( cuda_kernel_fft_3d<type>,  );
-    // }
-    // else ;
+    // std::cout << "CUDA FFT not implemented yet" << std::endl;
+    if(sz.size() == 2)
+    {
+        cuda_manager.setup(sz);
+        cuda_manager.execute( cuda_kernel_fft_2d<type>, input[0]->get_buffer()->get(),  input[1]->get_buffer()->get(),
+                            output[0]->get_buffer()->get(), output[1]->get_buffer()->get(), sz[0], sz[1], forward);
+    }
+    else if (sz.size() == 3)
+    {
+        cuda_manager.setup(sz);
+        cuda_manager.execute( cuda_kernel_fft_3d<type>, input[0]->get_buffer()->get(),  input[1]->get_buffer()->get(),
+                            output[0]->get_buffer()->get(), output[1]->get_buffer()->get(), sz[0], sz[1], sz[2], forward);
+    }
+    else ;
 };
 
 /*

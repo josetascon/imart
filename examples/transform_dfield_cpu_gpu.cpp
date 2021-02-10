@@ -50,22 +50,22 @@ int main(int argc, char *argv[])
     image14->write("output_dfield_cpu.png");
 
     //GPU
-    auto image21 = image_gpu<unsigned short>::new_pointer();
-    auto image22 = image_gpu<type>::new_pointer();
-    auto image23 = image_gpu<type>::new_pointer();
-    auto image24 = image_gpu<unsigned short>::new_pointer();
+    auto image21 = image_ocl<unsigned short>::new_pointer();
+    auto image22 = image_ocl<type>::new_pointer();
+    auto image23 = image_ocl<type>::new_pointer();
+    auto image24 = image_ocl<unsigned short>::new_pointer();
     
     image21->read(argv[1]);
     cast(*image21, *image22);
-    auto xgpu = grid_gpu<type>::new_pointer(image22);
+    auto xgpu = grid_ocl<type>::new_pointer(image22);
 
-    auto tdfield2 = dfield_gpu<type>::new_pointer(image22);
+    auto tdfield2 = dfield_ocl<type>::new_pointer(image22);
     tdfield2->get_parameters(0)->assign(15);
     auto interp2 = ilinear<type,vector_ocl<type>>::new_pointer(image22);
 
     image23 = interp2->apply(tdfield2->apply(xgpu));
     cast(*image23, *image24);
-    image24->write("output_dfield_gpu.png");
+    image24->write("output_dfield_ocl.png");
 
     return 0;
 }

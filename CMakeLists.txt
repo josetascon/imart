@@ -14,16 +14,6 @@ project(imart C CXX)
 # Path where all your libraries are
 set(CMAKE_LIBRARY_PATH "/usr/lib")
 
-# ===========================================
-#               Dependencies
-# ===========================================
-option(ENABLE_OPENMP "Enable OpenMP" ON)
-option(ENABLE_OPENCL "Enable OpenCL" ON)
-option(ENABLE_CUDA "Enable CUDA" ON)
-
-option(ENABLE_FFTW "Enable fftw3" ON)
-option(ENABLE_CLFFTW "Enable clfft" ON)
-
 
 # ===========================================
 #               Compiler Flags
@@ -38,10 +28,20 @@ set (CMAKE_BUILD_TYPE "Release")
 # set (CMAKE_BUILD_TYPE "Debug")
 # set (CMAKE_BUILD_TYPE "RelWithDebInfo")
 
-if(ENABLE_OPENMP)
-    find_package( OpenMP REQUIRED )
-endif()
 
+# ===========================================
+#               Options
+# ===========================================
+option(IMART_WITH_OPENMP "Enable OpenMP" ON)
+option(IMART_WITH_OPENCL "Enable OpenCL" ON)
+option(IMART_WITH_CUDA "Enable CUDA" ON)
+
+option(IMART_WITH_FFTW "Enable fftw3" ON)
+option(IMART_WITH_CLFFT "Enable clfft" ON)
+
+# configure a header file to pass some of the CMake settings
+# to the source code
+configure_file(src/imart_config.h.in imart_config.h)
 
 
 # ===========================================
@@ -55,8 +55,11 @@ find_package( Boost COMPONENTS program_options REQUIRED )
 include_directories( ${Boost_INCLUDE_DIR} )
 
 
-if(ENABLE_OPENCL)
-    # Find OpenCL.
+if(IMART_WITH_OPENMP)
+    find_package( OpenMP REQUIRED)
+endif()
+
+if(IMART_WITH_OPENCL)
     find_package( OpenCL REQUIRED )
 endif()
 
@@ -70,12 +73,13 @@ include_directories(src src/utils)
 #              Libs: imart_src
 # ===========================================
 add_subdirectory(src)
+list(APPEND IMART_MODULES imart_src)
 # subdirs(src)
 
 # ===========================================
 #              Libs: imart_cuda
 # ===========================================
-if(ENABLE_CUDA)
+if(IMART_WITH_CUDA)
     enable_language(CUDA)
     set (CMAKE_CUDA_ARCHITECTURES 52 72)
     add_subdirectory(src/cuda)
@@ -85,24 +89,30 @@ endif()
 #                   Links
 # ===========================================
 # set(link_targets imart_src ${ITK_LIBRARIES})
-set(link_targets imart_src ${ITK_LIBRARIES} ${Boost_LIBRARIES} dl)
+# set(link_targets imart_src ${ITK_LIBRARIES} ${Boost_LIBRARIES} dl)
+set(link_targets ${IMART_MODULES} ${ITK_LIBRARIES} ${Boost_LIBRARIES} dl)
 
-if (ENABLE_OPENMP)
+if (IMART_WITH_OPENMP)
     set(link_targets ${link_targets} OpenMP::OpenMP_CXX)
 endif()
-if (ENABLE_OPENCL)
-    set(link_targets ${link_targets} OpenCL::OpenCL)
-endif()
-if (ENABLE_CUDA)
-    set(link_targets ${link_targets} imart_cuda)
-endif()
 
-if (ENABLE_FFTW)
+if (IMART_WITH_FFTW)
     set(link_targets ${link_targets} fftw3)
 endif()
-if (ENABLE_CLFFTW)
+
+if (IMART_WITH_OPENCL)
+    set(link_targets ${link_targets} OpenCL::OpenCL)
+endif()
+
+if (IMART_WITH_CLFFT)
     set(link_targets ${link_targets} clFFT)
 endif()
+
+if (IMART_WITH_CUDA)
+    set(link_targets ${link_targets} imart_cuda cufft)
+endif()
+
+
 
 # ===========================================
 #               Build Options

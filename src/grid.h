@@ -103,8 +103,8 @@ public:
 template<typename type>
 using grid_cpu = grid<type,vector_cpu<type>>;
 
-template<typename type>
-using grid_gpu = grid<type,vector_ocl<type>>;
+// template<typename type>
+// using grid_gpu = grid<type,vector_ocl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>

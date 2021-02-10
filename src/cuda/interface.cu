@@ -93,7 +93,8 @@ template <typename type>
 void cuda_pull_memory(type * x, type * data, int size, int offset)
 {   
     // printf("pull\n");
-    imart_assert_cuda( cudaMemcpy(data, x, size*sizeof(type), cudaMemcpyDeviceToHost), "Memory copy device to host" );
+    // imart_assert_cuda( cudaMemcpy(data, x, size*sizeof(type), cudaMemcpyDeviceToHost), "Memory copy device to host" );
+    imart_assert_cuda( cudaMemcpy(data, x + offset, size*sizeof(type), cudaMemcpyDeviceToHost), "Memory copy device to host" );
     // cudaMemcpy(data, x + offset, size*sizeof(type), cudaMemcpyDeviceToHost);
     // printf("vector out:\n");
     // for(int i = 0; i < size; i++)

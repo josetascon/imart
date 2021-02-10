@@ -7,6 +7,7 @@
 
 // local libs
 #include "kernels.cuh"
+#include <cufft.h>
 
 // ===========================================
 // Check Errors
@@ -1768,6 +1769,262 @@ void cuda_kernel_convolution_3d( std::vector<int> & grid, std::vector<int> & blo
     imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel convolution 3d" );
 };
 
+template <typename type>
+void cuda_kernel_fft_2d( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * in_real, const type * in_img,
+                        type * out_real, type * out_img, int n0, int n1, bool forward )
+{
+    ;
+};
+
+// specialization
+template <> void cuda_kernel_fft_2d<float>( std::vector<int> & grid, std::vector<int> & block, 
+                        const float * in_real, const float * in_img,
+                        float * out_real, float * out_img, int n0, int n1, bool forward )
+{
+
+    int N = n0*n1;
+
+    cufftComplex *in;
+    cufftComplex *out;
+    
+    cudaMalloc(&in, N*sizeof(cufftComplex));
+    cudaMalloc(&out, N*sizeof(cufftComplex));
+
+    float * tmpi = (float *) in;
+
+    // COPY in_real and in_img to in
+    imart_assert_kernel ( cudaMemcpy2D(tmpi, 2 * sizeof(tmpi[0]), 
+                in_real, 1 * sizeof(in_real[0]), sizeof(in_real[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, real to complex");
+    imart_assert_kernel ( cudaMemcpy2D(tmpi + 1, 2 * sizeof(tmpi[0]), 
+                in_img, 1 * sizeof(in_img[0]), sizeof(in_img[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, imaginary to complex");
+    
+    cufftHandle p_fft;
+
+    // std::cout << "input\n";
+    cufftPlan2d(&p_fft, n1, n0, CUFFT_C2C);
+    // std::cout << "plan\n";
+    
+    if (forward)
+    {
+        // Forward
+        // std::cout << "execute\n";
+        cufftExecC2C(p_fft, (cufftComplex *)in, (cufftComplex *)out, CUFFT_FORWARD);
+    }
+    else
+    {
+        // Inverse
+        // std::cout << "execute\n";
+        cufftExecC2C(p_fft, (cufftComplex *)in, (cufftComplex *)out, CUFFT_INVERSE);
+    };
+
+    float * tmpo = (float *) out;
+
+    // COPY out to out_real and out_img
+    imart_assert_kernel ( cudaMemcpy2D(out_real, 1 * sizeof(out_real[0]), 
+                tmpo, 2 * sizeof(tmpo[0]), sizeof(out_real[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, complex to real");
+
+    imart_assert_kernel ( cudaMemcpy2D(out_img, 1 * sizeof(out_img[0]), 
+                tmpo+1, 2 * sizeof(tmpo[0]), sizeof(out_img[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, complex to real");
+
+    cufftDestroy(p_fft);
+
+    cudaFree(in);
+    cudaFree(out);
+};
+
+// specialization
+template <> void cuda_kernel_fft_2d<double>( std::vector<int> & grid, std::vector<int> & block, 
+                        const double * in_real, const double * in_img,
+                        double * out_real, double * out_img, int n0, int n1, bool forward )
+{
+
+    int N = n0*n1;
+
+    cufftDoubleComplex *in;
+    cufftDoubleComplex *out;
+    
+    cudaMalloc(&in, N*sizeof(cufftDoubleComplex));
+    cudaMalloc(&out, N*sizeof(cufftDoubleComplex));
+
+    double * tmpi = (double *) in;
+
+    // COPY in_real and in_img to in
+    imart_assert_kernel ( cudaMemcpy2D(tmpi, 2 * sizeof(tmpi[0]), 
+                in_real, 1 * sizeof(in_real[0]), sizeof(in_real[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, real to complex");
+    imart_assert_kernel ( cudaMemcpy2D(tmpi + 1, 2 * sizeof(tmpi[0]), 
+                in_img, 1 * sizeof(in_img[0]), sizeof(in_img[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, imaginary to complex");
+    
+    cufftHandle p_fft;
+
+    // std::cout << "input\n";
+    cufftPlan2d(&p_fft, n1, n0, CUFFT_C2C);
+    // std::cout << "plan\n";
+    
+    if (forward)
+    {
+        // Forward
+        // std::cout << "execute\n";
+        cufftExecZ2Z(p_fft, (cufftDoubleComplex *)in, (cufftDoubleComplex *)out, CUFFT_FORWARD);
+    }
+    else
+    {
+        // Inverse
+        // std::cout << "execute\n";
+        cufftExecZ2Z(p_fft, (cufftDoubleComplex *)in, (cufftDoubleComplex *)out, CUFFT_INVERSE);
+    };
+
+    double * tmpo = (double *) out;
+
+    // COPY out to out_real and out_img
+    imart_assert_kernel ( cudaMemcpy2D(out_real, 1 * sizeof(out_real[0]), 
+                tmpo, 2 * sizeof(tmpo[0]), sizeof(out_real[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, complex to real");
+
+    imart_assert_kernel ( cudaMemcpy2D(out_img, 1 * sizeof(out_img[0]), 
+                tmpo+1, 2 * sizeof(tmpo[0]), sizeof(out_img[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, complex to real");
+
+    cufftDestroy(p_fft);
+
+    cudaFree(in);
+    cudaFree(out);
+};
+
+template <typename type>
+void cuda_kernel_fft_3d( std::vector<int> & grid, std::vector<int> & block, 
+                        const type * in_real, const type * in_img,
+                        type * out_real, type * out_img, int n0, int n1, int n2, bool forward )
+{
+    ;
+};
+
+// specialization
+template <> void cuda_kernel_fft_3d<float>( std::vector<int> & grid, std::vector<int> & block, 
+                        const float * in_real, const float * in_img,
+                        float * out_real, float * out_img, int n0, int n1, int n2, bool forward )
+{
+
+    int N = n0*n1*n2;
+
+    cufftComplex *in;
+    cufftComplex *out;
+    
+    cudaMalloc(&in, N*sizeof(cufftComplex));
+    cudaMalloc(&out, N*sizeof(cufftComplex));
+
+    float * tmpi = (float *) in;
+
+    // COPY in_real and in_img to in
+    imart_assert_kernel ( cudaMemcpy2D(tmpi, 2 * sizeof(tmpi[0]), 
+                in_real, 1 * sizeof(in_real[0]), sizeof(in_real[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, real to complex");
+    imart_assert_kernel ( cudaMemcpy2D(tmpi + 1, 2 * sizeof(tmpi[0]), 
+                in_img, 1 * sizeof(in_img[0]), sizeof(in_img[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, imaginary to complex");
+    
+    cufftHandle p_fft;
+
+    // std::cout << "input\n";
+    cufftPlan3d(&p_fft, n2, n1, n0, CUFFT_C2C);
+    // std::cout << "plan\n";
+    
+    if (forward)
+    {
+        // Forward
+        // std::cout << "execute\n";
+        cufftExecC2C(p_fft, (cufftComplex *)in, (cufftComplex *)out, CUFFT_FORWARD);
+    }
+    else
+    {
+        // Inverse
+        // std::cout << "execute\n";
+        cufftExecC2C(p_fft, (cufftComplex *)in, (cufftComplex *)out, CUFFT_INVERSE);
+    };
+
+    float * tmpo = (float *) out;
+
+    // COPY out to out_real and out_img
+    imart_assert_kernel ( cudaMemcpy2D(out_real, 1 * sizeof(out_real[0]), 
+                tmpo, 2 * sizeof(tmpo[0]), sizeof(out_real[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, complex to real");
+
+    imart_assert_kernel ( cudaMemcpy2D(out_img, 1 * sizeof(out_img[0]), 
+                tmpo+1, 2 * sizeof(tmpo[0]), sizeof(out_img[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, complex to real");
+
+    cufftDestroy(p_fft);
+
+    cudaFree(in);
+    cudaFree(out);
+};
+
+// specialization
+template <> void cuda_kernel_fft_3d<double>( std::vector<int> & grid, std::vector<int> & block, 
+                        const double * in_real, const double * in_img,
+                        double * out_real, double * out_img, int n0, int n1, int n2, bool forward )
+{
+
+    int N = n0*n1*n2;
+
+    cufftDoubleComplex *in;
+    cufftDoubleComplex *out;
+    
+    cudaMalloc(&in, N*sizeof(cufftDoubleComplex));
+    cudaMalloc(&out, N*sizeof(cufftDoubleComplex));
+
+    double * tmpi = (double *) in;
+
+    // COPY in_real and in_img to in
+    imart_assert_kernel ( cudaMemcpy2D(tmpi, 2 * sizeof(tmpi[0]), 
+                in_real, 1 * sizeof(in_real[0]), sizeof(in_real[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, real to complex");
+    imart_assert_kernel ( cudaMemcpy2D(tmpi + 1, 2 * sizeof(tmpi[0]), 
+                in_img, 1 * sizeof(in_img[0]), sizeof(in_img[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, imaginary to complex");
+    
+    cufftHandle p_fft;
+
+    // std::cout << "input\n";
+    cufftPlan3d(&p_fft, n2, n1, n0, CUFFT_C2C);
+    // std::cout << "plan\n";
+    
+    if (forward)
+    {
+        // Forward
+        // std::cout << "execute\n";
+        cufftExecZ2Z(p_fft, (cufftDoubleComplex *)in, (cufftDoubleComplex *)out, CUFFT_FORWARD);
+    }
+    else
+    {
+        // Inverse
+        // std::cout << "execute\n";
+        cufftExecZ2Z(p_fft, (cufftDoubleComplex *)in, (cufftDoubleComplex *)out, CUFFT_INVERSE);
+    };
+
+    double * tmpo = (double *) out;
+
+    // COPY out to out_real and out_img
+    imart_assert_kernel ( cudaMemcpy2D(out_real, 1 * sizeof(out_real[0]), 
+                tmpo, 2 * sizeof(tmpo[0]), sizeof(out_real[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, complex to real");
+
+    imart_assert_kernel ( cudaMemcpy2D(out_img, 1 * sizeof(out_img[0]), 
+                tmpo+1, 2 * sizeof(tmpo[0]), sizeof(out_img[0]), 
+                N, cudaMemcpyDeviceToDevice), "Error copy device to device, complex to real");
+
+    cufftDestroy(p_fft);
+
+    cudaFree(in);
+    cudaFree(out);
+};
+
 
 // template <typename type>
 // void cuda_kernel_( std::vector<int> & grid, std::vector<int> & block, 
@@ -1820,6 +2077,19 @@ template void cuda_kernel_cast<unsigned short,double>( std::vector<int> & grid, 
                        const unsigned short * vin, double * vout, int n );
 
 
+template void cuda_kernel_cast<float,unsigned int>( std::vector<int> & grid, std::vector<int> & block, 
+                       const float * vin, unsigned int * vout, int n );
+
+template void cuda_kernel_cast<unsigned int,float>( std::vector<int> & grid, std::vector<int> & block, 
+                       const unsigned int * vin, float * vout, int n );
+
+template void cuda_kernel_cast<double,unsigned int>( std::vector<int> & grid, std::vector<int> & block, 
+                       const double * vin, unsigned int * vout, int n );
+
+template void cuda_kernel_cast<unsigned int,double>( std::vector<int> & grid, std::vector<int> & block, 
+                       const unsigned int * vin, double * vout, int n );
+
+
 template void cuda_kernel_cast<float,unsigned char>( std::vector<int> & grid, std::vector<int> & block, 
                        const float * vin, unsigned char * vout, int n );
 
@@ -1833,6 +2103,11 @@ template void cuda_kernel_cast<unsigned char,double>( std::vector<int> & grid, s
                        const unsigned char * vin, double * vout, int n );
 
 
+template void cuda_kernel_cast<float,float>( std::vector<int> & grid, std::vector<int> & block, 
+                       const float * vin, float * vout, int n );
+
+template void cuda_kernel_cast<double,double>( std::vector<int> & grid, std::vector<int> & block, 
+                       const double * vin, double * vout, int n );
 
 
 template void cuda_kernel_assign<float>( std::vector<int> & grid, std::vector<int> & block,

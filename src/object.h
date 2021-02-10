@@ -15,7 +15,7 @@
 // #include <typeinfo>     // operator typeids
 
 // local libs
-#include "config.h"     // precompiler definitions
+#include "imart_config.h"     // precompiler definitions
 #include "inherit.h"
 #include "utils/type.h"
 #include "utils/assertion.h"

@@ -25,7 +25,7 @@ int main()
     // Create image
     int w = 4;
     int h = 5;
-    auto img = image_gpu<type>::new_pointer(w,h);
+    auto img = image_ocl<type>::new_pointer(w,h);
 
     // Initialize
     std::vector<type> vec(w*h);
@@ -38,7 +38,7 @@ int main()
     // img->random();
     
     // Comput gradient
-    typename image_gpu<type>::vector grad(2);
+    typename image_ocl<type>::vector grad(2);
     grad = gradient(img);
     img->print_data("i");
     grad[0]->print_data("didx");
@@ -49,7 +49,7 @@ int main()
     // =====================================================
     // Create image
     int l = 3;
-    auto img3 = image_gpu<type>::new_pointer(w,h,l);
+    auto img3 = image_ocl<type>::new_pointer(w,h,l);
 
     // Initialize
     std::vector<type> vec3(w*h*l);
@@ -62,7 +62,7 @@ int main()
     // img3->random();
     
     // Comput gradient
-    typename image_gpu<type>::vector grad3(3);
+    typename image_ocl<type>::vector grad3(3);
     grad3 = gradient(img3);
     img3->print_data("i");
     grad3[0]->print_data("didx");

@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-07-24 15:34:56
+* @Last Modified time: 2021-02-10 16:16:21
 */
 
 
@@ -71,33 +71,33 @@ int main(int argc, char *argv[])
     // ============================================
     //              Testing GPU
     // ============================================
-    auto image11 = image_gpu<short>::new_pointer(3);
-    auto image12 = image_gpu<type>::new_pointer(3);
-    typename image_gpu<type>::vector vimage13(num_scales);
-    typename image_gpu<short>::vector vimage14(num_scales);
+    auto image11 = image_ocl<short>::new_pointer(3);
+    auto image12 = image_ocl<type>::new_pointer(3);
+    typename image_ocl<type>::vector vimage13(num_scales);
+    typename image_ocl<short>::vector vimage14(num_scales);
 
     for(int k = 0; k < num_scales; k++)
     {
-        vimage13[k] = image_gpu<type>::new_pointer(3);
-        vimage14[k] = image_gpu<short>::new_pointer(3);
+        vimage13[k] = image_ocl<type>::new_pointer(3);
+        vimage14[k] = image_ocl<short>::new_pointer(3);
     }
 
     image11->read(argv[1]);
     cast(*image11,*image12);
     // image12->print();
-    // image12->write("./out_res_3d_gpu.nrrd");
-    auto mresolution_gpu = resolution<type,vector_ocl<type>>::new_pointer(image12);
+    // image12->write("./out_res_3d_ocl.nrrd");
+    auto mresolution_ocl = resolution<type,vector_ocl<type>>::new_pointer(image12);
 
     // single test
-    // auto imagea1 = mresolution_gpu->apply(2.0);
-    // auto imageo1 = image_gpu<short>::new_pointer(3);
+    // auto imagea1 = mresolution_ocl->apply(2.0);
+    // auto imageo1 = image_ocl<short>::new_pointer(3);
     // cast(*imagea1,*imageo1);
-    // imageo1->write("./out_res_3d_gpu.nrrd");
+    // imageo1->write("./out_res_3d_ocl.nrrd");
 
-    std::string outfile2 = "./out_res_3d_gpu";
+    std::string outfile2 = "./out_res_3d_ocl";
     for(int k = 0; k < num_scales; k++)
     {
-        vimage13[k] = mresolution_gpu->apply(pow(2.0,k+1));
+        vimage13[k] = mresolution_ocl->apply(pow(2.0,k+1));
         vimage13[k]->print();
         cast(*(vimage13[k]),*(vimage14[k]));
         vimage14[k]->write(outfile2 + std::to_string(k) + ".nrrd");

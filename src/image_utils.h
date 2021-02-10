@@ -258,7 +258,7 @@ std::shared_ptr<image<type,container>> gradient_direction_gaussian(std::shared_p
 };
 
 template<typename type, typename container>
-typename image<type,container>::pointer jacobian(std::shared_ptr<std::vector< std::shared_ptr<image<type,container>> >> input, bool identity_at_zero = false)
+typename image<type,container>::pointer jacobian(std::shared_ptr<std::vector< std::shared_ptr<image<type,container>> >> input, bool identity_at_zero = true)
 {
     int sz = input->size();
     auto output = image<type,container>::new_pointer();
@@ -362,6 +362,11 @@ std::shared_ptr< image<type,container> > ifft(const std::vector<std::shared_ptr<
     // vin[0]->print_data("vin0"); vin[1]->print_data("vin1");
     container::fft(vin, vout, p[0]->get_size(), false);
     // vout[0]->print_data("vout0"); vout[1]->print_data("vout1");
+    
+    // ifft division of total elements
+    if(out_real->get_data()->get_name().compare("vector_ocl") != 0)
+        *out_real = *out_real/(type)out_real->get_total_elements();
+    // *out_img = *out_img/(type)out_img->get_total_elements();
     
     // typename image<type,container>::vector output = {out_real, out_img};
     // return output;
