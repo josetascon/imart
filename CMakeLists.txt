@@ -51,6 +51,10 @@ configure_file(src/imart_config.h.in imart_config.h)
 find_package( ITK REQUIRED )
 include(${ITK_USE_FILE})
 
+# Find VTK
+find_package(VTK REQUIRED)
+include(${VTK_USE_FILE})
+
 find_package( Boost COMPONENTS program_options REQUIRED )
 include_directories( ${Boost_INCLUDE_DIR} )
 
@@ -90,7 +94,7 @@ endif()
 # ===========================================
 # set(link_targets imart_src ${ITK_LIBRARIES})
 # set(link_targets imart_src ${ITK_LIBRARIES} ${Boost_LIBRARIES} dl)
-set(link_targets ${IMART_MODULES} ${ITK_LIBRARIES} ${Boost_LIBRARIES} dl)
+set(link_targets ${IMART_MODULES} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${Boost_LIBRARIES} dl)
 
 if (IMART_WITH_OPENMP)
     set(link_targets ${link_targets} OpenMP::OpenMP_CXX)
