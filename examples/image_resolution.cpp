@@ -39,11 +39,11 @@ int main()
     image1->print_data();
 
     // Create small imame
-    auto image2 = image_ocl<type>::new_pointer(10,8);
+    auto image2 = image_opencl<type>::new_pointer(10,8);
     image2->set_spacing(std::vector<double>{2.0,1.5});
     image2->ones();
     
-    auto mresolution2 = resolution<type,vector_ocl<type>>::new_pointer(image2);
+    auto mresolution2 = resolution<type,vector_opencl<type>>::new_pointer(image2);
     auto image3 = mresolution2->apply(4.0);
 
     image2->print();

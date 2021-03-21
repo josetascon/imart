@@ -145,11 +145,11 @@ template<typename type>
 using lddmm_cpu = lddmm<type,vector_cpu<type>>;
 
 // template<typename type>
-// using lddmm_gpu = lddmm<type,vector_ocl<type>>;
+// using lddmm_gpu = lddmm<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using lddmm_ocl = lddmm<type,vector_ocl<type>>;
+using lddmm_opencl = lddmm<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA

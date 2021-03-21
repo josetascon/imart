@@ -14,6 +14,7 @@
 #include "optimizer.h"
 #include "resolution.h"
 #include "utils/timer.h"
+// #include "viewer.h"
 
 namespace imart
 {
@@ -356,9 +357,12 @@ std::string registration<type,container>::info(std::string msg)
 template <typename type, typename container>
 void registration<type,container>::apply()
 {
-    std::cout << "============================" << std::endl;
-    std::cout << "Multiresolution Registration" << std::endl;
-    std::cout << "============================" << std::endl;
+    if (this->verbose)
+    {
+        std::cout << "============================" << std::endl;
+        std::cout << "Multiresolution Registration" << std::endl;
+        std::cout << "============================" << std::endl;
+    };
 
     timer t("ms");
     t.start();
@@ -384,6 +388,22 @@ void registration<type,container>::apply()
     //     tmp_transform = multiresolution->apply(levels_scales[0], trfm);
     //     method->set_transform(tmp_transform);
     // };
+
+    // auto view = viewer<image_cpu<type>>::new_pointer();
+    // view->size(1000,400);
+    // view->subplot(1,3);
+    
+    // // view->add_image(tmp_moving);
+    // // view->add_image(tmp_fixed);
+    // // view->add_image(tmp_moving);
+    // view->add_image( normalize(tmp_moving,0.0,255.0) );
+    // view->add_image( normalize(tmp_fixed,0.0,255.0) );
+    // view->add_image( normalize(tmp_moving,0.0,255.0) );
+    // view->setup();
+    // // view->visualize();
+    // view->show();
+
+
 
     // multiresolution
     for(int i = 0; i < levels; i++)
@@ -418,21 +438,50 @@ void registration<type,container>::apply()
         // method->get_transform()->get_parameters(0)->print("x");
         // method->get_transform()->get_parameters(1)->print("y");
 
+        // viewer
         // printf("viewer\n");
         // method->warped_moving();
         // if (plot) method->setup_viewer(view);
 
         // Info
-        std::cout << "Level:\t\t" << i+1 << std::endl;
-        std::cout << "Scale:\t\t" << levels_scales[i] << std::endl;
-        std::cout << "Iters:\t\t" << levels_iterations[i] << std::endl;
-        std::cout << "Image:\t\t[ ";
-        for(int k = 0; k < tmp_fixed->get_size().size(); k++) { std::cout << tmp_fixed->get_size()[k] << " "; };
-        std::cout << "]" << std::endl;
+        if (this->verbose)
+        {
+            std::cout << "Level:\t\t" << i+1 << std::endl;
+            std::cout << "Scale:\t\t" << levels_scales[i] << std::endl;
+            std::cout << "Iters:\t\t" << levels_iterations[i] << std::endl;
+            std::cout << "Image:\t\t[ ";
+            for(int k = 0; k < tmp_fixed->get_size().size(); k++) { std::cout << tmp_fixed->get_size()[k] << " "; };
+            std::cout << "]" << std::endl;
+        }
 
         // optimization
         optimization->set_iterations(levels_iterations[i]);
         optimization->optimize(method);
+
+        if (plot)
+        {
+            
+            // view->update_image( normalize(tmp_moving,0.0,255.0), 0 );
+            // view->update_image( normalize(tmp_fixed,0.0,255.0) , 1 );
+            // view->update_image( normalize(wmoving,0.0,255.0), 2 );
+            // view->show();
+
+            // auto view = viewer<image_cpu<type>>::new_pointer();
+            // view->size(1000,400);
+            // view->subplot(1,3);
+            
+            // auto wmoving = method->warped_moving();
+            // auto img1 = normalize(tmp_moving,type(0.0),type(255.0));
+            // auto img2 = normalize(tmp_fixed,type(0.0),type(255.0));
+            // auto img3 = normalize(wmoving,type(0.0),type(255.0));
+
+            // view->add_image( img1 );
+            // view->add_image( img2 );
+            // view->add_image( img3 );
+            // view->setup();
+            
+            // view->show();
+        }
 
         // increase resolution of transform;
         // if (i < levels - 1 && transformation->get_name() == "dfield")
@@ -444,6 +493,24 @@ void registration<type,container>::apply()
         // levels_sigmas[i]
     };
 
+    //Verify if final level is equal to 1
+    if (levels_scales[levels-1] != 1)
+    {
+        multiresolution->set_image(fixed_local);
+        tmp_fixed = multiresolution->apply(1);
+        multiresolution->set_image(moving_local);
+        tmp_moving = multiresolution->apply(1);
+        method->set_fixed(tmp_fixed);
+        method->set_moving(tmp_moving);
+
+        // change resolution of transform
+        if (transformation->get_name() == "dfield")
+        {
+            tmp_transform = multiresolution->apply(tmp_moving->get_size(), tmp_moving->get_spacing(), method->get_transform());
+            method->set_transform(tmp_transform);
+        };
+    };
+
     if(transformation->get_name() == "dfield")
     {
         if (padding) unpad_transform(tmp_transform);
@@ -453,7 +520,7 @@ void registration<type,container>::apply()
     set_transform(tmp_transform);
 
     t.lap();
-    printf("Total registration time: %5.2f [ms]\n", t.get_elapsed());
+    if (this->verbose) printf("Total registration time: %5.2f [ms]\n", t.get_elapsed());
 };
 
 template <typename type, typename container>

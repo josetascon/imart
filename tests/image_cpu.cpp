@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-06 00:00:00
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-09-07 17:08:11
+* @Last Modified time: 2021-02-12 09:27:39
 */
 
 // std libs
@@ -127,6 +127,19 @@ TYPED_TEST(test_image_cpu, constructor)
     ASSERT_FLOAT_EQ( 11.343, img9[0] );
     ASSERT_FLOAT_EQ( 11.343, img9[23] );
     ASSERT_FLOAT_EQ( 11.343, img9[47] );
+
+    std::vector<int> shape{3,2};
+    image_cpu<TypeParam> img10(shape, {1.82,2.0,3.113,9.0,-1.0,-2.212});
+    ASSERT_TRUE("image" == img10.get_name());
+    ASSERT_EQ( 2, img10.get_dimension() );
+    ASSERT_EQ( 3*2*1, img10.get_total_elements() );
+    ASSERT_EQ( 3, img10.get_width() );
+    ASSERT_EQ( 2, img10.get_height() );
+    ASSERT_EQ( 1, img10.get_length() );
+    ASSERT_EQ( 1, img10.get_channels() );
+    ASSERT_FLOAT_EQ( 1.82, img10[0] );
+    ASSERT_FLOAT_EQ( 3.113, img10[2] );
+    ASSERT_FLOAT_EQ( -2.212, img10[5] );
 }
 
 // ============================================
@@ -230,6 +243,19 @@ TYPED_TEST(test_image_cpu, pointers)
     ASSERT_FLOAT_EQ( 11.343, img9->operator[](0) );
     ASSERT_FLOAT_EQ( 11.343, img9->operator[](23) );
     ASSERT_FLOAT_EQ( 11.343, img9->operator[](47) );
+
+    std::initializer_list<TypeParam> kk = {0.82,2.0,5.113,9.0,-1.0,-4.212};
+    imgcpu_pointer img10 = image_cpu<TypeParam>::new_pointer(std::vector<int>({2,3}),kk);
+    ASSERT_TRUE("image" == img10->get_name());
+    ASSERT_EQ( 2, img10->get_dimension() );
+    ASSERT_EQ( 2*3*1, img10->get_total_elements() );
+    ASSERT_EQ( 2, img10->get_width() );
+    ASSERT_EQ( 3, img10->get_height() );
+    ASSERT_EQ( 1, img10->get_length() );
+    ASSERT_EQ( 1, img10->get_channels() );
+    ASSERT_FLOAT_EQ( 0.82, img10->operator[](0) );
+    ASSERT_FLOAT_EQ( 5.113, img10->operator[](2) );
+    ASSERT_FLOAT_EQ( -4.212, img10->operator[](5) );
 }
 
 // ============================================

@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-13 14:27:18
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-09-04 19:02:53
+* @Last Modified time: 2021-02-18 13:18:51
 */
 
 #include <iostream>
@@ -34,15 +34,15 @@ static void vector_add_image_cpu_2d(benchmark::State& state)
     };
 };
 
-static void vector_add_image_gpu_2d(benchmark::State& state)
+static void vector_add_image_opencl_2d(benchmark::State& state)
 {
     // Perform setup here
     using type = float;     //4 Bytes
     int N = state.range(0); 
 
-    image_gpu<type> img1(N,N);
-    image_gpu<type> img2(N,N);
-    image_gpu<type> img3(N,N);
+    image_opencl<type> img1(N,N);
+    image_opencl<type> img2(N,N);
+    image_opencl<type> img3(N,N);
     img1.ones();
     img2.ones();
     img3.zeros();
@@ -94,15 +94,15 @@ static void vector_add_image_cpu_3d(benchmark::State& state)
     };
 };
 
-static void vector_add_image_gpu_3d(benchmark::State& state)
+static void vector_add_image_opencl_3d(benchmark::State& state)
 {
     // Perform setup here
     using type = float;     //4 Bytes
     int N = state.range(0); 
 
-    image_gpu<type> img1(N,N,N);
-    image_gpu<type> img2(N,N,N);
-    image_gpu<type> img3(N,N,N);
+    image_opencl<type> img1(N,N,N);
+    image_opencl<type> img2(N,N,N);
+    image_opencl<type> img3(N,N,N);
     img1.ones();
     img2.ones();
     img3.zeros();
@@ -156,10 +156,10 @@ static void vector_assign_image_cpu_2d(benchmark::State& state)
 BENCHMARK(vector_assign_image_cpu_2d)->RangeMultiplier(10)->Range(10, 10000);
 
 BENCHMARK(vector_add_image_cpu_2d)->RangeMultiplier(10)->Range(10, 10000);
-// BENCHMARK(vector_add_image_gpu_2d)->RangeMultiplier(10)->Range(10, 10000);
+// BENCHMARK(vector_add_image_opencl_2d)->RangeMultiplier(10)->Range(10, 10000);
 // BENCHMARK(vector_add_image_cuda_2d)->RangeMultiplier(10)->Range(10, 10000);
 BENCHMARK(vector_add_image_cpu_3d)->RangeMultiplier(10)->Range(10, 400);
-// BENCHMARK(vector_add_image_gpu_3d)->RangeMultiplier(10)->Range(10, 400);
+// BENCHMARK(vector_add_image_opencl_3d)->RangeMultiplier(10)->Range(10, 400);
 // BENCHMARK(vector_add_image_cuda_3d)->RangeMultiplier(10)->Range(10, 400);
 
 

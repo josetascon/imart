@@ -27,12 +27,12 @@ int main()
     // using type = double;
     
     // Create small imame
-    auto image0 = image<type,vector_ocl<type>>::new_pointer(10,7);
+    auto image0 = image<type,vector_opencl<type>>::new_pointer(10,7);
     auto image1 = image0->mimic();
     image0->assign(1.0);
     image1->assign(2.0);
 
-    auto ssd1 = ssd<type,vector_ocl<type>>::new_pointer(image0, image1);
+    auto ssd1 = ssd<type,vector_opencl<type>>::new_pointer(image0, image1);
     // auto ssd1 = ssd<type>::new_pointer();
     ssd1->print();
     image0->print();
@@ -46,7 +46,7 @@ int main()
     // ============================================
     image0->random();
     image1->random();
-    auto cc1 = cc<type,vector_ocl<type>>::new_pointer(image0, image1);
+    auto cc1 = cc<type,vector_opencl<type>>::new_pointer(image0, image1);
     std::cout << "cc cost: " << cc1->cost() << std::endl;
     
     return 0;

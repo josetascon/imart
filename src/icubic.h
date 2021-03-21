@@ -66,11 +66,11 @@ template<typename type>
 using icubic_cpu = icubic<type,vector_cpu<type>>;
 
 template<typename type>
-using icubic_gpu = icubic<type,vector_ocl<type>>;
+using icubic_gpu = icubic<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using icubic_ocl = icubic<type,vector_ocl<type>>;
+using icubic_opencl = icubic<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA

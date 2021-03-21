@@ -34,10 +34,10 @@ set (CMAKE_BUILD_TYPE "Release")
 # ===========================================
 option(IMART_WITH_OPENMP "Enable OpenMP" ON)
 option(IMART_WITH_OPENCL "Enable OpenCL" ON)
-option(IMART_WITH_CUDA "Enable CUDA" ON)
+option(IMART_WITH_CUDA   "Enable CUDA"   ON)
 
-option(IMART_WITH_FFTW "Enable fftw3" ON)
-option(IMART_WITH_CLFFT "Enable clfft" ON)
+option(IMART_WITH_FFTW   "Enable fftw3"  ON)
+option(IMART_WITH_CLFFT  "Enable clfft"  ON)
 
 # configure a header file to pass some of the CMake settings
 # to the source code
@@ -81,7 +81,7 @@ list(APPEND IMART_MODULES imart_src)
 # ===========================================
 if(IMART_WITH_CUDA)
     enable_language(CUDA)
-    set (CMAKE_CUDA_ARCHITECTURES 52 72)
+    set (CMAKE_CUDA_ARCHITECTURES 86) #52 72 )
     add_subdirectory(src/cuda)
 endif()
 
@@ -98,17 +98,23 @@ endif()
 
 if (IMART_WITH_FFTW)
     set(link_targets ${link_targets} fftw3)
+    if (IMART_WITH_OPENMP)
+       set(link_targets ${link_targets} fftw3_omp)
+    endif()
 endif()
 
 if (IMART_WITH_OPENCL)
+    # list(APPEND opencl_targets OpenCL::OpenCL)
     set(link_targets ${link_targets} OpenCL::OpenCL)
 endif()
 
 if (IMART_WITH_CLFFT)
+    # list(APPEND opencl_targets clFFT)
     set(link_targets ${link_targets} clFFT)
 endif()
 
 if (IMART_WITH_CUDA)
+    # list(APPEND cuda_targets imart_cuda cufft)
     set(link_targets ${link_targets} imart_cuda cufft)
 endif()
 

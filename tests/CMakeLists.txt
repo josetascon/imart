@@ -13,8 +13,8 @@ set(test_targets ${link_targets} gtest)
 add_executable(vector_cpu vector_cpu.cpp)
 target_link_libraries(vector_cpu ${test_targets})
 
-add_executable(vector_ocl vector_ocl.cpp)
-target_link_libraries(vector_ocl ${test_targets})
+add_executable(vector_opencl vector_opencl.cpp)
+target_link_libraries(vector_opencl ${test_targets})
 
 add_executable(vector_cuda vector_cuda.cpp)
 target_link_libraries(vector_cuda ${test_targets})

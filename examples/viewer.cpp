@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-09-09 15:41:57
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-02-01 23:48:32
+* @Last Modified time: 2021-02-19 20:07:48
 */
 
 // std libs
@@ -26,16 +26,15 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     };
 
-    using type = unsigned char;
+    using type = double;
     using image_type = image_cpu<type>;
 
-    auto input = image_cpu<type>::new_pointer();
-    auto operation = image_cpu<type>::new_pointer();
+    auto input = image_type::new_pointer();
     // auto img = image_cpu<type>::new_pointer();
     input->read(argv[1]);
     // cast(*input, *img);
 
-    auto input2 = image_cpu<type>::new_pointer();
+    auto input2 = image_type::new_pointer();
     input2->read(argv[2]);
 
     // auto inputfloat = image_cpu<float>::new_pointer();
@@ -57,19 +56,18 @@ int main(int argc, char *argv[])
 
     for (size_t i = 0; i<10; i++)
     {
-        view.visualize();
+        view.render();
         t.lap();
         printf("Visualize time: %5.2f [ms]\n", t.get_elapsed());
         sleep(1);
 
-        // input->equal(*input - 10);
-        // view.update_image(input, 0);
-
-        *input = (*input - 10);
+        input->equal(*input - 20);
+        // *input = (*input - 10);
+        // input->print();
 
         t.lap();
         printf("Sleep time: %5.2f [ms]\n", t.get_elapsed());
-        view.update_image(input, 0);
+        view.update(0);
         t.lap();
         printf("Update time: %5.2f [ms]\n", t.get_elapsed());
     };

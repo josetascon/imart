@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-01-27 06:45:48
+* @Last Modified time: 2021-02-18 15:57:10
 */
 
 // std libs
@@ -29,11 +29,11 @@ int main()
     // ============================================
 
     // Create small imame
-    std::string file_fixed = "./examples/images/lenag1.png";
+    std::string file_fixed = "./examples/images/lenag0.png";
     auto img_fixed_ = image_cuda<intype>::new_pointer();
     img_fixed_->read(file_fixed);
 
-    std::string file_moving = "./examples/images/lenag2.png";
+    std::string file_moving = "./examples/images/lenag1.png";
     auto img_moving_ = image_cuda<intype>::new_pointer();
     img_moving_->read(file_moving);
 

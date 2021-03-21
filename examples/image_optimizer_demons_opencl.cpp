@@ -31,15 +31,15 @@ int main()
 
     // Create small imame
     std::string file_fixed = "./examples/images/lenag1.png";
-    auto img_fixed_ = image_ocl<intype>::new_pointer();
+    auto img_fixed_ = image_opencl<intype>::new_pointer();
     img_fixed_->read(file_fixed);
 
     std::string file_moving = "./examples/images/lenag2.png";
-    auto img_moving_ = image_ocl<intype>::new_pointer();
+    auto img_moving_ = image_opencl<intype>::new_pointer();
     img_moving_->read(file_moving);
 
-    auto img_fixed = image_ocl<type>::new_pointer();
-    auto img_moving = image_ocl<type>::new_pointer();
+    auto img_fixed = image_opencl<type>::new_pointer();
+    auto img_moving = image_opencl<type>::new_pointer();
     cast(*img_fixed_, *img_fixed);
     cast(*img_moving_, *img_moving);
 
@@ -63,14 +63,14 @@ int main()
     // img_moving->print();
     // img_moving->print_data();
     
-    auto trfm = dfield<type,vector_ocl<type>>::new_pointer(img_fixed);
+    auto trfm = dfield<type,vector_opencl<type>>::new_pointer(img_fixed);
     trfm->print();
     // trfm->print_data();
     
-    auto demons1 = demons<type,vector_ocl<type>>::new_pointer(img_fixed, img_moving, trfm);
+    auto demons1 = demons<type,vector_opencl<type>>::new_pointer(img_fixed, img_moving, trfm);
     std::cout << "cost: " << demons1->cost() << std::endl;
 
-    auto opt = gradient_descent<type,vector_ocl<type>>::new_pointer();
+    auto opt = gradient_descent<type,vector_opencl<type>>::new_pointer();
     opt->set_step(1.0);
     // opt->set_iterations(1);
     opt->optimize(demons1);
@@ -78,10 +78,10 @@ int main()
     auto moving_warped = demons1->warped_moving();
     // moving_warped->print_data();
 
-    auto moving_cast = image_ocl<intype>::new_pointer();
+    auto moving_cast = image_opencl<intype>::new_pointer();
     cast((*moving_warped)*(type(255)), *moving_cast);
 
-    // auto output = image_ocl<intype>::new_pointer();
+    // auto output = image_opencl<intype>::new_pointer();
     // *output = normalize<intype>(*moving_cast, min, max);
 
     // auto moving = (*moving_warped)*(type(255));
@@ -90,7 +90,7 @@ int main()
     // cast(*moving, *output);
     // cast(*moving_warped, *output);
     // output->print_data();
-    moving_cast->write("./demons_warped_ocl.png");
+    moving_cast->write("./demons_warped_opencl.png");
     // output->write("./demons_warped.png");
     
 

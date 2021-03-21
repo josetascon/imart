@@ -114,6 +114,8 @@ public:
     virtual void regularize();
     // !resolution uptade to apply when a registration level is updated
     virtual void resolution_update();
+    // !store internal variable when an improved registration is achieved
+    virtual void store_best();
     // !max scale in update
     virtual void max_scale(typename transform<type,container>::pointer trfm);
     // !viewer update plot
@@ -355,6 +357,12 @@ void metric<type,container>::regularize()
 
 template <typename type, typename container>
 void metric<type,container>::resolution_update()
+{
+    ;
+};
+
+template <typename type, typename container>
+void metric<type,container>::store_best()
 {
     ;
 };

@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
         //     // view->add_image(lddmm1->j0->at(31));
             
         //     view->setup();
-        //     // view->visualize();
+        //     // view->render();
         //     view->show();
         // };
 
@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
     //     // view->add_image(img_fixed);
     //     // view->add_image(moving_warped);
     //     view->setup();
-    //     // view->visualize();
+    //     // view->render();
     //     view->show();
     // };
 

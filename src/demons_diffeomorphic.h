@@ -82,7 +82,7 @@ template<typename type>
 using demons_diffeomorphic_cpu = demons_diffeomorphic<type,vector_cpu<type>>;
 
 // template<typename type>
-// using demons_diffeomorphic_gpu = demons_diffeomorphic<type,vector_ocl<type>>;
+// using demons_diffeomorphic_gpu = demons_diffeomorphic<type,vector_opencl<type>>;
 
 
 // ===========================================
@@ -180,8 +180,8 @@ typename transform<type,container>::pointer demons_diffeomorphic<type,container>
             // printf("den {min: %e, max: %e}\n",den.min(), den.max());
             // auto scale = dif/den;
 
-            auto ux = scale*gx*fixed->get_spacing()[0];
-            auto uy = scale*gy*fixed->get_spacing()[1];
+            auto ux = scale*gx;
+            auto uy = scale*gy;
 
             ux.replace(*fixed <= low, 0.0);
             ux.replace(*moving_prime <= low, 0.0);

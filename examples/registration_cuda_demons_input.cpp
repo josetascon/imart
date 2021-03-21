@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-01-27 06:44:29
+* @Last Modified time: 2021-03-04 12:12:03
 */
 
 // std libs
@@ -19,7 +19,7 @@
 #include "../src/demons_diffeomorphic.h"
 #include "../src/gradient_descent.h"
 #include "../src/registration.h"
-#include "../src/viewer.h"
+// #include "../src/viewer.h"
 
 using namespace imart;
 namespace po = boost::program_options;
@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
     // ============================================
     //              Testing resolution
     // ============================================
-    // using type = float;
-    using type = double;
+    using type = float;
+    // using type = double;
 
     // Variables
     std::string file_fixed;
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     //     view->add_image(img_fixed);
     //     view->add_image(moving_warped);
     //     view->setup();
-    //     // view->visualize();
+    //     // view->render();
     //     view->show();
     // };
 

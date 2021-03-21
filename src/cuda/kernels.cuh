@@ -283,12 +283,12 @@ void cuda_kernel_gradientz( std::vector<int> & grid, std::vector<int> & block,
 template <typename type>
 void cuda_kernel_convolution_2d( std::vector<int> & grid, std::vector<int> & block,
                                  const type * imgr, const type * kern, //kernel width
-                                 type * imgo, int kwidth, int n0, int n1);
+                                 type * imgo, int n0, int n1, int kw0, int kw1);
 
 template <typename type>
 void cuda_kernel_convolution_3d( std::vector<int> & grid, std::vector<int> & block,
                                  const type * imgr, const type * kern, //kernel width
-                                 type * imgo, int kwidth, int n0, int n1, int n2 );
+                                 type * imgo, int n0, int n1, int n2, int kw0, int kw1, int kw2 );
 
 template <typename type>
 void cuda_kernel_fft_2d( std::vector<int> & grid, std::vector<int> & block,

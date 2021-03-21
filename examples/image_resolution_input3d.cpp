@@ -71,33 +71,33 @@ int main(int argc, char *argv[])
     // ============================================
     //              Testing GPU
     // ============================================
-    auto image11 = image_ocl<short>::new_pointer(3);
-    auto image12 = image_ocl<type>::new_pointer(3);
-    typename image_ocl<type>::vector vimage13(num_scales);
-    typename image_ocl<short>::vector vimage14(num_scales);
+    auto image11 = image_opencl<short>::new_pointer(3);
+    auto image12 = image_opencl<type>::new_pointer(3);
+    typename image_opencl<type>::vector vimage13(num_scales);
+    typename image_opencl<short>::vector vimage14(num_scales);
 
     for(int k = 0; k < num_scales; k++)
     {
-        vimage13[k] = image_ocl<type>::new_pointer(3);
-        vimage14[k] = image_ocl<short>::new_pointer(3);
+        vimage13[k] = image_opencl<type>::new_pointer(3);
+        vimage14[k] = image_opencl<short>::new_pointer(3);
     }
 
     image11->read(argv[1]);
     cast(*image11,*image12);
     // image12->print();
-    // image12->write("./out_res_3d_ocl.nrrd");
-    auto mresolution_ocl = resolution<type,vector_ocl<type>>::new_pointer(image12);
+    // image12->write("./out_res_3d_opencl.nrrd");
+    auto mresolution_opencl = resolution<type,vector_opencl<type>>::new_pointer(image12);
 
     // single test
-    // auto imagea1 = mresolution_ocl->apply(2.0);
-    // auto imageo1 = image_ocl<short>::new_pointer(3);
+    // auto imagea1 = mresolution_opencl->apply(2.0);
+    // auto imageo1 = image_opencl<short>::new_pointer(3);
     // cast(*imagea1,*imageo1);
-    // imageo1->write("./out_res_3d_ocl.nrrd");
+    // imageo1->write("./out_res_3d_opencl.nrrd");
 
-    std::string outfile2 = "./out_res_3d_ocl";
+    std::string outfile2 = "./out_res_3d_opencl";
     for(int k = 0; k < num_scales; k++)
     {
-        vimage13[k] = mresolution_ocl->apply(pow(2.0,k+1));
+        vimage13[k] = mresolution_opencl->apply(pow(2.0,k+1));
         vimage13[k]->print();
         cast(*(vimage13[k]),*(vimage14[k]));
         vimage14[k]->write(outfile2 + std::to_string(k) + ".nrrd");

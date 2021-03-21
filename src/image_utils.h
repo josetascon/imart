@@ -157,7 +157,7 @@ std::shared_ptr<image<type,container>> unpad(std::shared_ptr<image<type,containe
     if (input->get_dimension() == 2){ output = image<type,container>::new_pointer(w-extra[0], h-extra[1]); };
     if (input->get_dimension() == 3){ output = image<type,container>::new_pointer(w-extra[0], h-extra[1], l-extra[2]); };
 
-    container::unpad(input->get_data(), output->get_data(), input->get_size(), pre, post);
+    container::unpad(input->get_data(), output->get_data(), output->get_size(), pre, post);
     output->set_sod_parameters(input->get_spacing(), input->get_origin(), input->get_direction());
     return output;
 };
@@ -185,24 +185,29 @@ std::shared_ptr<image<type,container>> gradientx(std::shared_ptr<image<type,cont
 {
     auto output = input->mimic();
     container::gradientx(input->get_data(), output->get_data(), input->get_size() );
+    *output = (*output) * input->get_spacing()[0] * input->get_direction()[0]; 
     return output;
-}
+};
 
 template<typename type, typename container>
 std::shared_ptr<image<type,container>> gradienty(std::shared_ptr<image<type,container>> input)
 {
+    int d = input->get_dimension();
     auto output = input->mimic();
     container::gradienty(input->get_data(), output->get_data(), input->get_size() );
+    *output = (*output) * input->get_spacing()[1] * input->get_direction()[1*(d+1)];
     return output;
-}
+};
 
 template<typename type, typename container>
 std::shared_ptr<image<type,container>> gradientz(std::shared_ptr<image<type,container>> input)
 {
+    int d = input->get_dimension();
     auto output = input->mimic();
     container::gradientz(input->get_data(), output->get_data(), input->get_size() );
+    *output = (*output) * input->get_spacing()[2] * input->get_direction()[2*(d+1)];
     return output;
-}
+};
 
 template<typename type, typename container>
 typename image<type,container>::vector gradient(std::shared_ptr<image<type,container>> input)
@@ -213,7 +218,7 @@ typename image<type,container>::vector gradient(std::shared_ptr<image<type,conta
     output[1] = gradienty(input);
     if (d == 3) output[2] = gradientz(input);
     return output;
-}
+};
 
 template<typename type, typename container>
 std::shared_ptr<image<type,container>> directional_components(std::shared_ptr<image<type,container>> der1, std::shared_ptr<image<type,container>> der2)
@@ -364,7 +369,7 @@ std::shared_ptr< image<type,container> > ifft(const std::vector<std::shared_ptr<
     // vout[0]->print_data("vout0"); vout[1]->print_data("vout1");
     
     // ifft division of total elements
-    if(out_real->get_data()->get_name().compare("vector_ocl") != 0)
+    if(out_real->get_data()->get_name().compare("vector_opencl") != 0)
         *out_real = *out_real/(type)out_real->get_total_elements();
     // *out_img = *out_img/(type)out_img->get_total_elements();
     
@@ -454,18 +459,68 @@ typename image<type,container>::vector gradient_fft(const image<type,container> 
 };
 
 template<typename type, typename container>
-typename std::shared_ptr<image<type,container>> convolve(std::shared_ptr<image<type,container>> input, std::shared_ptr<image<type,container>> kernel)
+typename std::shared_ptr<image<type,container>> convolve(std::shared_ptr<image<type,container>> input, std::shared_ptr<image<type,container>> kernel, bool fft_method = false)
+{
+    // TODO: select depending on size
+    if (fft_method) return fftconvolution(input, kernel);
+    return convolution(input, kernel);    
+};
+
+template<typename type, typename container>
+typename std::shared_ptr<image<type,container>> convolution(std::shared_ptr<image<type,container>> input, std::shared_ptr<image<type,container>> kernel)
 {
     auto output = input->mimic();
     output->zeros();
     
-    int kwidth = kernel->get_width();
+    // int kwidth = kernel->get_width(); // kernel image should be squared
 
     container::convolution(input->get_data(), kernel->get_data(),
-                           output->get_data(), input->get_size(), kwidth);
+                           output->get_data(), input->get_size(), kernel->get_size());
     return output;
 };
 
+template<typename type, typename container>
+typename std::shared_ptr<image<type,container>> fftconvolution(std::shared_ptr<image<type,container>> input, std::shared_ptr<image<type,container>> kernel)
+{
+    // padding
+    int dim = input->get_dimension();
+    std::vector<int> pad_init(dim);
+    std::vector<int> pad_extra(dim);
+    std::vector<int> pad_kernel(dim);
+    std::vector<int> unpad_init(dim);
+    std::vector<int> unpad_extra(dim);
+
+    std::vector<int> sz = input->get_size();
+    std::vector<int> kw = kernel->get_size();
+
+    // define extra sizes
+    for(int i = 0; i < dim; i++)
+    {
+        pad_init[i] = 0;
+        pad_extra[i] = kw[i] >> 1;
+        pad_kernel[i] = sz[i] + pad_extra[i] - kw[i];
+        unpad_init[i] = pad_extra[i]-1*(1 - kw[i]%2);
+        unpad_extra[i] = pad_extra[i] - unpad_init[i];
+        // printf("unpad int %d\n", unpad_init[i]);
+        // printf("unpad extra %d\n", unpad_extra[i]);
+    };
+    
+    // input padding
+    auto input_pad = pad(input, pad_init, pad_extra);
+    // input_pad->print_data();
+
+    // kernel padding
+    auto kernel_pad = pad(kernel, pad_init, pad_kernel);
+    // kernel_pad->print_data();
+
+    auto out_conv = ifft(complex_product<type,container>( fft(input_pad), fft(kernel_pad) ));
+    // out_conv->print_data("convolution before unpad");
+
+    // auto output = image<type,container>::new_pointer(dim);
+    auto output = unpad(out_conv, unpad_init, unpad_extra);
+    // output->print();
+    return output;
+};
 
 // ===========================================
 //      Functions of Gaussian Filter
@@ -516,13 +571,13 @@ std::shared_ptr< image<type,container> > gaussian_kernel(int dim = 2, type sigma
 //         vector_cpu<type>::convolution(input->get_data(), gkernel->get_data(),
 //                            output->get_data(), input->get_size(), kwidth);
 //     }
-//     else if (input->get_data()->get_name() == "vector_ocl")
+//     else if (input->get_data()->get_name() == "vector_opencl")
 //     {
 //         // create kernel in gpu (copy from host ram)
-//         auto kernel = vector_ocl<type>::new_pointer(gkernel->get_data()->size());
+//         auto kernel = vector_opencl<type>::new_pointer(gkernel->get_data()->size());
 //         kernel->read_ram(gkernel->get_data()->data(),gkernel->get_data()->size());
 
-//         vector_ocl<type>::convolution(input->get_data(), kernel,
+//         vector_opencl<type>::convolution(input->get_data(), kernel,
 //                                output->get_data(), input->get_size(), kwidth);
 //     }
 //     else ;
@@ -543,7 +598,7 @@ typename std::shared_ptr<image<type,container>> gaussian_filter(std::shared_ptr<
     // printf("size: %4d\n", input->get_size().size());
 
     container::convolution(input->get_data(), gkernel->get_data(),
-                           output->get_data(), input->get_size(), kwidth);
+                           output->get_data(), input->get_size(), gkernel->get_size());
     return output;
 };
 

@@ -72,32 +72,32 @@ int main(int argc, char *argv[])
     //              Testing GPU
     // ============================================
 #ifdef IMART_WITH_OPENCL
-    auto image11 = image_ocl<unsigned short>::new_pointer(2);
-    auto image12 = image_ocl<type>::new_pointer(2);
-    typename image_ocl<type>::vector vimage13(num_scales);
-    typename image_ocl<unsigned short>::vector vimage14(num_scales);
+    auto image11 = image_opencl<unsigned short>::new_pointer(2);
+    auto image12 = image_opencl<type>::new_pointer(2);
+    typename image_opencl<type>::vector vimage13(num_scales);
+    typename image_opencl<unsigned short>::vector vimage14(num_scales);
 
     for(int k = 0; k < num_scales; k++)
     {
-        vimage13[k] = image_ocl<type>::new_pointer(2);
-        vimage14[k] = image_ocl<unsigned short>::new_pointer(2);
+        vimage13[k] = image_opencl<type>::new_pointer(2);
+        vimage14[k] = image_opencl<unsigned short>::new_pointer(2);
     }
 
     image11->read(argv[1]);
     cast(*image11,*image12);
     image12->print();
-    auto mresolution_ocl = resolution<type,vector_ocl<type>>::new_pointer(image12);
+    auto mresolution_opencl = resolution<type,vector_opencl<type>>::new_pointer(image12);
 
     // single test
-    // auto imagea1 = mresolution_ocl->apply(2.0);
-    // auto imageo1 = image_ocl<unsigned short>::new_pointer(2);
+    // auto imagea1 = mresolution_opencl->apply(2.0);
+    // auto imageo1 = image_opencl<unsigned short>::new_pointer(2);
     // cast(*imagea1,*imageo1);
-    // imageo1->write("./out_res_2d_ocl.png");
+    // imageo1->write("./out_res_2d_opencl.png");
 
-    std::string outfile2 = "./out_res_2d_ocl";
+    std::string outfile2 = "./out_res_2d_opencl";
     for(int k = 0; k < num_scales; k++)
     {
-        vimage13[k] = mresolution_ocl->apply(pow(2.0,k+1));
+        vimage13[k] = mresolution_opencl->apply(pow(2.0,k+1));
         vimage13[k]->print();
         cast(*(vimage13[k]),*(vimage14[k]));
         vimage14[k]->write(outfile2 + std::to_string(k) + ".png");

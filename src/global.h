@@ -83,7 +83,7 @@ using global_cpu = global<type,vector_cpu<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using global_ocl = global<type,vector_ocl<type>>;
+using global_opencl = global<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA

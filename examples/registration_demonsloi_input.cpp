@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
         view->add_image( normalize(moving_warped, 0.0, max_gray) );
         
         view->setup();
-        // view->visualize();
+        // view->render();
         view->show();
     };
 

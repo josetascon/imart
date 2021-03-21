@@ -29,12 +29,12 @@ int main()
     std::cout << std::string(45,'=') << std::endl;
 
     // Image to create grid
-    auto image2 = image_ocl<type>::new_pointer(5,3);
+    auto image2 = image_opencl<type>::new_pointer(5,3);
 
     // Create identity transform
-    auto dfield1 = dfield_ocl<type>::new_pointer(image2);
+    auto dfield1 = dfield_opencl<type>::new_pointer(image2);
     // Create other transform
-    auto dfield2 = dfield_ocl<type>::new_pointer(image2);
+    auto dfield2 = dfield_opencl<type>::new_pointer(image2);
 
     // Setup dfield2
     dfield2->get_parameters(0)->assign(2.0);
@@ -73,8 +73,8 @@ int main()
     //      Testing 2d dfield with grids
     // ============================================
     // Grid
-    auto x0 = grid_ocl<type>::new_pointer(image2);
-    auto x1 = grid_ocl<type>::new_pointer();
+    auto x0 = grid_opencl<type>::new_pointer(image2);
+    auto x1 = grid_opencl<type>::new_pointer();
 
     // Print grid
     x0->print_data("grid x0");
@@ -94,12 +94,12 @@ int main()
     std::cout << std::string(45,'=') << std::endl;
 
     // Image to create grid
-    auto image3 = image_ocl<type>::new_pointer(4,2,3);
+    auto image3 = image_opencl<type>::new_pointer(4,2,3);
 
     // Create identity transform
-    auto dfield11 = dfield_ocl<type>::new_pointer(image3);
+    auto dfield11 = dfield_opencl<type>::new_pointer(image3);
     // Create other transform
-    auto dfield12 = dfield_ocl<type>::new_pointer(image3);
+    auto dfield12 = dfield_opencl<type>::new_pointer(image3);
 
     // Setup dfield2
     dfield12->get_parameters(0)->assign(2.0);
@@ -138,8 +138,8 @@ int main()
     // ============================================
     //      Testing 3d dfield with grids
     // ============================================
-    auto x10 = grid_ocl<type>::new_pointer(image3);
-    auto x11 = grid_ocl<type>::new_pointer(3);
+    auto x10 = grid_opencl<type>::new_pointer(image3);
+    auto x11 = grid_opencl<type>::new_pointer(3);
     
     x10->print_data("grid x10");
 

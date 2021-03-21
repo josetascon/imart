@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-09-21 14:49:58
+* @Last Modified time: 2021-02-21 23:31:21
 */
 
 // File to test utilities such as: pad, unpad, normalize
@@ -25,20 +25,46 @@ int main()
     //      Testing image 2d utility functions
     // ============================================
     // test padding
-    image<type> img10(8,5);
-    img10.ones();
-    img10.random();
-    image<type> img10pad = pad(img10, std::vector<int>{1,3}, std::vector<int>{4,2});
+    // image<type> img10(8,5);
+    // img10.ones();
+    // img10.random();
+    // image<type> img10pad = pad(img10, std::vector<int>{1,3}, std::vector<int>{4,2});
+    
+    // std::cout << "===================== ";
+    // std::cout << "Test function pad";
+    // std::cout << " =====================";
+    // std::cout << std::endl;
+    // std::cout << "pad width (1 column left, 4 column right)\n";
+    // std::cout << "pad height (3 rows up, 2 rows down)\n";
+    // img10.print("img info");
+    // img10.print_data();
+    // img10pad.print_data("img to pad");
+    // // std::cout << std::endl;
+
+    // std::cout << "===================== ";
+    // std::cout << "Test function unpad";
+    // std::cout << " =====================";
+    // std::cout << std::endl;
+    
+    // image<type> img20 = unpad(img10pad, std::vector<int>{1,3}, std::vector<int>{4,2});
+    // // img20.print("img unpad");
+    // img20.print_data("unpad to get img");
+
+
+    image<type> img12(10,10);
+    img12.ones();
+    img12.random();
+    image<type> img12pad = pad(img12, std::vector<int>{0,0}, std::vector<int>{1,1});
     
     std::cout << "===================== ";
     std::cout << "Test function pad";
     std::cout << " =====================";
     std::cout << std::endl;
-    std::cout << "pad width (1 column left, 4 column right)\n";
-    std::cout << "pad height (3 rows up, 2 rows down)\n";
-    img10.print("img info");
-    img10.print_data();
-    img10pad.print_data("img to pad");
+    std::cout << "pad width (0 column left, 1 column right)\n";
+    std::cout << "pad height (0 rows up, 1 rows down)\n";
+    img12.print("img info");
+    img12.print_data();
+    img12pad.print_data("img to pad");
     // std::cout << std::endl;
 
     std::cout << "===================== ";
@@ -46,9 +72,11 @@ int main()
     std::cout << " =====================";
     std::cout << std::endl;
     
-    image<type> img20 = unpad(img10pad, std::vector<int>{1,3}, std::vector<int>{4,2});
+    image<type> img22 = unpad(img12pad, std::vector<int>{1,1}, std::vector<int>{0,0});
     // img20.print("img unpad");
-    img20.print_data("unpad to get img");
+    img22.print_data("unpad to get img");
+
+    /*
 
     // ============================================
     //      Testing image 3d
@@ -97,6 +125,8 @@ int main()
     img30.print_data("float");
     img31.print_data("cast to int");
     img32.print_data("cast to double");
+
+    */
 
     return 0;
 };

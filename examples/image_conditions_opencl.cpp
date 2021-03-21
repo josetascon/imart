@@ -23,7 +23,7 @@ int main()
     //      Testing image condition function
     // ============================================
     // test condition
-    auto img10 = image_ocl<type>::new_pointer(8,5);
+    auto img10 = image_opencl<type>::new_pointer(8,5);
     img10->random();
     img10->print();
     img10->print_data("random values");

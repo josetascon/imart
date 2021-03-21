@@ -36,6 +36,7 @@ protected:
     int num_outputs;                        // number of outputs
     bool ready_in;                          // ready to run
     bool ready_out;                         // ready to run
+    bool verbose;
     std::vector<object::pointer> vinput;    // vector with pointers of inputs
     std::vector<object::pointer> voutput;   // vector with pointers of outputs
 
@@ -81,6 +82,9 @@ public:
     std::vector<object::pointer> get_output() const;
     object::pointer get_input(unsigned int id) const;
     object::pointer get_output(unsigned int id) const;
+
+    bool get_verbose() const;
+    void set_verbose(bool vv);
 
     // ===========================================
     // Functions
@@ -132,6 +136,7 @@ void process_object::init(int inputs, int outputs)
     // Attributes initialization
     this->set_total_inputs(inputs);
     this->set_total_inputs(outputs);
+    verbose = true;
 };
 
 // template <typename type>
@@ -156,6 +161,7 @@ void process_object::mimic_(const process_object & input)
 {
     num_inputs = input.get_total_inputs();
     num_outputs = input.get_total_outputs();
+    verbose = input.get_verbose();
     ready_in = false;
     ready_out = false;
 };
@@ -195,9 +201,19 @@ object::pointer process_object::get_output(unsigned int id) const
     return voutput[id];
 };
 
+bool process_object::get_verbose() const
+{
+    return verbose;
+};
+
 // ===========================================
 // Set Functions
 // ===========================================
+void process_object::set_verbose(bool vv)
+{
+    verbose = vv;
+};
+
 void process_object::set_total_inputs(int num)
 {
     num_inputs = num;
