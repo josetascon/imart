@@ -69,9 +69,9 @@ static void bm_ilinear_cuda_3d(benchmark::State& state)
 };
 
 // Register the function as a benchmark
-// BENCHMARK(bm_ilinear_ocl_2d)->RangeMultiplier(10)->Range(10, 8000);
+// BENCHMARK(bm_ilinear_opencl_2d)->RangeMultiplier(10)->Range(10, 8000);
 // BENCHMARK(bm_ilinear_cuda_2d)->RangeMultiplier(10)->Range(10, 8000);
-// BENCHMARK(bm_ilinear_ocl_3d)->RangeMultiplier(10)->Range(10, 400);
+// BENCHMARK(bm_ilinear_opencl_3d)->RangeMultiplier(10)->Range(10, 400);
 // BENCHMARK(bm_ilinear_cuda_3d)->RangeMultiplier(10)->Range(10, 400);
 
 static void CustomArguments2d(benchmark::internal::Benchmark* b)

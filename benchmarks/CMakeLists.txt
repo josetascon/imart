@@ -22,17 +22,20 @@ target_link_libraries( memory_gpu2cpu ${bench_targets} )
 add_executable( image_copy_functions image_copy_functions.cpp )
 target_link_libraries( image_copy_functions ${bench_targets} )
 
-add_executable( image_scalar_cpu_vs_gpu image_scalar_cpu_vs_gpu.cpp )
-target_link_libraries( image_scalar_cpu_vs_gpu ${bench_targets} )
+add_executable( image_scalar_functions image_scalar_functions.cpp )
+target_link_libraries( image_scalar_functions ${bench_targets} )
 
-add_executable( image_vector_cpu_vs_gpu image_vector_cpu_vs_gpu.cpp )
-target_link_libraries( image_vector_cpu_vs_gpu ${bench_targets} )
+add_executable( image_vector_operations image_vector_operations.cpp )
+target_link_libraries( image_vector_operations ${bench_targets} )
 
-add_executable( image_reduction_cpu_vs_gpu image_reduction_cpu_vs_gpu.cpp )
-target_link_libraries( image_reduction_cpu_vs_gpu ${bench_targets} )
+add_executable( image_reduction_functions image_reduction_functions.cpp )
+target_link_libraries( image_reduction_functions ${bench_targets} )
 
-add_executable( image_fft_cpu_vs_gpu image_fft_cpu_vs_gpu.cpp )
-target_link_libraries( image_fft_cpu_vs_gpu ${bench_targets} )
+add_executable( image_fft image_fft.cpp )
+target_link_libraries( image_fft ${bench_targets} )
+
+add_executable( image_convolve image_convolve.cpp )
+target_link_libraries( image_convolve ${bench_targets} )
 
 add_executable( image_gradient_cpu_vs_gpu image_gradient_cpu_vs_gpu.cpp )
 target_link_libraries( image_gradient_cpu_vs_gpu ${bench_targets} )

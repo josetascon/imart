@@ -10,7 +10,7 @@
 
 // local libs
 #include "../src/opencl_object.h"
-#include "../src/vector_ocl.h"
+#include "../src/vector_opencl.h"
 
 using namespace imart;
 
@@ -18,21 +18,21 @@ int main()
 {
     using type = double;
 
-    vector_ocl<type> veca;
+    vector_opencl<type> veca;
     veca.print();
     veca.print_data();
 
-    vector_ocl<type> vecb(10);
+    vector_opencl<type> vecb(10);
     vecb.print();
     vecb.print_data();
 
     int N = 20;
     type scalar = 3;
-    vector_ocl<type> vecc(N,scalar);
+    vector_opencl<type> vecc(N,scalar);
     vecc.print();
     vecc.print_data();
 
-    auto vec1 = vector_ocl<type>::new_pointer(N,4);
+    auto vec1 = vector_opencl<type>::new_pointer(N,4);
     auto vec2 = vec1->clone();
     auto vec3 = vec1->copy();
     auto vec4 = vec1->mimic();
@@ -46,10 +46,10 @@ int main()
     vec4->print("vec4 = vec1->mimic()");
     vec4->print_data();
 
-    auto vec11 = vector_ocl<type>::new_pointer(10,3.1);
-    auto vec12 = vector_ocl<type>::new_pointer(10,-0.2);
+    auto vec11 = vector_opencl<type>::new_pointer(10,3.1);
+    auto vec12 = vector_opencl<type>::new_pointer(10,-0.2);
 
-    auto vec13 = vector_ocl<type>::new_pointer();
+    auto vec13 = vector_opencl<type>::new_pointer();
     vec13 = *vec11 + *vec12;
 
     vec11->print();
@@ -72,10 +72,10 @@ int main()
     for(int i = 0; i < std_vec.size(); i++) std::cout << std_vec[i] << " ";
     std::cout << "]" << std::endl;
 
-    auto vec_ocl = vector_ocl<type>::new_pointer(22);
-    vec_ocl->print_data("create vec_ocl");
-    vec_ocl->read_ram(std_vec.data(), std_vec.size());
-    vec_ocl->print_data("copy ram std_vec");
+    auto vec_opencl = vector_opencl<type>::new_pointer(22);
+    vec_opencl->print_data("create vec_opencl");
+    vec_opencl->read_ram(std_vec.data(), std_vec.size());
+    vec_opencl->print_data("copy ram std_vec");
 
     int ss = 501;
     std::vector<type> std_vec1(ss);
@@ -86,13 +86,13 @@ int main()
         add += 101.2 - i;
     }
 
-    auto vec_ocl1 = vector_ocl<type>::new_pointer(ss);
-    vec_ocl1->read_ram(std_vec1.data(), std_vec1.size());
-    // vec_ocl1->print_data();
+    auto vec_opencl1 = vector_opencl<type>::new_pointer(ss);
+    vec_opencl1->read_ram(std_vec1.data(), std_vec1.size());
+    // vec_opencl1->print_data();
     std::cout << "add: " << add << std::endl;
-    std::cout << "add ocl: " << vec_ocl1->sum() << std::endl;
-    std::cout << "min ocl: " << vec_ocl1->min() << std::endl;
-    std::cout << "max ocl: " << vec_ocl1->max() << std::endl;
+    std::cout << "add opencl: " << vec_opencl1->sum() << std::endl;
+    std::cout << "min opencl: " << vec_opencl1->min() << std::endl;
+    std::cout << "max opencl: " << vec_opencl1->max() << std::endl;
 
 
     return 0;

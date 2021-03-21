@@ -25,10 +25,10 @@ int main()
     //      Testing image utility functions
     // ============================================
     // test padding
-    image_ocl<type> img10(8,5);
+    image_opencl<type> img10(8,5);
     img10.ones();
     img10.random();
-    image_ocl<type> img10pad = pad(img10, std::vector<int>{1,3}, std::vector<int>{4,2});
+    image_opencl<type> img10pad = pad(img10, std::vector<int>{1,3}, std::vector<int>{4,2});
     
     std::cout << "===================== ";
     std::cout << "Test function pad";
@@ -46,7 +46,7 @@ int main()
     std::cout << " =====================";
     std::cout << std::endl;
     
-    image_ocl<type> img20 = unpad(img10pad, std::vector<int>{1,3}, std::vector<int>{4,2});
+    image_opencl<type> img20 = unpad(img10pad, std::vector<int>{1,3}, std::vector<int>{4,2});
     // img20.print("img unpad");
     img20.print_data("unpad to get img");
 
@@ -54,10 +54,10 @@ int main()
     //      Testing image 3d
     // ============================================
     // test padding
-    image_ocl<type> img13(4,3,2);
+    image_opencl<type> img13(4,3,2);
     img13.ones();
     img13.random();
-    image_ocl<type> img13pad = pad(img13, std::vector<int>{1,3,2}, std::vector<int>{4,2,1});
+    image_opencl<type> img13pad = pad(img13, std::vector<int>{1,3,2}, std::vector<int>{4,2,1});
     
     std::cout << "===================== ";
     std::cout << "Test function pad 3d";
@@ -76,7 +76,7 @@ int main()
     std::cout << " =====================";
     std::cout << std::endl;
     
-    image_ocl<type> img23 = unpad(img13pad, std::vector<int>{1,3,2}, std::vector<int>{4,2,1});
+    image_opencl<type> img23 = unpad(img13pad, std::vector<int>{1,3,2}, std::vector<int>{4,2,1});
     // img20.print("img unpad");
     img23.print_data("unpad to get img");
 
@@ -85,9 +85,9 @@ int main()
     std::cout << "Test function cast";
     std::cout << " =====================";
     std::cout << std::endl;
-    image_ocl<float> img30(4,3);
-    image_ocl<int> img31;
-    image_ocl<double> img32;
+    image_opencl<float> img30(4,3);
+    image_opencl<int> img31;
+    image_opencl<double> img32;
     img30.random(0.0, 100.0);
 
     // cast

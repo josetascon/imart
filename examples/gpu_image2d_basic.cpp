@@ -18,7 +18,7 @@ int main()
     //      Testing image basic features
     // ============================================
     // Create empty image
-    image_ocl<int> image0;
+    image_opencl<int> image0;
 
     std::cout << "===================== ";
     std::cout << "Test class image, basic features";
@@ -54,7 +54,7 @@ int main()
 
 
     // Create medium size image 
-    image_ocl<float> image1(4, 3);
+    image_opencl<float> image1(4, 3);
 
     std::cout << std::endl;
     std::cout << "===================== ";
@@ -137,8 +137,8 @@ int main()
     std::shared_ptr<std::vector<float>> buffer = std::make_shared<std::vector<float>>(6);
     *buffer = {1.1, 2.1, 3.1, 4.1, 5.1, 6.1};
 
-    // image_ocl<float> image3(5,3);
-    image_ocl<float> image4(buffer, 3,2);
+    // image_opencl<float> image3(5,3);
+    image_opencl<float> image4(buffer, 3,2);
     // image4 = image4 + image4;
 
     // std::cout << "image3 ptr count: " << image3.get_ptr_count() << std::endl;

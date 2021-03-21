@@ -29,7 +29,7 @@
 #include "data_object.h"
 #include "vector_cpu.h"
 #ifdef IMART_WITH_OPENCL
-#include "vector_ocl.h"
+#include "vector_opencl.h"
 #endif
 #ifdef IMART_WITH_CUDA
 #include "vector_cuda.h"
@@ -102,15 +102,18 @@ public:
     //! Constructor using width, height and length.
     image(int w, int h, int l);                    // Only 3d
     //! Constructor with vector size
-    image(std::vector<int> size);
+    image(std::vector<int> shape);
     //! Constructor with vector size and channel
-    image(std::vector<int> size, int channel);
-    // //! Constructor with existing data.
+    image(std::vector<int> shape, int channel);
+    //! Constructor with existing data.
     image(container_pointer buffer, int w, int h);        // Only 2d
-    // //! Constructor with existing data.
+    //! Constructor with existing data.
     image(container_pointer buffer, int w, int h, int l); // Only 3d
-    // //! Constructor with list
+    //! Constructor with list
     image(std::initializer_list<type> list);
+    //! Constructor with list
+    image(std::vector<int> shape, std::initializer_list<type> list);
+
     //! Constructor copy
     image(const image & input);
     //! Constructor with file_name (call read()).
@@ -129,6 +132,8 @@ public:
     virtual void mimic_(const image & input);
     // !Make the data equal. This function is to hold the memory pointer
     void equal(const image & input);
+    //! Send data to cpu
+    void to_cpu();
 
     // ===========================================
     // Get Functions
@@ -149,6 +154,7 @@ public:
     container_pointer get_data() const;
     //! Get raw pointer to image data
     type * ptr() const;
+    
     // //! Get the iterator begin
     // iterator begin() const;
     // //! Get the iterator end
@@ -266,11 +272,11 @@ template<typename type>
 using image_cpu = image<type,vector_cpu<type>>;
 
 // template<typename type>
-// using image_gpu = image<type,vector_ocl<type>>;
+// using image_gpu = image<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using image_ocl = image<type,vector_ocl<type>>;
+using image_opencl = image<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA
@@ -324,21 +330,21 @@ image<type,container>::image(int w, int h, int l)
 
 // Constructor
 template <typename type, typename container>
-image<type,container>::image(std::vector<int> size)
+image<type,container>::image(std::vector<int> shape)
 {
     this->class_name = "image";
-    if (size.size() == 2) init(size[0], size[1], 1);
-    else if (size.size() == 3) init(size[0], size[1], size[2], 1);
+    if (shape.size() == 2) init(shape[0], shape[1], 1);
+    else if (shape.size() == 3) init(shape[0], shape[1], shape[2], 1);
     else ; // undefined for other dimensions
 };
 
 // Constructor
 template <typename type, typename container>
-image<type,container>::image(std::vector<int> size, int channel)
+image<type,container>::image(std::vector<int> shape, int channel)
 {
     this->class_name = "image";
-    if (size.size() == 2) init(size[0], size[1], channel);
-    else if (size.size() == 3) init(size[0], size[1], size[2], channel);
+    if (shape.size() == 2) init(shape[0], shape[1], channel);
+    else if (shape.size() == 3) init(shape[0], shape[1], shape[2], channel);
     else ; // undefined for other dimensions
 };
 
@@ -375,7 +381,30 @@ image<type,container>::image(std::initializer_list<type> list)
     init(s, 1, 1);
     data.reset();
     data = container::new_pointer(list);
-}
+};
+
+template <typename type, typename container>
+image<type,container>::image(std::vector<int> shape, std::initializer_list<type> list)
+{
+    this->class_name = "image";
+    int d = shape.size();
+    int s = list.size();
+
+    int m = 1;
+    for (int i=0; i<d; i++) m = m*shape[i];
+
+    // printf("vector size %d\n",m);
+    // printf("list size %d\n",s);
+    imart_assert( m == s, "vector and initializer list have different size");
+    
+    if (d == 2)
+        init(shape[0], shape[1], 1);
+    else if (d == 3)
+        init(shape[0], shape[1], shape[2], 1);
+        
+    data.reset();
+    data = container::new_pointer(list);
+};
 
 // Constructor
 template <typename type, typename container>
@@ -467,6 +496,12 @@ void image<type,container>::equal(const image & input)
 {
     assert_size(input);
     this->get_data()->equal(input.get_data());
+};
+
+template <typename type, typename container>
+void image<type,container>::to_cpu()
+{
+    this->get_data()->to_cpu();
 };
 
 // template <typename type, typename container>
@@ -1039,25 +1074,25 @@ void image<type,container>::read_2d(std::string file_name)
     typename itkImageType::PointType origin_itk = image_itk->GetOrigin();
     typename itkImageType::DirectionType direction_itk = image_itk->GetDirection();
 
-    std::vector<double> spacing(d,0), origin(d,0), direction(d*d,0);
+    std::vector<double> spacing_im(d,0), origin_im(d,0), direction_im(d*d,0);
     for (int i = 0; i < d; i++)
     {
-        spacing[i] = spacing_itk[i];
-        origin[i] = origin_itk[i];
+        spacing_im[i] = spacing_itk[i];
+        origin_im[i] = origin_itk[i];
     };
     int c = 0;
     for (int i = 0; i < d; i++)
     {
         for (int j = 0; j < d; j++)
         {
-            direction[c] = direction_itk[i][j];
+            direction_im[c] = direction_itk[i][j];
             c++;
         };
     };
 
-    this->set_spacing(spacing);
-    this->set_origin(origin);
-    this->set_direction(direction);
+    this->set_spacing(spacing_im);
+    this->set_origin(origin_im);
+    this->set_direction(direction_im);
 };
 
 template <typename type, typename container>
@@ -1102,25 +1137,25 @@ void image<type,container>::read_3d(std::string file_name)
     typename itkImageType::PointType origin_itk = image_itk->GetOrigin();
     typename itkImageType::DirectionType direction_itk = image_itk->GetDirection();
 
-    std::vector<double> spacing(d,0), origin(d,0), direction(d*d,0);
+    std::vector<double> spacing_im(d,0), origin_im(d,0), direction_im(d*d,0);
     for (int i = 0; i < d; i++)
     {
-        spacing[i] = spacing_itk[i];
-        origin[i] = origin_itk[i];
+        spacing_im[i] = spacing_itk[i];
+        origin_im[i] = origin_itk[i];
     };
     int c = 0;
     for (int i = 0; i < d; i++)
     {
         for (int j = 0; j < d; j++)
         {
-            direction[c] = direction_itk[i][j];
+            direction_im[c] = direction_itk[i][j];
             c++;
         };
     };
 
-    this->set_spacing(spacing);
-    this->set_origin(origin);
-    this->set_direction(direction);
+    this->set_spacing(spacing_im);
+    this->set_origin(origin_im);
+    this->set_direction(direction_im);
 };
 
 // template <size_t type_itk>
@@ -1134,7 +1169,7 @@ void image<type,container>::read_3d(std::string file_name)
 //     ImageType::SizeType size = region.GetSize();
 //     type * p = image_itk->GetBufferPointer();
 //     int w = size[0];
-//     int h = size[0];
+//     int h = size[1];
 
 //     image(w,h); // empty current image and create new
 
@@ -1164,14 +1199,14 @@ void image<type,container>::write_2d(std::string file_name)
 
     typename itkImageType::RegionType region;
     typename itkImageType::IndexType  start;
-    typename itkImageType::SizeType size;
+    typename itkImageType::SizeType itksize;
     
     start[0] = 0;
     start[1] = 0;
-    size[0] = get_width();
-    size[1] = get_height();
+    itksize[0] = get_width();
+    itksize[1] = get_height();
 
-    region.SetSize(size);
+    region.SetSize(itksize);
     region.SetIndex(start);
 
     image_itk->SetRegions(region);
@@ -1186,9 +1221,9 @@ void image<type,container>::write_2d(std::string file_name)
     // };
     
     // Writing metadata
-    std::vector<double> spacing = this->get_spacing();
-    std::vector<double> origin = this->get_origin();
-    std::vector<double> direction = this->get_direction();
+    std::vector<double> spacing_im = this->get_spacing();
+    std::vector<double> origin_im = this->get_origin();
+    std::vector<double> direction_im = this->get_direction();
     
     typename itkImageType::SpacingType spacing_itk;// = image_itk->GetSpacing();
     typename itkImageType::PointType origin_itk;// = image_itk->GetOrigin();
@@ -1196,8 +1231,8 @@ void image<type,container>::write_2d(std::string file_name)
     
     for (int i = 0; i < d; i++)
     {
-        spacing_itk[i] = spacing[i];
-        origin_itk[i] = origin[i];
+        spacing_itk[i] = spacing_im[i];
+        origin_itk[i] = origin_im[i];
         // std::cout << origin_itk[i];
     };
     int c = 0;
@@ -1205,7 +1240,7 @@ void image<type,container>::write_2d(std::string file_name)
     {
         for (int j = 0; j < d; j++)
         {
-            direction_itk[i][j] = direction[c];
+            direction_itk[i][j] = direction_im[c];
             c++;
         };
     };
@@ -1239,16 +1274,16 @@ void image<type,container>::write_3d(std::string file_name)
 
     typename itkImageType::RegionType region;
     typename itkImageType::IndexType  start;
-    typename itkImageType::SizeType size;
+    typename itkImageType::SizeType itksize;
     
     start[0] = 0;
     start[1] = 0;
     start[2] = 0;
-    size[0] = get_width();
-    size[1] = get_height();
-    size[2] = get_length();
+    itksize[0] = get_width();
+    itksize[1] = get_height();
+    itksize[2] = get_length();
 
-    region.SetSize(size);
+    region.SetSize(itksize);
     region.SetIndex(start);
 
     image_itk->SetRegions(region);
@@ -1263,9 +1298,9 @@ void image<type,container>::write_3d(std::string file_name)
     // };
     
     // Writing metadata
-    std::vector<double> spacing = this->get_spacing();
-    std::vector<double> origin = this->get_origin();
-    std::vector<double> direction = this->get_direction();
+    std::vector<double> spacing_im = this->get_spacing();
+    std::vector<double> origin_im = this->get_origin();
+    std::vector<double> direction_im = this->get_direction();
     
     // When I uncomment this lines spacing in z goes to 10^14???
 
@@ -1275,8 +1310,8 @@ void image<type,container>::write_3d(std::string file_name)
 
     for (int i = 0; i < d; i++)
     {
-        spacing_itk[i] = spacing[i];
-        origin_itk[i] = origin[i];
+        spacing_itk[i] = spacing_im[i];
+        origin_itk[i] = origin_im[i];
         // std::cout << origin_itk[i];
     };
     int c = 0;
@@ -1284,7 +1319,7 @@ void image<type,container>::write_3d(std::string file_name)
     {
         for (int j = 0; j < d; j++)
         {
-            direction_itk[i][j] = direction[c];
+            direction_itk[i][j] = direction_im[c];
             c++;
         };
     };

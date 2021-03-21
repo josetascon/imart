@@ -19,6 +19,7 @@
 #include "cuda_object.h"
 #include "cuda_buffer.h"
 #include "utils/timer.h"
+#include "vector_cpu.h"
 
 namespace imart
 {
@@ -31,7 +32,7 @@ namespace imart
 // #endif
 
 #ifdef IMART_WITH_CUDA
-cuda_object cuda_manager; // manager of vector ocl;
+cuda_object cuda_manager; // manager of vector cuda;
 
 // imart function to check cuda device
 void imart_cuda_device_name()
@@ -61,6 +62,7 @@ protected:
     int _size_;
     int err;
     std::shared_ptr<cuda_buffer<type>> buffer;
+    vector_cpu<type> data_cpu;
 
     // ===========================================
     // Constructor Functions
@@ -96,6 +98,7 @@ public:
     // Get Functions
     // ===========================================
     int size() const;
+    type * data() const;
     std::shared_ptr<cuda_buffer<type>> get_buffer() const;
     std::vector<type> std_vector();
 
@@ -104,6 +107,8 @@ public:
     // ===========================================
     void read_ram(type * p, int size, int offset = 0);
     void write_ram(type * p, int size, int offset = 0);
+    void equal(pointer input);
+    void to_cpu();
 
     // ===========================================
     // Print Functions
@@ -258,7 +263,7 @@ public:
     static void convolution( typename vector_cuda<type>::pointer imgr,
                              typename vector_cuda<type>::pointer kernel,
                              typename vector_cuda<type>::pointer imgo,
-                             std::vector<int> ref_size, int kwidth);
+                             std::vector<int> ref_size, std::vector<int> kernel_size);
 };
 
 
@@ -330,6 +335,7 @@ void vector_cuda<type>::allocate(int s)
 {
     // err = 0;
     buffer = std::make_shared<cuda_buffer<type>>(s);
+    data_cpu = vector_cpu<type>(s);
     // assert(err == 0);
 };
 
@@ -374,6 +380,12 @@ int vector_cuda<type>::size() const
 };
 
 template <typename type>
+type * vector_cuda<type>::data() const
+{
+    return data_cpu.data();
+};
+
+template <typename type>
 std::shared_ptr<cuda_buffer<type>> vector_cuda<type>::get_buffer() const
 {
     return buffer;
@@ -406,6 +418,28 @@ void vector_cuda<type>::write_ram(type * p, int s, int offset)
         buffer->pull_memory(p, s, offset);
 };
 
+template <typename type>
+void vector_cuda<type>::equal(pointer input)
+{
+    // Used to hold a cpu pointer. In gpu there is no need to hold the pointer.
+    // Therefore, we use this to write to cpu
+    
+    assert_size(*input);
+
+    // GPU
+    buffer.reset();
+    buffer = input->get_buffer();
+
+    // Tranfer GPU to CPU (keeping same CPU pointer)
+    to_cpu();
+};
+
+template <typename type>
+void vector_cuda<type>::to_cpu()
+{
+    // Tranfer GPU to CPU (keeping same CPU pointer)
+    write_ram( data_cpu.data(), _size_ );
+};
 
 // ===========================================
 // Print Functions
@@ -447,7 +481,7 @@ std::string vector_cuda<type>::info_data(std::string msg)
 template <typename type>
 void vector_cuda<type>::assert_size(const vector_cuda<type> & input)
 {
-    assert(this->size() == input.size());
+    imart_assert(this->size() == input.size(), "Mismatch of vector size");
 };
 
 // ===========================================
@@ -1265,108 +1299,6 @@ void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> &
     else ;
 };
 
-/*
-template <typename type>
-void vector_cuda<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward)
-{
-    // timer t("ms");
-    // t.start();
-    // Dimension
-    cl_int err;
-    int dim = size.size();
-    size_t lengths[dim];
-
-    // Input and Output buffer
-    cl_mem buffers_in[2];
-    cl_mem buffers_out[2];
-    // input[0]->print_data("vin0 ocl");
-    // input[1]->print_data("vin1 ocl");
-
-    // Initiliaze
-    for(int i = 0; i < dim; i++) lengths[i] = size[i];
-    for(int i = 0; i < 2; i++) // real and img
-    {
-        buffers_in[i] = (*(input[i]->get_buffer()))();
-        buffers_out[i] = (*(output[i]->get_buffer()))();
-        // std::cout << "in buffer " << i << ": " << (*(input[i]->get_buffer()))() << std::endl;
-        // std::cout << "out buffer " << i << ": " << (*(output[i]->get_buffer()))() << std::endl;
-
-    };
-    // t.lap("[Init]");
-
-    // Temporary buffer
-    cl_mem tmp_buffer = 0;
-    size_t tmp_buffer_size = 0;
-    int status = 0;
-    
-    // Setup clFFT
-    clfftSetupData fft_setup;
-    err = clfftInitSetupData(&fft_setup);
-    err = clfftSetup(&fft_setup);
-    // t.lap("[Setup]");
-
-    // Create a default plan for a complex FFT
-    clfftPlanHandle plan_handle;
-    clfftDim dd;
-    if (dim == 2) dd = CLFFT_2D;
-    if (dim == 3) dd = CLFFT_3D;
-
-    // t.lap("[Handle]");
-    cl_context ctx = (cuda_manager.get_context())();
-    err = clfftCreateDefaultPlan(&plan_handle, ctx, dd, lengths);
-    // t.lap("[Plan]");
-
-    // Set plan parameters
-    if (string_type<type>() == "double") err = clfftSetPlanPrecision(plan_handle, CLFFT_DOUBLE);
-    else err = clfftSetPlanPrecision(plan_handle, CLFFT_SINGLE);    
-    err = clfftSetLayout(plan_handle, CLFFT_COMPLEX_PLANAR, CLFFT_COMPLEX_PLANAR);
-    err = clfftSetResultLocation(plan_handle, CLFFT_OUTOFPLACE);
-    // t.lap("[PlanProp]");
-
-    // Bake the plan
-    cl_command_queue queue = (cuda_manager.get_queue())();
-    err = clfftBakePlan(plan_handle, 1, &queue, NULL, NULL);
-    // t.lap("[Bake]");
-
-    // Create temporary buffer
-    status = clfftGetTmpBufSize(plan_handle, &tmp_buffer_size);
-
-    if ((status == 0) && (tmp_buffer_size > 0))
-    {
-        // tmp_buffer = cl::Buffer(cuda_manager.get_context(), CL_MEM_READ_WRITE, tmp_buffer_size, nullptr, &err);
-        tmp_buffer = clCreateBuffer(ctx, CL_MEM_READ_WRITE, tmp_buffer_size, 0, &err);
-        if (err != CL_SUCCESS)
-            printf("Error with tmp_buffer clCreateBuffer\n");
-    };
-    // t.lap("[Buffer]");
-    
-    // Execute Forward or Backward FFT
-    if(forward)
-    {
-        // Execute the plan
-        err = clfftEnqueueTransform(plan_handle, CLFFT_FORWARD, 1, &queue, 0, NULL, NULL,
-        buffers_in, buffers_out, tmp_buffer);
-        if (err != CL_SUCCESS)
-            printf("Error running fft plan\n");
-    }
-    else
-    {
-        // Execute the plan
-        err = clfftEnqueueTransform(plan_handle, CLFFT_BACKWARD, 1, &queue, 0, NULL, NULL,
-        buffers_in, buffers_out, tmp_buffer);
-        if (err != CL_SUCCESS)
-            printf("Error running fft plan\n");
-    };
-    // t.lap("[FFT]");
-    // t.finish();
-
-    // Release the plan
-    err = clfftDestroyPlan(&plan_handle);
-
-    // Release clFFT library
-    clfftTeardown();
-};
-*/
 template <typename type>
 void vector_cuda<type>::gradientx( typename vector_cuda<type>::pointer imgr,
                                   typename vector_cuda<type>::pointer imgo,
@@ -1413,19 +1345,19 @@ template <typename type>
 void vector_cuda<type>::convolution( typename vector_cuda<type>::pointer imgr,
                                      typename vector_cuda<type>::pointer kernel,
                                      typename vector_cuda<type>::pointer imgo,
-                                     std::vector<int> ref_size, int kwidth)
+                                     std::vector<int> ref_size, std::vector<int> kernel_size)
 {
     if (ref_size.size() == 2)
     {
         cuda_manager.setup(ref_size); // multidimensional
         cuda_manager.execute( cuda_kernel_convolution_2d<type>, imgr->get_buffer()->get(), kernel->get_buffer()->get(),
-                            imgo->get_buffer()->get(), kwidth, ref_size[0], ref_size[1]);
+                            imgo->get_buffer()->get(), ref_size[0], ref_size[1], kernel_size[0], kernel_size[1]);
     }
     else if (ref_size.size() == 3)
     {
         cuda_manager.setup(ref_size); // multidimensional
         cuda_manager.execute( cuda_kernel_convolution_3d<type>, imgr->get_buffer()->get(), kernel->get_buffer()->get(), 
-                            imgo->get_buffer()->get(), kwidth, ref_size[0], ref_size[1], ref_size[2]);
+                            imgo->get_buffer()->get(), ref_size[0], ref_size[1], ref_size[2], kernel_size[0], kernel_size[1], kernel_size[2]);
     }
     else ;
 };

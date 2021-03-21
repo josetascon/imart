@@ -36,6 +36,9 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/images/lpba_s02.nrrd
 # Core
 option(ENABLE_SAMPLES "Enable Samples" OFF)
 
+
+if(ENABLE_SAMPLES)
+
 add_executable(image2d_arithmetic image2d_arithmetic.cpp)
 target_link_libraries(image2d_arithmetic ${link_targets})
 
@@ -45,8 +48,11 @@ target_link_libraries(image_read_write ${link_targets})
 add_executable(image_statistics_input image_statistics_input.cpp)
 target_link_libraries(image_statistics_input ${link_targets})
 
+add_executable(image_fftconvolve_cpu image_fftconvolve_cpu.cpp)
+target_link_libraries(image_fftconvolve_cpu ${link_targets})
 
-if(ENABLE_SAMPLES)
+add_executable(image_utils_cpu image_utils_cpu.cpp)
+target_link_libraries(image_utils_cpu ${link_targets})
 
 add_executable(vector_cpu_aritmethic vector_cpu_aritmethic.cpp)
 target_link_libraries(vector_cpu_aritmethic ${link_targets})
@@ -73,8 +79,7 @@ target_link_libraries(image_copy ${link_targets})
 add_executable(image_conditions_cpu image_conditions_cpu.cpp)
 target_link_libraries(image_conditions_cpu ${link_targets})
 
-add_executable(image_utils_cpu image_utils_cpu.cpp)
-target_link_libraries(image_utils_cpu ${link_targets})
+
 
 add_executable(image_reduction_cpu image_reduction_cpu.cpp)
 target_link_libraries(image_reduction_cpu ${link_targets})
@@ -148,7 +153,7 @@ target_link_libraries(image_resolution_input2d ${link_targets})
 
 add_executable(image_resolution_input3d image_resolution_input3d.cpp)
 target_link_libraries(image_resolution_input3d ${link_targets})
-endif()
+
 
 add_executable(image_optimizer_cpu image_optimizer_cpu.cpp)
 target_link_libraries(image_optimizer_cpu ${link_targets})
@@ -187,128 +192,117 @@ target_link_libraries(registration_lddmm_input ${link_targets})
 if (IMART_WITH_OPENCL)
 
     # add_executable(gpu_image2d_basic gpu_image2d_basic.cpp)
-    # target_link_libraries(gpu_image2d_basic ${link_targets})
+    # target_link_libraries(gpu_image2d_basic ${link_targets} )
 
     # add_executable(gpu_image2d_arithmetic gpu_image2d_arithmetic.cpp)
-    # target_link_libraries(gpu_image2d_arithmetic ${link_targets})
+    # target_link_libraries(gpu_image2d_arithmetic ${link_targets} )
 
     add_executable(opencl_object opencl_object.cpp)
-    target_link_libraries(opencl_object ${link_targets})
+    target_link_libraries(opencl_object ${link_targets} )
 
-    add_executable(vector_ocl_aritmethic vector_ocl_aritmethic.cpp)
-    target_link_libraries(vector_ocl_aritmethic ${link_targets})
+    add_executable(vector_opencl_aritmethic vector_opencl_aritmethic.cpp)
+    target_link_libraries(vector_opencl_aritmethic ${link_targets} )
 
-    add_executable(image2d_arithmetic_ocl image2d_arithmetic_ocl.cpp)
-    target_link_libraries(image2d_arithmetic_ocl ${link_targets})
+    add_executable(image2d_arithmetic_opencl image2d_arithmetic_opencl.cpp)
+    target_link_libraries(image2d_arithmetic_opencl ${link_targets} )
 
-    add_executable(image_conditions_ocl image_conditions_ocl.cpp)
-    target_link_libraries(image_conditions_ocl ${link_targets})
+    add_executable(image_conditions_opencl image_conditions_opencl.cpp)
+    target_link_libraries(image_conditions_opencl ${link_targets} )
 
-    add_executable(image_utils_ocl image_utils_ocl.cpp)
-    target_link_libraries(image_utils_ocl ${link_targets})
+    add_executable(image_utils_opencl image_utils_opencl.cpp)
+    target_link_libraries(image_utils_opencl ${link_targets} )
 
-    add_executable(image_reduction_ocl image_reduction_ocl.cpp)
-    target_link_libraries(image_reduction_ocl ${link_targets})
+    add_executable(image_reduction_opencl image_reduction_opencl.cpp)
+    target_link_libraries(image_reduction_opencl ${link_targets} )
 
-    add_executable(image_fft_ocl image_fft_ocl.cpp)
-    target_link_libraries(image_fft_ocl ${link_targets})
+    add_executable(image_fft_opencl image_fft_opencl.cpp)
+    target_link_libraries(image_fft_opencl ${link_targets} )
 
-    add_executable(image_gradient_kernel_ocl image_gradient_kernel_ocl.cpp)
-    target_link_libraries(image_gradient_kernel_ocl ${link_targets})
+    add_executable(image_gradient_kernel_opencl image_gradient_kernel_opencl.cpp)
+    target_link_libraries(image_gradient_kernel_opencl ${link_targets} )
 
-    add_executable(image_gradient_ocl image_gradient_ocl.cpp)
-    target_link_libraries(image_gradient_ocl ${link_targets})
+    add_executable(image_gradient_opencl image_gradient_opencl.cpp)
+    target_link_libraries(image_gradient_opencl ${link_targets} )
 
-    add_executable(image_gradient_ocl_input image_gradient_ocl_input.cpp)
-    target_link_libraries(image_gradient_ocl_input ${link_targets})
+    add_executable(image_gradient_opencl_input image_gradient_opencl_input.cpp)
+    target_link_libraries(image_gradient_opencl_input ${link_targets} )
 
-    add_executable(image_meshgrid_ocl image_meshgrid_ocl.cpp)
-    target_link_libraries(image_meshgrid_ocl ${link_targets})
+    add_executable(image_meshgrid_opencl image_meshgrid_opencl.cpp)
+    target_link_libraries(image_meshgrid_opencl ${link_targets} )
 
-    add_executable(affine_basic_ocl affine_basic_ocl.cpp)
-    target_link_libraries(affine_basic_ocl ${link_targets})
+    add_executable(affine_basic_opencl affine_basic_opencl.cpp)
+    target_link_libraries(affine_basic_opencl ${link_targets} )
 
-    add_executable(dfield_basic_ocl dfield_basic_ocl.cpp)
-    target_link_libraries(dfield_basic_ocl ${link_targets})
+    add_executable(dfield_basic_opencl dfield_basic_opencl.cpp)
+    target_link_libraries(dfield_basic_opencl ${link_targets} )
 
-    add_executable(image_interpolator_nearest_ocl image_interpolator_nearest_ocl.cpp)
-    target_link_libraries(image_interpolator_nearest_ocl ${link_targets})
+    add_executable(image_interpolator_nearest_opencl image_interpolator_nearest_opencl.cpp)
+    target_link_libraries(image_interpolator_nearest_opencl ${link_targets} )
 
-    add_executable(image_interpolator_linear_ocl image_interpolator_linear_ocl.cpp)
-    target_link_libraries(image_interpolator_linear_ocl ${link_targets})
+    add_executable(image_interpolator_linear_opencl image_interpolator_linear_opencl.cpp)
+    target_link_libraries(image_interpolator_linear_opencl ${link_targets} )
 
-    # CHECK if CUDA
-    add_executable(affine_ilinear_cpu_gpu_itk affine_ilinear_cpu_gpu_itk.cpp)
-    target_link_libraries(affine_ilinear_cpu_gpu_itk ${link_targets})
+    add_executable(image_metric_opencl image_metric_opencl.cpp)
+    target_link_libraries(image_metric_opencl ${link_targets} )
 
-    add_executable(scale_icubic_cpu_gpu_itk scale_icubic_cpu_gpu_itk.cpp)
-    target_link_libraries(scale_icubic_cpu_gpu_itk ${link_targets})
+    add_executable(image_optimizer_opencl image_optimizer_opencl.cpp)
+    target_link_libraries(image_optimizer_opencl ${link_targets} )
 
-    add_executable(transform_dfield_cpu_gpu transform_dfield_cpu_gpu.cpp)
-    target_link_libraries(transform_dfield_cpu_gpu ${link_targets})
+    add_executable(image_optimizer_demons_opencl image_optimizer_demons_opencl.cpp)
+    target_link_libraries(image_optimizer_demons_opencl ${link_targets} )
 
+    add_executable(registration_demons_opencl registration_demons_opencl.cpp)
+    target_link_libraries(registration_demons_opencl ${link_targets} )
 
-    add_executable(image_metric_ocl image_metric_ocl.cpp)
-    target_link_libraries(image_metric_ocl ${link_targets})
-
-    add_executable(image_optimizer_ocl image_optimizer_ocl.cpp)
-    target_link_libraries(image_optimizer_ocl ${link_targets})
-
-    add_executable(image_optimizer_demons_ocl image_optimizer_demons_ocl.cpp)
-    target_link_libraries(image_optimizer_demons_ocl ${link_targets})
-
-    add_executable(registration_demons_ocl registration_demons_ocl.cpp)
-    target_link_libraries(registration_demons_ocl ${link_targets})
-
-    add_executable(registration_ocl_demons_input registration_ocl_demons_input.cpp)
-    target_link_libraries(registration_ocl_demons_input ${link_targets})
+    add_executable(registration_opencl_demons_input registration_opencl_demons_input.cpp)
+    target_link_libraries(registration_opencl_demons_input ${link_targets} )
 endif()
 
 if (IMART_WITH_CUDA)
     add_executable(vector_cuda_aritmethic vector_cuda_aritmethic.cpp)
-    target_link_libraries(vector_cuda_aritmethic ${link_targets})
+    target_link_libraries(vector_cuda_aritmethic ${link_targets} )
 
     add_executable(image_utils_cuda image_utils_cuda.cpp)
-    target_link_libraries(image_utils_cuda ${link_targets})
+    target_link_libraries(image_utils_cuda ${link_targets} )
 
     add_executable(image_reduction_cuda image_reduction_cuda.cpp)
-    target_link_libraries(image_reduction_cuda ${link_targets})
+    target_link_libraries(image_reduction_cuda ${link_targets} )
 
     add_executable(image_gradient_cuda image_gradient_cuda.cpp)
-    target_link_libraries(image_gradient_cuda ${link_targets})
+    target_link_libraries(image_gradient_cuda ${link_targets} )
 
     add_executable(image_fft_cuda image_fft_cuda.cpp)
-    target_link_libraries(image_fft_cuda ${link_targets})
+    target_link_libraries(image_fft_cuda ${link_targets} )
 
     add_executable(image_meshgrid_cuda image_meshgrid_cuda.cpp)
-    target_link_libraries(image_meshgrid_cuda ${link_targets})
+    target_link_libraries(image_meshgrid_cuda ${link_targets} )
 
     add_executable(affine_basic_cuda affine_basic_cuda.cpp)
-    target_link_libraries(affine_basic_cuda ${link_targets})
+    target_link_libraries(affine_basic_cuda ${link_targets} )
 
     add_executable(dfield_basic_cuda dfield_basic_cuda.cpp)
-    target_link_libraries(dfield_basic_cuda ${link_targets})
+    target_link_libraries(dfield_basic_cuda ${link_targets} )
 
     add_executable(image_interpolator_nearest_cuda image_interpolator_nearest_cuda.cpp)
-    target_link_libraries(image_interpolator_nearest_cuda ${link_targets})
+    target_link_libraries(image_interpolator_nearest_cuda ${link_targets} )
 
     add_executable(image_interpolator_linear_cuda image_interpolator_linear_cuda.cpp)
-    target_link_libraries(image_interpolator_linear_cuda ${link_targets})
+    target_link_libraries(image_interpolator_linear_cuda ${link_targets} )
 
     add_executable(image_optimizer_cuda image_optimizer_cuda.cpp)
-    target_link_libraries(image_optimizer_cuda ${link_targets})
+    target_link_libraries(image_optimizer_cuda ${link_targets} )
 
     add_executable(image_optimizer_demons_cuda image_optimizer_demons_cuda.cpp)
-    target_link_libraries(image_optimizer_demons_cuda ${link_targets})
+    target_link_libraries(image_optimizer_demons_cuda ${link_targets} )
 
     add_executable(registration_demons_cuda registration_demons_cuda.cpp)
-    target_link_libraries(registration_demons_cuda ${link_targets})
+    target_link_libraries(registration_demons_cuda ${link_targets} )
 
     add_executable(registration_cuda_demons_input registration_cuda_demons_input.cpp)
-    target_link_libraries(registration_cuda_demons_input ${link_targets})
+    target_link_libraries(registration_cuda_demons_input ${link_targets} )
 
     # add_executable(registration_cuda_lddmm_prototype registration_cuda_lddmm_prototype.cpp)
-    # target_link_libraries(registration_cuda_lddmm_prototype ${link_targets})
+    # target_link_libraries(registration_cuda_lddmm_prototype ${link_targets} )
 endif()
 
 # # 3d test
@@ -319,7 +313,27 @@ endif()
 # target_link_libraries(image3d_itk ${link_targets})
 
 
+if (IMART_WITH_OPENCL AND IMART_WITH_CUDA)
+    # CHECK if OPENCL and CUDA
+    add_executable(affine_ilinear_cpu_gpu_itk affine_ilinear_cpu_gpu_itk.cpp)
+    target_link_libraries(affine_ilinear_cpu_gpu_itk ${link_targets}  )
+
+    add_executable(scale_icubic_cpu_gpu_itk scale_icubic_cpu_gpu_itk.cpp)
+    target_link_libraries(scale_icubic_cpu_gpu_itk ${link_targets}  )
+
+    add_executable(transform_dfield_cpu_gpu transform_dfield_cpu_gpu.cpp)
+    target_link_libraries(transform_dfield_cpu_gpu ${link_targets}  )
+endif()
 
 # Real time
 add_executable(viewer viewer.cpp)
 target_link_libraries(viewer ${link_targets})
+
+add_executable(tracking_video_ground tracking_video_ground.cpp)
+target_link_libraries(tracking_video_ground ${link_targets})
+
+endif()
+
+add_executable(tracking_video tracking_video.cpp)
+target_link_libraries(tracking_video ${link_targets})
+

@@ -1008,20 +1008,20 @@ __global__ void kernel_gradientz( const type * imgr, type * imgo,
 
 template <typename type>
 __global__ void kernel_convolution_2d( const type * imgr, const type * kern, //kernel width
-                                       type * imgo, int kwidth, int n0, int n1)
+                                       type * imgo, int n0, int n1, int kw0, int kw1)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     int j = blockDim.y * blockIdx.y + threadIdx.y;
-    int off = floor(kwidth/2.0);
+    int off0 = kw0>>1; int off1 = kw1>>1;
 
-    if(i >= off && i < n0 - off && j >= off && j < n1 - off)
+    if(i >= off0 && i < n0 - off0 && j >= off1 && j < n1 - off1)
     {
         type sum = 0;
-        for (int p = 0; p < kwidth; p++)
+        for (int p = 0; p < kw1; p++)
         {
-            for (int q = 0; q < kwidth; q++)
+            for (int q = 0; q < kw0; q++)
             {
-                sum += imgr[i+p-off + (j+q-off)*n0] * kern[p*kwidth + q];
+                sum += imgr[i+p-off0 + (j+q-off1)*n0] * kern[p*kw0 + q];
             };
         };
         imgo[i + j*n0] = sum;
@@ -1030,24 +1030,24 @@ __global__ void kernel_convolution_2d( const type * imgr, const type * kern, //k
 
 template <typename type>
 __global__ void kernel_convolution_3d( const type * imgr, const type * kern, //kernel width
-                                       type * imgo, int kwidth, int n0, int n1, int n2)
+                                       type * imgo, int n0, int n1, int n2, int kw0, int kw1, int kw2)
 {
     int i = (blockIdx.x * blockDim.x) + threadIdx.x;
     int j = (blockIdx.y * blockDim.y) + threadIdx.y;
     int k = (blockIdx.z * blockDim.z) + threadIdx.z;
     
-    int off = floor(kwidth/2.0);
+    int off0 = kw0>>1; int off1 = kw1>>1; int off2 = kw2>>1;
 
-    if(i >= off && i < n0 - off && j >= off && j < n1 - off && k >= off && k < n2 - off)
+    if(i >= off0 && i < n0 - off0 && j >= off1 && j < n1 - off1 && k >= off2 && k < n2 - off2)
     {
         type sum = 0;
-        for (int r = 0; r < kwidth; r++)
+        for (int r = 0; r < kw2; r++)
         {
-            for (int p = 0; p < kwidth; p++)
+            for (int p = 0; p < kw1; p++)
             {
-                for (int q = 0; q < kwidth; q++)
+                for (int q = 0; q < kw0; q++)
                 {
-                    sum += imgr[i+q-off + (j+p-off)*n0 + (k+r-off)*n0*n1] * kern[r*kwidth*kwidth + p*kwidth + q];
+                    sum += imgr[i+q-off0 + (j+p-off1)*n0 + (k+r-off2)*n0*n1] * kern[r*kw0*kw1 + p*kw0 + q];
                 };
             };
         };
@@ -1748,11 +1748,11 @@ void cuda_kernel_gradientz( std::vector<int> & grid, std::vector<int> & block,
 template <typename type>
 void cuda_kernel_convolution_2d( std::vector<int> & grid, std::vector<int> & block,
                                  const type * imgr, const type * kern, //kernel width
-                                 type * imgo, int kwidth, int n0, int n1)
+                                 type * imgo, int n0, int n1, int kw0, int kw1)
 {
     dim3 grd(grid[0],grid[1]);
     dim3 blk(block[0],block[1]);
-    kernel_convolution_2d<<<grd,blk>>>(imgr, kern, imgo, kwidth, n0, n1);
+    kernel_convolution_2d<<<grd,blk>>>(imgr, kern, imgo, n0, n1, kw0, kw1);
     imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel convolution 2d" );
     imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel convolution 2d" );
 };
@@ -1760,11 +1760,11 @@ void cuda_kernel_convolution_2d( std::vector<int> & grid, std::vector<int> & blo
 template <typename type>
 void cuda_kernel_convolution_3d( std::vector<int> & grid, std::vector<int> & block,
                                  const type * imgr, const type * kern, //kernel width
-                                 type * imgo, int kwidth, int n0, int n1, int n2)
+                                 type * imgo, int n0, int n1, int n2, int kw0, int kw1, int kw2)
 {
     dim3 grd(grid[0],grid[1],grid[2]);
     dim3 blk(block[0],block[1],block[2]);
-    kernel_convolution_3d<<<grd,blk>>>(imgr, kern, imgo, kwidth, n0, n1, n2);
+    kernel_convolution_3d<<<grd,blk>>>(imgr, kern, imgo, n0, n1, n2, kw0, kw1, kw2);
     imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel convolution 3d" );
     imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel convolution 3d" );
 };
@@ -2303,11 +2303,11 @@ template void cuda_kernel_gradientz<float>( std::vector<int> & grid, std::vector
 
 template void cuda_kernel_convolution_2d<float>( std::vector<int> & grid, std::vector<int> & block,
                                  const float * imgr, const float * kern, //kernel width
-                                 float * imgo, int kwidth, int n0, int n1);
+                                 float * imgo, int n0, int n1, int kw0, int kw1);
 
 template void cuda_kernel_convolution_3d<float>( std::vector<int> & grid, std::vector<int> & block,
                                  const float * imgr, const float * kern, //kernel width
-                                 float * imgo, int kwidth, int n0, int n1, int n2);
+                                 float * imgo, int n0, int n1, int n2, int kw0, int kw1, int kw2);
 
 
 
@@ -2505,11 +2505,11 @@ template void cuda_kernel_gradientz<double>( std::vector<int> & grid, std::vecto
 
 template void cuda_kernel_convolution_2d<double>( std::vector<int> & grid, std::vector<int> & block,
                                  const double * imgr, const double * kern, //kernel width
-                                 double * imgo, int kwidth, int n0, int n1);
+                                 double * imgo, int n0, int n1, int kw0, int kw1);
 
 template void cuda_kernel_convolution_3d<double>( std::vector<int> & grid, std::vector<int> & block,
                                  const double * imgr, const double * kern, //kernel width
-                                 double * imgo, int kwidth, int n0, int n1, int n2);
+                                 double * imgo, int n0, int n1, int n2, int kw0, int kw1, int kw2);
 
 
 
@@ -2695,11 +2695,11 @@ template void cuda_kernel_gradientz<int>( std::vector<int> & grid, std::vector<i
 
 template void cuda_kernel_convolution_2d<int>( std::vector<int> & grid, std::vector<int> & block,
                                  const int * imgr, const int * kern, //kernel width
-                                 int * imgo, int kwidth, int n0, int n1);
+                                 int * imgo, int n0, int n1, int kw0, int kw1);
 
 template void cuda_kernel_convolution_3d<int>( std::vector<int> & grid, std::vector<int> & block,
                                  const int * imgr, const int * kern, //kernel width
-                                 int * imgo, int kwidth, int n0, int n1, int n2);
+                                 int * imgo, int n0, int n1, int n2, int kw0, int kw1, int kw2);
 
 
 

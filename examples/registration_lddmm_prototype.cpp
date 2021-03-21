@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-02-10 13:09:08
+* @Last Modified time: 2021-02-17 17:12:47
 */
 
 // std libs
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     ("plot_per_iter,q", po::bool_switch(&plot_per_iter), "Enable plot per iteration")
     ("opt-step,l", po::value<double>(&step)->default_value(1.0), "Optimizer step")
     ("opt-iterations,i", po::value<int>(&iter)->default_value(150), "Optimizer iterations")
-    ("opt-tolerance,t", po::value<double>(&tolerance)->default_value(1e-7), "Optimizer tolerance")
+    ("opt-tolerance,t", po::value<double>(&tolerance)->default_value(1e-6), "Optimizer tolerance")
     ("sigma_fluid,u", po::value<double>(&sigma_f)->default_value(0.0), "Deformation field sigma fluid")
     ("sigma_elastic,e", po::value<double>(&sigma_e)->default_value(1.0), "Deformation field sigma elastic")
     ("sigma_lddmm,s", po::value<double>(&sigma_l)->default_value(0.1), "LDDMM sigma")
@@ -139,18 +139,18 @@ int main(int argc, char *argv[])
         view->subplot(2,5);
         for (int i=0; i<5; i++)
         {
-            int p = int(tsteps/4)*i - 1;
+            int p = round(tsteps*i/4 - 1);
             if (i == 0) p = 0;
             view->add_image(normalize(lddmm1->j1->at(p),0.0,255.0));
         }
         for (int i=0; i<5; i++)
         {
-            int p = int(tsteps/4)*i - 1;
+            int p = round(tsteps*i/4 - 1);
             if (i == 0) p = 0;
             view->add_image(normalize(lddmm1->j0->at(p),0.0,255.0));
         }
         view->setup();
-        view->visualize();
+        view->render();
     };
     
     for (int k = 0; k < iter; k++)
@@ -181,21 +181,25 @@ int main(int argc, char *argv[])
             // view->subplot(2,5);
             for (int i=0; i<5; i++)
             {
-                int p = int(tsteps/4)*i - 1;
+                int p = round(tsteps*i/4 - 1);
                 if (i == 0) p = 0;
                 // view->add_image(normalize(lddmm1->j1->at(p),0.0,255.0));
                 view->update_image(normalize(lddmm1->j1->at(p),0.0,255.0), c);
+                // view->update_image(normalize(lddmm1->phi1->at(p)[0],0.0,255.0), c);
                 c++;
             }
             for (int i=0; i<5; i++)
             {
-                int p = int(tsteps/4)*i - 1;
+                int p = round(tsteps*i/4 - 1);
                 if (i == 0) p = 0;
                 view->update_image(normalize(lddmm1->j0->at(p),0.0,255.0), c);
                 c++;
             }
+            // lddmm1->j0->at(0)->print("j0 t0");
+            // lddmm1->j0->at(tsteps-1)->print("j0 t1");
+
             // view->setup();
-            view->visualize();
+            view->render();
         };
 
         
@@ -230,7 +234,7 @@ int main(int argc, char *argv[])
         //     // view->add_image(lddmm1->j0->at(31));
             
         //     view->setup();
-        //     // view->visualize();
+        //     // view->render();
         //     view->show();
         // };
 
@@ -280,9 +284,10 @@ int main(int argc, char *argv[])
     auto x0 = grid_cpu<type>::new_pointer(img_fixed);
     auto moving_warped = interpolation->apply(transformation->apply(x0));
     
-    transformation->print();
-    x0->print();
-    moving_warped->print();
+    // Print output summary information
+    // transformation->print();
+    // x0->print();
+    // moving_warped->print();
 
 
     // auto moving_warped = lddmm1->warped_moving();
@@ -322,7 +327,7 @@ int main(int argc, char *argv[])
         // view->add_image(img_fixed);
         // view->add_image(moving_warped);
         view->setup();
-        // view->visualize();
+        // view->render();
         view->show();
     };
 

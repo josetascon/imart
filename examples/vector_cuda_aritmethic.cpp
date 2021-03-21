@@ -71,10 +71,10 @@ int main()
     for(int i = 0; i < std_vec.size(); i++) std::cout << std_vec[i] << " ";
     std::cout << "]" << std::endl;
 
-    auto vec_ocl = vector_cuda<type>::new_pointer(22);
-    vec_ocl->print_data("create vec_ocl");
-    vec_ocl->read_ram(std_vec.data(), std_vec.size());
-    vec_ocl->print_data("copy ram std_vec");
+    auto vec_opencl = vector_cuda<type>::new_pointer(22);
+    vec_opencl->print_data("create vec_opencl");
+    vec_opencl->read_ram(std_vec.data(), std_vec.size());
+    vec_opencl->print_data("copy ram std_vec");
 
     int ss = 501;
     std::vector<type> std_vec1(ss);
@@ -87,7 +87,7 @@ int main()
 
     auto vec_cuda1 = vector_cuda<type>::new_pointer(ss);
     vec_cuda1->read_ram(std_vec1.data(), std_vec1.size());
-    // vec_ocl1->print_data();
+    // vec_opencl1->print_data();
     std::cout << "add: " << add << std::endl;
     std::cout << "add cuda: " << vec_cuda1->sum() << std::endl;
     std::cout << "min cuda: " << vec_cuda1->min() << std::endl;

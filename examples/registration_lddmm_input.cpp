@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-01-27 06:50:13
+* @Last Modified time: 2021-02-16 14:16:16
 */
 
 // std libs
@@ -132,6 +132,7 @@ int main(int argc, char *argv[])
     registro->set_optimizer(opt);
     registro->set_normalize(true);
     // registro->set_padding(true);
+    registro->set_plot(plot);
     registro->apply();
 
 
@@ -172,7 +173,7 @@ int main(int argc, char *argv[])
         view->add_image(img_fixed);
         view->add_image(moving_warped);
         view->setup();
-        // view->visualize();
+        // view->render();
         view->show();
     };
 

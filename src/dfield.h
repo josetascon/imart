@@ -111,11 +111,11 @@ template<typename type>
 using dfield_cpu = dfield<type,vector_cpu<type>>;
 
 // template<typename type>
-// using dfield_gpu = dfield<type,vector_ocl<type>>;
+// using dfield_gpu = dfield<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using dfield_ocl = dfield<type,vector_ocl<type>>;
+using dfield_opencl = dfield<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA

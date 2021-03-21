@@ -18,7 +18,7 @@ int main()
 {
     using type = double;
     
-    auto imgg = image_ocl<type>::new_pointer(4,5);
+    auto imgg = image_opencl<type>::new_pointer(4,5);
     std::vector<type> vec{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19};
     imgg->get_data()->read_ram(vec.data(),vec.size());
 

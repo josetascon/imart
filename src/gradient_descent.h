@@ -105,7 +105,7 @@ template <typename type, typename container>
 void gradient_descent<type,container>::optimize(typename metric<type,container>::pointer method)
 {
     _method_ = method;
-    std::cout << "Init optimization" << std::endl;
+    if (this->verbose) std::cout << "Init optimization" << std::endl;
     // Affine
     // typename affine<type,container>::pointer tr_base = std::static_pointer_cast<affine<type,container>>(method->get_transform());
     // typename affine<type,container>::pointer tr_derive = tr_base->mimic();
@@ -175,15 +175,17 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
         // tr_base = expfield(tr_base)
 
         // std::cout << "Diff:" << std::endl;
-        diff = abs(previous_cost - current_cost);
+        diff = (previous_cost - current_cost);
         t.lap();
-        printf( "iteration: %4d  cost: %7.3e  diff: %7.3e  perf: %7.1e  time: %7.3f\n", iterations, current_cost, diff, t.get_elapsed()*(1e6)/N,  t.get_elapsed() );
+        if (this->verbose)
+            printf( "iteration: %4d  cost: %7.3e  diff: %+7.3e  perf: %7.1e  time: %7.3f\n", iterations, current_cost, diff, t.get_elapsed()*(1e6)/N,  t.get_elapsed() );
 
         // if (method->get_plot()) method->plot();
         // sleep(1);
         // std::cout << std::showpoint << std::setprecision(4);
         // std::cout << "iteration: " << std::setw(4) << iterations << "  cost: " << std::setw(4) <<  current_cost;
         // std::cout << "  diff: " << std::setw(4) << diff << "  time:" << std::setw(4) << t.get_elapsed() << std::endl;
+        diff = abs(diff);
         iterations++;
 
         if (diff > 0.0 and diff < tolerance)
@@ -197,6 +199,7 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
         if (current_cost < lowest_cost)
         {
             lowest_cost = current_cost;
+            method->store_best();
             tr_best = tr_base->copy();
             unchanged_times = 0;
         }
@@ -218,10 +221,14 @@ void gradient_descent<type,container>::optimize(typename metric<type,container>:
     };
 
     t.finish();
-    std::cout << "Optimization Summary" << std::endl;
-    std::cout << "Iterations:\t" << iterations << std::endl;
-    std::cout << "Lowest cost:\t" << lowest_cost << std::endl;
-    std::cout << "Termination:\t" << termination << std::endl;
+    if (this->verbose)
+    {
+        std::cout << "Optimization Summary" << std::endl;
+        std::cout << "Iterations:\t" << iterations << std::endl;
+        std::cout << "Lowest cost:\t" << lowest_cost << std::endl;
+        std::cout << "Termination:\t" << termination << std::endl;
+    };
+    
     // tr_best->print_data();
     method->set_transform(tr_best);
 

@@ -76,11 +76,11 @@ int main(int argc, char *argv[])
     // ============================================
     // Create small imame
     // std::string file_fixed = argv[1];
-    auto img_fixed = image_ocl<type>::new_pointer(dim);
+    auto img_fixed = image_opencl<type>::new_pointer(dim);
     img_fixed->read(file_fixed);
 
     // std::string file_moving = argv[2];
-    auto img_moving = image_ocl<type>::new_pointer(dim);
+    auto img_moving = image_opencl<type>::new_pointer(dim);
     img_moving->read(file_moving);
 
     img_fixed->print("Fixed Image");
@@ -102,19 +102,19 @@ int main(int argc, char *argv[])
 
     // auto mg = gradient(img_moving);
 
-    auto trfm = dfield<type,vector_ocl<type>>::new_pointer(img_fixed);
+    auto trfm = dfield<type,vector_opencl<type>>::new_pointer(img_fixed);
     trfm->set_sigma_fluid(sigma_f);
     trfm->set_sigma_elastic(sigma_e);
     // trfm->print();
     // trfm->print_data();
 
-    auto demons1 = demons<type,vector_ocl<type>>::new_pointer(img_fixed, img_moving, trfm);
-    auto opt = gradient_descent<type,vector_ocl<type>>::new_pointer();
+    auto demons1 = demons<type,vector_opencl<type>>::new_pointer(img_fixed, img_moving, trfm);
+    auto opt = gradient_descent<type,vector_opencl<type>>::new_pointer();
     opt->set_step(step);
     opt->set_tolerance(tolerance);
     opt->set_unchanged_times(15);
 
-    auto registro = registration<type,vector_ocl<type>>::new_pointer(img_fixed, img_moving, trfm);
+    auto registro = registration<type,vector_opencl<type>>::new_pointer(img_fixed, img_moving, trfm);
     registro->set_levels(5);
     registro->set_levels_scales(std::vector<int>{10,6,4,2,1});
     registro->set_levels_iterations(std::vector<int>{iter,iter,iter,iter,iter});
@@ -126,8 +126,8 @@ int main(int argc, char *argv[])
 
 
     auto transformation = registro->get_transform();
-    auto interpolation = ilinear_ocl<type>::new_pointer(img_moving);
-    auto x0 = grid_ocl<type>::new_pointer(img_fixed);
+    auto interpolation = ilinear_opencl<type>::new_pointer(img_moving);
+    auto x0 = grid_opencl<type>::new_pointer(img_fixed);
     auto moving_warped = interpolation->apply(transformation->apply(x0));
 
     // auto moving_warped = demons1->warped_moving();
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     //     view->add_image(img_fixed);
     //     view->add_image(moving_warped);
     //     view->setup();
-    //     // view->visualize();
+    //     // view->render();
     //     view->show();
     // };
 

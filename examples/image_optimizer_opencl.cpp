@@ -30,11 +30,11 @@ int main()
 
     // Create small imame
     std::string filename = "./examples/images/sinc_pad.png";
-    auto img = image_ocl<unsigned short>::new_pointer();
+    auto img = image_opencl<unsigned short>::new_pointer();
     img->read(filename);
 
-    auto image0_cast = image_ocl<type>::new_pointer();
-    auto image0 = image_ocl<type>::new_pointer();
+    auto image0_cast = image_opencl<type>::new_pointer();
+    auto image0 = image_opencl<type>::new_pointer();
     cast(*img, *image0_cast);
 
     // std::cout << "Min: " << image0_cast->min() << std::endl;
@@ -46,21 +46,21 @@ int main()
     // std::cout << "Min: " << image0->min() << std::endl;
     // std::cout << "Max: " << image0->max() << std::endl;
 
-    auto x0 = grid<type,vector_ocl<type>>::new_pointer(*image0);
+    auto x0 = grid<type,vector_opencl<type>>::new_pointer(*image0);
 
-    image_ocl<type>::pointer params( new image_ocl<type>{1.0, 0.2, 0.0, 1.0, -20.0, 20.0} );
-    auto taffine = affine<type,vector_ocl<type>>::new_pointer(2, params);
+    image_opencl<type>::pointer params( new image_opencl<type>{1.0, 0.2, 0.0, 1.0, -20.0, 20.0} );
+    auto taffine = affine<type,vector_opencl<type>>::new_pointer(2, params);
     // taffine->print_data();
 
-    // auto imaget = image_ocl<type>::new_pointer();
-    // auto image0_itpw = ilinear<type,vector_ocl<type>>::new_pointer(image0_cast);
+    // auto imaget = image_opencl<type>::new_pointer();
+    // auto image0_itpw = ilinear<type,vector_opencl<type>>::new_pointer(image0_cast);
     // imaget = image0_itpw->apply(taffine->apply(x0));
-    // auto img_out = image_ocl<unsigned short>::new_pointer();
+    // auto img_out = image_opencl<unsigned short>::new_pointer();
     // cast(*imaget, *img_out);
     // img_out->write("./transformed.png");
 
-    auto image1 = image_ocl<type>::new_pointer();
-    auto image0_itp = ilinear<type,vector_ocl<type>>::new_pointer(image0);
+    auto image1 = image_opencl<type>::new_pointer();
+    auto image0_itp = ilinear<type,vector_opencl<type>>::new_pointer(image0);
     image1 = image0_itp->apply(taffine->apply(x0));
     // image0->print();
     // image0->print_data();
@@ -69,26 +69,26 @@ int main()
     // image1->print_data();
 
     // Gradient
-    // typename image_ocl<type>::vector grad(image0->get_dimension());
+    // typename image_opencl<type>::vector grad(image0->get_dimension());
     // grad = gradient(image0);
     // image0->print_data("i");
     // grad[0]->print();
     // grad[0]->print_data("di/dx");
     // grad[1]->print_data("di/dy");
 
-    auto trfm = affine<type,vector_ocl<type>>::new_pointer(2);
+    auto trfm = affine<type,vector_opencl<type>>::new_pointer(2);
     // trfm->print_data();
 
-    auto ssd1 = ssd<type,vector_ocl<type>>::new_pointer(image0, image1, trfm);
+    auto ssd1 = ssd<type,vector_opencl<type>>::new_pointer(image0, image1, trfm);
     // std::cout << ssd1->cost();
 
     // Affine test
     // *trfm + *taffine;
-    // affine<type,vector_ocl<type>> tt = (*trfm - *taffine);
+    // affine<type,vector_opencl<type>> tt = (*trfm - *taffine);
     // tt.print();
     // tt.print_data();
 
-    auto opt = gradient_descent<type,vector_ocl<type>>::new_pointer();
+    auto opt = gradient_descent<type,vector_opencl<type>>::new_pointer();
     opt->optimize(ssd1);
     ssd1->get_transform()->print_data();
     return 0;

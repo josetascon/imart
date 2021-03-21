@@ -13,8 +13,11 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkInteractorStyleImage.h>
-// #include <vtkCamera.h>
 // #include <vtkProperty.h>
+
+#include <vtkCamera.h>
+#include <vtkHomogeneousTransform.h>
+#include <vtkMatrix4x4.h>
 
 // Local headers
 #include "object.h"
@@ -47,7 +50,8 @@ protected:
     std::vector<std::string>            _titles_;
 
     std::vector<std::shared_ptr<type>>              _images_;
-    std::vector<vtkSmartPointer<vtkImageData>>      _vtkimg_;
+    std::vector<vtkSmartPointer<vtkImageData>>      _vtkimage_;
+    std::vector<vtkSmartPointer<vtkImageImport>>    _vtkimports_;
     std::vector<vtkSmartPointer<vtkImageActor>>     _actors_;
     std::vector<vtkSmartPointer<vtkRenderer>>       _renders_;
     vtkSmartPointer<vtkRenderWindow>                _renwin_;
@@ -63,6 +67,7 @@ protected:
     // Functions
     // ===========================================
     vtkSmartPointer<vtkImageData> imart2vtk(std::shared_ptr<type> image_pointer);
+    // vtkSmartPointer<vtkImageImport> imart2vtk(std::shared_ptr<type> image_pointer);
 
 public:
     // ===========================================
@@ -88,12 +93,16 @@ public:
     // Add image to window
     void add_image(std::shared_ptr<type> image_pointer);
     void add_image(std::shared_ptr<type> image_pointer, std::string title, std::string mask, bool flip);
+    
+
+    
+    void update_image(std::shared_ptr<type> img, int id);
+    void update(int id);
+
     // Visualize all the image added
     void setup();
-    void update_image(std::shared_ptr<type> img, int id);
-    // void update(images);
 
-    void visualize();
+    void render();
     void show();
 };
 
@@ -172,13 +181,18 @@ void viewer<type>::add_image(std::shared_ptr<type> image_pointer, std::string ti
 };
 
 template <typename type>
+// vtkSmartPointer<vtkImageImport> viewer<type>::imart2vtk(std::shared_ptr<type> image_pointer)
 vtkSmartPointer<vtkImageData> viewer<type>::imart2vtk(std::shared_ptr<type> image_pointer)
-{
+{   
+    image_pointer->to_cpu(); // update in case gpu image
     vtkSmartPointer<vtkImageImport> imageImport = vtkSmartPointer<vtkImageImport>::New();
     auto dim = image_pointer->get_dimension();
     auto size = image_pointer->get_size();
     auto spacing = image_pointer->get_spacing();
     auto origin = image_pointer->get_origin();
+
+    // double direction[9] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+    // imageImport->SetDataDirection(direction);
 
     if (dim == 2)
     {
@@ -193,8 +207,12 @@ vtkSmartPointer<vtkImageData> viewer<type>::imart2vtk(std::shared_ptr<type> imag
         imageImport->SetWholeExtent(0, size[0]-1, 0, size[1]-1, 0, size[2]-1);
     };
     imageImport->SetDataExtentToWholeExtent();
+
     // TODO: modify this according to type
     imageImport->SetDataScalarTypeToDouble();
+    // imageImport->SetDataScalarTypeToUnsignedChar();
+
+
     // if (strcmp(image_pointer->get_type().c_str(),"unsigned_char"))
     //     imageImport->SetDataScalarTypeToUnsignedChar();
     // else if (strcmp(image_pointer->get_type().c_str(),"unsigned_short"))
@@ -213,13 +231,15 @@ vtkSmartPointer<vtkImageData> viewer<type>::imart2vtk(std::shared_ptr<type> imag
     imageImport->SetImportVoidPointer(image_pointer->get_data()->data());    
     imageImport->Update();
 
-    // return imageImport->GetOutput();
+    return imageImport->GetOutput();
 
-    vtkSmartPointer<vtkImageFlip> flip = vtkSmartPointer<vtkImageFlip>::New();
-    flip->SetInputData(imageImport->GetOutput());
-    flip->SetFilteredAxis(1);
-    flip->Update();
-    return flip->GetOutput();
+    // vtkSmartPointer<vtkImageFlip> flip = vtkSmartPointer<vtkImageFlip>::New();
+    // flip->SetInputData(imageImport->GetOutput());
+    // flip->SetFilteredAxis(1);
+    // flip->Update();
+    // return flip->GetOutput();
+    // // return imageImport->GetOutput();
+    // return imageImport;
 };
 
 // Declaration of method: void viewer::visualize()
@@ -269,13 +289,25 @@ void viewer<type>::setup()
         // Get vtk image from image data
         // printf("image %d\n", k);
         vtkSmartPointer<vtkImageData> img = imart2vtk(_images_[k]);
-        _vtkimg_.push_back(img);
-        // _images_[k]->print();
+
+        // const double direction[9] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+        // img->SetDirectionMatrix(direction);
+        // img->GetDirectionMatrix ();
+        // imageImport->SetDataDirection(direction);
+
+        _vtkimage_.push_back(img);
+
+        vtkSmartPointer<vtkImageFlip> flip = vtkSmartPointer<vtkImageFlip>::New();
+        flip->SetInputData(img);
+        flip->SetFilteredAxis(1);
+        flip->Update();
 
         //Actor
         vtkSmartPointer<vtkImageActor> actor = vtkSmartPointer<vtkImageActor>::New();
         _actors_.push_back(actor);
-        actor->GetMapper()->SetInputData(img);
+        // actor->SetInputData(img);
+        // actor->GetMapper()->SetInputData(img);
+        actor->GetMapper()->SetInputConnection(flip->GetOutputPort());
 
         // Renderer
         vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
@@ -284,6 +316,19 @@ void viewer<type>::setup()
         renderer->AddActor(actor);
         // renderer->SetBackground(0.3,0.5,0.8); // blue
         renderer->SetBackground(0,0,0); // dark
+        // renderer->GetActiveCamera()->Roll(180);;
+        // renderer->GetActiveCamera()->SetViewUp(1, 1, 0);;
+        // vtkSmartPointer<vtkCamera> cam = renderer->GetActiveCamera();
+        // cam->SetViewUp(-1, -1, 0);
+        // vtkSmartPointer<vtkHomogeneousTransform> cam_trfm = 
+        //     renderer->GetActiveCamera()->GetUserTransform();
+        // std::cout<< cam_trfm << std::endl;
+        // vtkSmartPointer<vtkMatrix4x4> mat = cam_trfm->GetMatrix();
+        // mat->SetElement(1,1,-1.0);
+
+
+
+
         renderer->ResetCamera();
         _renwin_->AddRenderer(renderer);
     };
@@ -296,9 +341,15 @@ void viewer<type>::update_image(std::shared_ptr<type> img, int id)
 {
     if (id < _images_.size())
     {
-        _images_[id] = img;
-        _vtkimg_[id] = imart2vtk(_images_[id]);
-        _actors_[id]->GetMapper()->SetInputData(_vtkimg_[id]);
+        _vtkimage_[id]->Modified();
+
+        // _images_[id] = img;
+        // _vtkimage_[id] = imart2vtk(_images_[id]);
+        // _actors_[id]->GetMapper()->SetInputData(_vtkimage_[id]);
+        // _vtkimports_[id]->Update();
+        // _vtkimage_[id] = _vtkimports_[id]->GetOutput();
+        // _actors_[id]->GetMapper()->SetInputConnection(_vtkimports_[id]->GetOutputPort());
+
         // _renders_[id]->SetViewport(_viewports_[id].data());
         // _renders_[id]->AddActor(_actors_[id]);
         // _renders_[id]->SetBackground(0,0,0); // dark
@@ -307,18 +358,24 @@ void viewer<type>::update_image(std::shared_ptr<type> img, int id)
     }
     else
     {
-        printf("[Warning][Viewer] Invalid update due to image id");
+        printf("[Warning][Viewer] Invalid update due to invalid image id");
     };
     // visualize();
 };
 
 template <typename type>
-void viewer<type>::visualize()
+void viewer<type>::update( int id )
+{
+    if (id < _images_.size())
+        _vtkimage_[id]->Modified();
+    else
+        printf("[Warning][Viewer] Invalid update due to invalid image id");
+};
+
+template <typename type>
+void viewer<type>::render()
 {
     _renwin_->Render();
-    // _interactor_->SetRenderWindow(_renwin_);
-    // _interactor_->Initialize();
-    // _interactor_->Start();
 };
 
 template <typename type>
@@ -329,8 +386,6 @@ void viewer<type>::show()
     _interactor_->Initialize();
     _interactor_->Start();
 };
-
-
 
 }; //end namespace
 

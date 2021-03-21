@@ -104,11 +104,11 @@ template<typename type>
 using grid_cpu = grid<type,vector_cpu<type>>;
 
 // template<typename type>
-// using grid_gpu = grid<type,vector_ocl<type>>;
+// using grid_gpu = grid<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using grid_ocl = grid<type,vector_ocl<type>>;
+using grid_opencl = grid<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA

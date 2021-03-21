@@ -38,6 +38,8 @@ public:
     ptr_field_group v;
     ptr_field_group dv;
 
+    ptr_field_group v_best;
+
     ptr_image_group j0;
     ptr_image_group j1;
 
@@ -72,7 +74,7 @@ protected:
     void init();
     void init_fields();
     // NOTE: Consider init functions without zero initialization of images
-    ptr_field_group init_field_group(ptr_image img);
+    ptr_field_group init_field_group(ptr_image img, bool zero = true);
     ptr_image_group init_image_group(ptr_image img, int n, bool zero = true);
     ptr_image sample(ptr_image img, ptr_grid xr, ptr_image_group xo);
     type norm(std::vector<std::shared_ptr<image<type,container>>> & a);
@@ -139,7 +141,9 @@ public:
     // void regularize();
     // !resolution
     void resolution_update();
-    // // !max scale
+    // !best
+    void store_best();
+    // !max scale
     // void max_scale();
 };
 
@@ -147,11 +151,11 @@ template<typename type>
 using lddmm_cpu = lddmm<type,vector_cpu<type>>;
 
 // template<typename type>
-// using lddmm_gpu = lddmm<type,vector_ocl<type>>;
+// using lddmm_gpu = lddmm<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using lddmm_ocl = lddmm<type,vector_ocl<type>>;
+using lddmm_opencl = lddmm<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA
@@ -264,13 +268,15 @@ void lddmm<type,container>::init_fields()
     // std::cout << "init fields" << std::endl;
     v = init_field_group(fixed);
     dv = init_field_group(fixed);
+    v_best = v;
 
     // initialize to be able to call cost function
     j0 = init_image_group(fixed, tsteps, false);
-    j0->at(0) = fixed->clone();
+    j0->at(0) = fixed->copy();
+    j0->at(tsteps-1) = fixed->copy();
 
     j1 = init_image_group(fixed, tsteps, false);
-    j1->at(tsteps-1) = moving->clone();
+    j1->at(tsteps-1) = moving->copy();
 
     // learning_rate = 0.001;
     // sigma = 0.1;
@@ -281,7 +287,7 @@ void lddmm<type,container>::init_fields()
 };
 
 template <typename type, typename container>
-typename lddmm<type,container>::ptr_field_group lddmm<type,container>::init_field_group(typename lddmm<type,container>::ptr_image img)
+typename lddmm<type,container>::ptr_field_group lddmm<type,container>::init_field_group(typename lddmm<type,container>::ptr_image img, bool zero)
 {
     // init pointer and outer vector
     auto output = std::make_shared< field_group >(tsteps);
@@ -324,6 +330,7 @@ typename lddmm<type,container>::ptr_image lddmm<type,container>::sample(typename
     xout->set_grid(xo);
 
     auto itp = ilinear<type,container>::new_pointer(img);
+    itp->set_default(1.0);
     return itp->apply(xout);
 };
 
@@ -366,6 +373,8 @@ template <typename type, typename container>
 void lddmm<type,container>::resolution_update()
 {
     int dim = fixed->get_dimension();
+    // fixed->print("fixed");
+    v = v_best; // retrive stored best velocity
 
     regularize.update_a(fixed);
 
@@ -380,6 +389,14 @@ void lddmm<type,container>::resolution_update()
             dv->at(t)[d]->zeros();
         };
     };
+
+    // v->at(0)[0]->print("v resolution update");
+};
+
+template <typename type, typename container>
+void lddmm<type,container>::store_best()
+{
+    v_best = v;
 };
 
 template <typename type, typename container>
@@ -532,6 +549,9 @@ typename lddmm<type,container>::ptr_field_group lddmm<type,container>::integrate
 
     // x
     ptr_image_group x = x0->get_grid();
+    auto _y = grid<type,container>::new_pointer(x0->get_size());
+    _y->meshgrid();
+    ptr_image_group y = _y->get_grid();
 
     // create temporary x pointer image vector
     auto xa = std::make_shared< image_group >(x->size());
@@ -542,7 +562,7 @@ typename lddmm<type,container>::ptr_field_group lddmm<type,container>::integrate
     }
 
     // create the fields
-    auto phi1 = init_field_group(fixed);
+    auto phi1 = init_field_group(fixed, false); // false = do not init with zeros
 
     // reference grid phi1, selecting [0,0], same for all
     ptr_grid x_phi1 = grid<type,container>::new_pointer(phi1->at(0)[0]);
@@ -550,8 +570,18 @@ typename lddmm<type,container>::ptr_field_group lddmm<type,container>::integrate
     // reference grid v, selecting [0,0], same for all
     ptr_grid x_vtd = grid<type,container>::new_pointer(v->at(0)[0]);
 
+    // x0->print("x");
+    // x_phi1->print("xphi");
+    // x_vtd->print("xvel");
+    // phi1->at(0)[0]->print("phi1_t0");
+    // phi1->at(tsteps - 1)[0]->print("phi1_t1");
+
     // phi1_1 is the identity mapping
-    for(int d = 0; d < dim; d++) phi1->at(tsteps - 1)[d] = (*x)[d]->clone();
+    // for(int d = 0; d < dim; d++){ phi1->at(tsteps - 1)[d] = (* x)[d]->clone(); };
+    for(int d = 0; d < dim; d++) phi1->at(tsteps - 1)[d]->set_data( x->at(d)->get_data() );
+
+    // phi1->at(0)[0]->print("phi1_t0");
+    // phi1->at(tsteps - 1)[0]->print("phi1_t1");
 
     for(int t = tsteps-2; t >= 0; t--)
     {
@@ -559,11 +589,21 @@ typename lddmm<type,container>::ptr_field_group lddmm<type,container>::integrate
         for(int d = 0; d < dim; d++)
         {
             auto alpha = backward_alpha(v->at(t)[d], x_vtd,  x);
+            // alpha->print("alpha");
 
             // operation: xa = x + alpha
-            for(int k = 0; k < x->size(); k++) *(xa->at(k)) = *(x->at(k)) + (*alpha);
+            for(int k = 0; k < x->size(); k++)
+            {
+                // *(xa->at(k)) = *(x->at(k));
+                *(xa->at(k)) = *(x->at(k)) + (*alpha);
+                // if (t == tsteps-2) *(xa->at(k)) = (* xa->at(k)) / fixed->get_spacing()[k];
+            }
 
             phi1->at(t)[d] = sample(phi1->at(t + 1)[d], x_phi1, xa);
+
+            // scaling
+            // type spaced = fixed->get_spacing()[d];
+            // *phi1->at(t)[d] = (*phi1->at(t)[d]) * spaced;
         };
 
     };
@@ -595,7 +635,7 @@ typename lddmm<type,container>::ptr_image lddmm<type,container>::backward_alpha(
     for(int i = 0; i < integration_steps; i++)
     {   
         // operation: xa = x + 0.5 * alpha
-        for(int k = 0; k < x->size(); k++) *(xa->at(k)) = *(x->at(k)) + (*alpha)*0.5;
+        for(int k = 0; k < x->size(); k++) *(xa->at(k)) = *(x->at(k)) + (*alpha)*0.5; //*fixed->get_spacing()[k];
         // interpolation
         alpha = sample(v_td, x_vtd, xa);
     };
@@ -610,6 +650,11 @@ typename lddmm<type,container>::ptr_field_group lddmm<type,container>::integrate
 
     // x
     ptr_image_group x = x0->get_grid();
+    // auto _y = grid<type,container>::new_pointer(x0->get_size());
+    // _y->meshgrid();
+    // ptr_image_group y = _y->get_grid();
+
+
 
     // create temporary x pointer image vector
     auto xa = std::make_shared< image_group >(x->size());
@@ -620,7 +665,7 @@ typename lddmm<type,container>::ptr_field_group lddmm<type,container>::integrate
     }
 
     // create the fields
-    auto phi0 = init_field_group(fixed);
+    auto phi0 = init_field_group(fixed, false); // false = do not init with zeros
 
     // reference grid phi0, selecting [0,0], same for all
     ptr_grid x_phi0 = grid<type,container>::new_pointer(phi0->at(0)[0]);
@@ -629,7 +674,8 @@ typename lddmm<type,container>::ptr_field_group lddmm<type,container>::integrate
     ptr_grid x_vtd = grid<type,container>::new_pointer(v->at(0)[0]);
 
     // phi0_0 is the identity mapping
-    for(int d = 0; d < dim; d++) phi0->at(0)[d] = (*x)[d]->clone();
+    // for(int d = 0; d < dim; d++) phi0->at(0)[d] = (*x)[d]->clone();
+    for(int d = 0; d < dim; d++) phi0->at(0)[d]->set_data( x->at(d)->get_data() ); 
 
     for(int t = 0; t < tsteps - 1; t++)
     {
@@ -637,10 +683,18 @@ typename lddmm<type,container>::ptr_field_group lddmm<type,container>::integrate
         {
             auto alpha = forward_alpha(v->at(t)[d], x_vtd,  x);
 
-            // operation: xa = x + alpha
-            for(int k = 0; k < x->size(); k++) *(xa->at(k)) = *(x->at(k)) - (*alpha);
+            // operation: xa = x - alpha
+            for(int k = 0; k < x->size(); k++)
+            {
+                *(xa->at(k)) = *(x->at(k)) - (*alpha);
+                // if (t == 0) *(xa->at(k)) = (* xa->at(k)) / fixed->get_spacing()[k];
+            };
 
             phi0->at(t+1)[d] = sample(phi0->at(t)[d], x_phi0, xa);
+
+            // scaling
+            // type spaced = fixed->get_spacing()[d];
+            // *phi0->at(t+1)[d] = (*phi0->at(t+1)[d]) * spaced;
         };
 
     };
@@ -671,7 +725,7 @@ typename lddmm<type,container>::ptr_image lddmm<type,container>::forward_alpha(t
     for(int i = 0; i < integration_steps; i++)
     {   
         // operation: xa = x - 0.5 * alpha
-        for(int k = 0; k < x->size(); k++) *(xa->at(k)) = *(x->at(k)) - (*alpha)*0.5;
+        for(int k = 0; k < x->size(); k++) *(xa->at(k)) = *(x->at(k)) - (*alpha)*0.5; //*fixed->get_spacing()[k];
         // interpolation
         alpha = sample(v_td, x_vtd, xa);
     };
@@ -686,6 +740,11 @@ typename lddmm<type,container>::ptr_image_group lddmm<type,container>::push_forw
     {
         auto p = std::make_shared< image_group >(phi0->at(t).size());
         *p = phi0->at(t);
+        // for (int d = 0; d<fixed->get_dimension(); d++)
+        // {
+        //     type spaced = fixed->get_spacing()[d];
+        //     * p->at(d) = (* p->at(d)) / spaced;
+        // }
         j0->at(t) = sample(fixed, x0, p);
     };
     return j0;
@@ -708,7 +767,7 @@ template <typename type, typename container>
 typename lddmm<type,container>::ptr_field_group lddmm<type,container>::image_gradients(typename lddmm<type,container>::ptr_image_group j0)
 {
     int dim = fixed->get_dimension();
-    auto dj0 = init_field_group(j0->at(0));
+    auto dj0 = init_field_group(j0->at(0), false); // false = do not init with zeros
 
     for(int t = 0; t < tsteps; t++)
     {

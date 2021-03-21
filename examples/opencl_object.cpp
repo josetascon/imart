@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-06-19 20:05:07
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-06-19 21:27:03
+* @Last Modified time: 2021-03-17 19:28:43
 */
 
 
@@ -19,6 +19,9 @@ int main()
 {
     using type = int;
     opencl_object cl_manager;
+
+    cl_manager.set_platform_device(0,0);
+    cl_manager.print_device_name();
 
     int N = 64;
     type scalar = 2;

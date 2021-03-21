@@ -1029,22 +1029,23 @@ std::string kernel_convolution_2d(std::string input_type)
     source.append("     __global const " + input_type + " * imgr,");
     source.append("     __global const " + input_type + " * kern,");
     source.append("     __global " + input_type + " * imgo,");
-    source.append("     int kwidth)\n"); //kernel width
+    source.append("     int kw0, int kw1)\n"); //kernel width
     source.append("{\n");
     source.append("     int i = get_global_id(0);\n");
     source.append("     int j = get_global_id(1);\n");
     source.append("     int n0 = get_global_size(0);\n");
     source.append("     int n1 = get_global_size(1);\n");
-    source.append("     int off = floor(kwidth/2.0);\n");
+    source.append("     int off0 = kw0>>1;\n");
+    source.append("     int off1 = kw1>>1;\n");
 
-    source.append("     if(i >= off && i < n0 - off && j >= off && j < n1 - off)\n");
+    source.append("     if(i >= off0 && i < n0 - off0 && j >= off1 && j < n1 - off1)\n");
     source.append("     {\n");
     source.append("         " + input_type + " sum = 0;\n");
-    source.append("         for (int p = 0; p < kwidth; p++)\n");
+    source.append("         for (int p = 0; p < kw1; p++)\n");
     source.append("         {\n");
-    source.append("             for (int q = 0; q < kwidth; q++)\n");
+    source.append("             for (int q = 0; q < kw0; q++)\n");
     source.append("             {\n");
-    source.append("                 sum += imgr[i+q-off + (j+p-off)*n0] * kern[p*kwidth + q];\n");
+    source.append("                 sum += imgr[i+q-off0 + (j+p-off1)*n0] * kern[p*kw0 + q];\n");
     source.append("             };\n");
     source.append("         };\n");
     source.append("         imgo[i + j*n0] = sum;\n");
@@ -1060,7 +1061,7 @@ std::string kernel_convolution_3d(std::string input_type)
     source.append("     __global const " + input_type + " * imgr,");
     source.append("     __global const " + input_type + " * kern,");
     source.append("     __global " + input_type + " * imgo,\n");
-    source.append("     int kwidth)\n"); //kernel width
+    source.append("     int kw0, int kw1, int kw2)\n"); //kernel width
     source.append("{\n");
     source.append("     int i = get_global_id(0);\n");
     source.append("     int j = get_global_id(1);\n");
@@ -1068,18 +1069,20 @@ std::string kernel_convolution_3d(std::string input_type)
     source.append("     int n0 = get_global_size(0);\n");
     source.append("     int n1 = get_global_size(1);\n");
     source.append("     int n2 = get_global_size(2);\n");
-    source.append("     int off = floor(kwidth/2.0);\n");
+    source.append("     int off0 = kw0>>1;\n");
+    source.append("     int off1 = kw1>>1;\n");
+    source.append("     int off2 = kw2>>1;\n");
 
-    source.append("     if(i >= off && i < n0 - off && j >= off && j < n1 - off && k >= off && k < n2 - off)\n");
+    source.append("     if(i >= off0 && i < n0 - off0 && j >= off1 && j < n1 - off1 && k >= off2 && k < n2 - off2)\n");
     source.append("     {\n");
     source.append("         " + input_type + " sum = 0;\n");
-    source.append("         for (int r = 0; r < kwidth; r++)\n");
+    source.append("         for (int r = 0; r < kw2; r++)\n");
     source.append("         {\n");
-    source.append("             for (int p = 0; p < kwidth; p++)\n");
+    source.append("             for (int p = 0; p < kw1; p++)\n");
     source.append("             {\n");
-    source.append("                 for (int q = 0; q < kwidth; q++)\n");
+    source.append("                 for (int q = 0; q < kw0; q++)\n");
     source.append("                 {\n");
-    source.append("                     sum += imgr[i+q-off + (j+p-off)*n0 + (k+r-off)*n0*n1] * kern[r*kwidth*kwidth + p*kwidth + q];\n");
+    source.append("                     sum += imgr[i+q-off0 + (j+p-off1)*n0 + (k+r-off2)*n0*n1] * kern[r*kw0*kw1 + p*kw0 + q];\n");
     source.append("                 };\n");
     source.append("             };\n");
     source.append("         };\n");

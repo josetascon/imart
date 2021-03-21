@@ -68,11 +68,11 @@ template<typename type>
 using ilinear_cpu = ilinear<type,vector_cpu<type>>;
 
 // template<typename type>
-// using ilinear_gpu = ilinear<type,vector_ocl<type>>;
+// using ilinear_gpu = ilinear<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using ilinear_ocl = ilinear<type,vector_ocl<type>>;
+using ilinear_opencl = ilinear<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA

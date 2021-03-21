@@ -99,11 +99,11 @@ template<typename type>
 using demons_loi_cpu = demons_loi<type,vector_cpu<type>>;
 
 // template<typename type>
-// using demons_loi_gpu = demons_loi<type,vector_ocl<type>>;
+// using demons_loi_gpu = demons_loi<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using demons_loi_ocl = demons_loi<type,vector_ocl<type>>;
+using demons_loi_opencl = demons_loi<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA

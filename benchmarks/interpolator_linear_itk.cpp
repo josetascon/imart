@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-13 14:27:18
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-01-24 00:21:04
+* @Last Modified time: 2021-02-18 13:24:45
 */
 
 #include <iostream>
@@ -78,21 +78,21 @@ static void bm_ilinear_cpu_3d(benchmark::State& state)
     // x1.print_data();
 };
 
-static void bm_ilinear_gpu_2d(benchmark::State& state)
+static void bm_ilinear_opencl_2d(benchmark::State& state)
 {
     // Perform setup here
     using type = float;     //4 Bytes
     int N = state.range(0); 
 
-    auto image0 = image_gpu<type>::new_pointer(N,N);
-    auto image1 = image_gpu<type>::new_pointer();
+    auto image0 = image_opencl<type>::new_pointer(N,N);
+    auto image1 = image_opencl<type>::new_pointer();
     image0->random();
-    auto x0 = grid_gpu<type>::new_pointer(image0);
+    auto x0 = grid_opencl<type>::new_pointer(image0);
     auto x1 = x0->mimic();
 
-    image_gpu<type>::pointer params(new image_gpu<type>{1.1, 0.1, -0.2, 0.9, 1.3, 8.0});
-    auto taffine = affine<type,vector_ocl<type>>::new_pointer(2, params);
-    auto interp0 = ilinear_gpu<type>::new_pointer(image0);
+    image_opencl<type>::pointer params(new image_opencl<type>{1.1, 0.1, -0.2, 0.9, 1.3, 8.0});
+    auto taffine = affine<type,vector_opencl<type>>::new_pointer(2, params);
+    auto interp0 = ilinear_opencl<type>::new_pointer(image0);
     
     for (auto _ : state)
     {
@@ -103,21 +103,21 @@ static void bm_ilinear_gpu_2d(benchmark::State& state)
     // x1.print_data();
 };
 
-static void bm_ilinear_gpu_3d(benchmark::State& state)
+static void bm_ilinear_opencl_3d(benchmark::State& state)
 {
     // Perform setup here
     using type = float;     //4 Bytes
     int N = state.range(0); 
 
-    auto image0 = image_gpu<type>::new_pointer(N,N,N);
-    auto image1 = image_gpu<type>::new_pointer();
+    auto image0 = image_opencl<type>::new_pointer(N,N,N);
+    auto image1 = image_opencl<type>::new_pointer();
     image0->random();
-    auto x0 = grid_gpu<type>::new_pointer(image0);
+    auto x0 = grid_opencl<type>::new_pointer(image0);
     auto x1 = x0->mimic();
 
-    image_gpu<type>::pointer params(new image_gpu<type>{1.1, 0.1, -0.2, 0.05, 1.2, 0.03, 0, -0.04, 1, 11.324, 201.4, 8.0});
-    auto taffine = affine<type,vector_ocl<type>>::new_pointer(3, params);
-    auto interp0 = ilinear_gpu<type>::new_pointer(image0);
+    image_opencl<type>::pointer params(new image_opencl<type>{1.1, 0.1, -0.2, 0.05, 1.2, 0.03, 0, -0.04, 1, 11.324, 201.4, 8.0});
+    auto taffine = affine<type,vector_opencl<type>>::new_pointer(3, params);
+    auto interp0 = ilinear_opencl<type>::new_pointer(image0);
     
     for (auto _ : state)
     {
@@ -280,10 +280,10 @@ static void bm_ilinear_itk_3d(benchmark::State& state)
 
 // Register the function as a benchmark
 // BENCHMARK(bm_ilinear_cpu_2d)->RangeMultiplier(10)->Range(10, 8000);
-// BENCHMARK(bm_ilinear_gpu_2d)->RangeMultiplier(10)->Range(10, 8000);
+// BENCHMARK(bm_ilinear_opencl_2d)->RangeMultiplier(10)->Range(10, 8000);
 // BENCHMARK(bm_ilinear_itk_2d)->RangeMultiplier(10)->Range(10, 8000);
 // BENCHMARK(bm_ilinear_cpu_3d)->RangeMultiplier(10)->Range(10, 400);
-// BENCHMARK(bm_ilinear_gpu_3d)->RangeMultiplier(10)->Range(10, 400);
+// BENCHMARK(bm_ilinear_opencl_3d)->RangeMultiplier(10)->Range(10, 400);
 // BENCHMARK(bm_ilinear_itk_3d)->RangeMultiplier(10)->Range(10, 400);
 
 static void CustomArguments2d(benchmark::internal::Benchmark* b)
@@ -305,10 +305,10 @@ static void CustomArguments3d(benchmark::internal::Benchmark* b)
 };
 
 BENCHMARK(bm_ilinear_cpu_2d)->Apply(CustomArguments2d);
-// BENCHMARK(bm_ilinear_gpu_2d)->Apply(CustomArguments2d);
+// BENCHMARK(bm_ilinear_opencl_2d)->Apply(CustomArguments2d);
 BENCHMARK(bm_ilinear_itk_2d)->Apply(CustomArguments2d);
 BENCHMARK(bm_ilinear_cpu_3d)->Apply(CustomArguments3d);
-// BENCHMARK(bm_ilinear_gpu_3d)->Apply(CustomArguments3d);
+// BENCHMARK(bm_ilinear_opencl_3d)->Apply(CustomArguments3d);
 BENCHMARK(bm_ilinear_itk_3d)->Apply(CustomArguments3d);
 
 

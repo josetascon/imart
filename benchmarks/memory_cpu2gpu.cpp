@@ -9,10 +9,10 @@
 #include <benchmark/benchmark.h>
 
 // libs
-#include "../src/vector_ocl.h"
+#include "../src/vector_opencl.h"
 
 // Testing google benchmark library
-static void memory_cpu_to_gpu(benchmark::State& state)
+static void memory_cpu_to_opencl(benchmark::State& state)
 {
     // Perform setup here
     typedef float        scalar_type;
@@ -20,20 +20,20 @@ static void memory_cpu_to_gpu(benchmark::State& state)
     int N = state.range(0);
     // std::cout << "Vector memory: " << 256*4 << "Bytes" << std::endl;
     std::vector<scalar_type>        std_vec(N, (scalar_type)N);
-    imart::vector_ocl<scalar_type>  ocl_vec(N);
+    imart::vector_opencl<scalar_type>  opencl_vec(N);
     for (auto _ : state)
     {
         // This code gets timed
-        ocl_vec.read_ram(std_vec.data(), std_vec.size());
-        // ocl_vec.print_data();
+        opencl_vec.read_ram(std_vec.data(), std_vec.size());
+        // opencl_vec.print_data();
     };
 };
 
 // Register the function as a benchmark
 // std::cout << "Vector memory: " << 256*4 << "Bytes" << std::endl;
-BENCHMARK(memory_cpu_to_gpu)->RangeMultiplier(10)->Range(1000, pow(10,9)); // range loop
-// BENCHMARK(memory_cpu_to_gpu)->DenseRange(1<<10,1<<30,1<<10);
-// BENCHMARK(memory_cpu_to_gpu)->Arg(256);
+BENCHMARK(memory_cpu_to_opencl)->RangeMultiplier(10)->Range(1000, pow(10,9)); // range loop
+// BENCHMARK(memory_cpu_to_opencl)->DenseRange(1<<10,1<<30,1<<10);
+// BENCHMARK(memory_cpu_to_opencl)->Arg(256);
 
 
 // Run the benchmark

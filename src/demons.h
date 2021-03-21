@@ -96,11 +96,11 @@ template<typename type>
 using demons_cpu = demons<type,vector_cpu<type>>;
 
 // template<typename type>
-// using demons_gpu = demons<type,vector_ocl<type>>;
+// using demons_gpu = demons<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using demons_ocl = demons<type,vector_ocl<type>>;
+using demons_opencl = demons<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA
@@ -175,7 +175,7 @@ void demons<type,container>::optical_flow(std::shared_ptr<image<type,container>>
     
     // Computing gradient
     // std::cout << "Gradient:" << std::endl;
-    auto grad = gradient(img_moving);
+    auto grad = gradient(img_moving); //moving prime
 
     // dimensional data
     auto gx = *grad[0];
@@ -192,12 +192,12 @@ void demons<type,container>::optical_flow(std::shared_ptr<image<type,container>>
         scale.replace(dif_sq <= low,0.0);   // remove 0 division
 
         // update depends of space and orientation
-        type spacex = img_fixed->get_spacing()[0]*img_fixed->get_direction()[0];
-        type spacey = img_fixed->get_spacing()[1]*img_fixed->get_direction()[3];
+        // type spacex = img_fixed->get_spacing()[0]*img_fixed->get_direction()[0];
+        // type spacey = img_fixed->get_spacing()[1]*img_fixed->get_direction()[3];
 
         // demons derivative of dfield
-        auto ux = scale*gx*spacex;
-        auto uy = scale*gy*spacey;
+        auto ux = scale*gx;//*spacex;
+        auto uy = scale*gy;//*spacey;
 
         // no update where image is empty
         ux.replace(*img_fixed <= low, 0.0);
@@ -222,15 +222,15 @@ void demons<type,container>::optical_flow(std::shared_ptr<image<type,container>>
         scale.replace(dif_sq <= low,0.0);   // remove 0 division
 
         // update depends of space and orientation
-        type spacex = img_fixed->get_spacing()[0]*img_fixed->get_direction()[0];
-        type spacey = img_fixed->get_spacing()[1]*img_fixed->get_direction()[4];
-        type spacez = img_fixed->get_spacing()[2]*img_fixed->get_direction()[8];
+        // type spacex = img_fixed->get_spacing()[0]*img_fixed->get_direction()[0];
+        // type spacey = img_fixed->get_spacing()[1]*img_fixed->get_direction()[4];
+        // type spacez = img_fixed->get_spacing()[2]*img_fixed->get_direction()[8];
 
         // demons derivative of dfield
         // std::cout << "Scale:" << std::endl;
-        auto ux = scale*gx*spacex;
-        auto uy = scale*gy*spacey;
-        auto uz = scale*gz*spacez;
+        auto ux = scale*gx;//*spacex;
+        auto uy = scale*gy;//*spacey;
+        auto uz = scale*gz;//*spacez;
 
         // no update where image is empty
         ux.replace(*img_fixed <= low, 0.0);

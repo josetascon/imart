@@ -91,6 +91,7 @@ public:
     void read_ram(type * p, int size, int offset = 0);
     void write_ram(type * p, int size, int offset = 0);
     void equal(pointer input);
+    void to_cpu();
 
     // ===========================================
     // Print Functions
@@ -251,7 +252,7 @@ public:
     static void convolution( typename vector_cpu<type>::pointer imgr,
                              typename vector_cpu<type>::pointer kernel,
                              typename vector_cpu<type>::pointer imgo,
-                             std::vector<int> ref_size, int kwidth);
+                             std::vector<int> ref_size, std::vector<int> kernel_size);
 
 };
 
@@ -352,6 +353,7 @@ void vector_cpu<type>::write_ram(type * p, int s, int offset)
 template <typename type>
 void vector_cpu<type>::equal(pointer input)
 {
+    assert_size(*input);
     type * d = this->data();
     type * p = input->data();
     int n = input->size();
@@ -360,6 +362,12 @@ void vector_cpu<type>::equal(pointer input)
     {
         *(d+k) = *(p+k);
     };
+};
+
+template <typename type>
+void vector_cpu<type>::to_cpu()
+{
+    ; // do nothing, already on cpu
 };
 
 // ===========================================
@@ -2110,7 +2118,11 @@ void vector_cpu<type>::fft(std::vector<pointer> & input, std::vector<pointer> & 
     int N = 1;
     for(int i = 0; i < dim; i++) N *= size[i];
     
-    fftw_complex in[N], out[N];
+    // fftw_complex in[N], out[N];
+    // Allocate memory with new for large vector size
+    fftw_complex * in = new fftw_complex[N];
+    fftw_complex * out = new fftw_complex[N];
+
     type * p1 = input[0]->data();
     type * p2 = input[1]->data();
 
@@ -2119,6 +2131,11 @@ void vector_cpu<type>::fft(std::vector<pointer> & input, std::vector<pointer> & 
         in[i][0] = p1[i];
         in[i][1] = p2[i];
     };
+
+    #ifdef IMART_WITH_OPENMP
+    if (N > 15*IMART_OPENMP_VECTOR_MIN_SIZE)
+        fftw_plan_with_nthreads(omp_get_max_threads());
+    #endif
 
     fftw_plan p_fft;
     // std::cout << "plan ";
@@ -2146,6 +2163,9 @@ void vector_cpu<type>::fft(std::vector<pointer> & input, std::vector<pointer> & 
             pim[i] = out[i][1];
         };
     }
+
+    delete[] in;
+    delete[] out;
 };
 #endif
 
@@ -2265,28 +2285,29 @@ template <typename type>
 void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
                                     typename vector_cpu<type>::pointer kernel,
                                     typename vector_cpu<type>::pointer imgo,
-                                    std::vector<int> ref_size, int kwidth)
+                                    std::vector<int> ref_size, std::vector<int> kernel_size)
 {
     type * pimgr = imgr->data();
     type * pkrnl = kernel->data();
     type * pimgo = imgo->data();
 
-    int off = std::floor(kwidth/2.0);
-
     if (ref_size.size() == 2)
     {
         int n0 = ref_size[0]; int n1 = ref_size[1];
+        int kw0 = kernel_size[0]; int kw1 = kernel_size[1];
+        int off0 = kw0>>1; int off1 = kw1>>1;
+
         #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
-        for(int j = off; j < n1-off; j++)
+        for(int j = off1; j < n1-off1; j++)
         {
-            for(int i = off; i < n0-off; i++)
+            for(int i = off0; i < n0-off0; i++)
             {
                 type sum = 0;
-                for (int p = 0; p < kwidth; p++)
+                for (int p = 0; p < kw1; p++)
                 {
-                    for (int q = 0; q < kwidth; q++)
+                    for (int q = 0; q < kw0; q++)
                     {
-                        sum += pimgr[i+q-off + (j+p-off)*n0] * pkrnl[p*kwidth + q];
+                        sum += pimgr[i+q-off0 + (j+p-off1)*n0] * pkrnl[p*kw0 + q];
                     };
                 };
                 pimgo[i + j*n0] = sum;
@@ -2297,21 +2318,23 @@ void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
     {
         // printf("n0: %4d, n1: %4d, n2: %4d\n", n0, n1, n2);
         int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[2];
+        int kw0 = kernel_size[0]; int kw1 = kernel_size[1]; int kw2 = kernel_size[2];
+        int off0 = kw0>>1; int off1 = kw1>>1; int off2 = kw2>>1;
         #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
-        for(int k = off; k < n2-off; k++)
+        for(int k = off2; k < n2-off2; k++)
         {
-            for(int j = off; j < n1-off; j++)
+            for(int j = off1; j < n1-off1; j++)
             {
-                for(int i = off; i < n0-off; i++)
+                for(int i = off0; i < n0-off0; i++)
                 {
                     type sum = 0;
-                    for (int r = 0; r < kwidth; r++)
+                    for (int r = 0; r < kw2; r++)
                     {
-                        for (int p = 0; p < kwidth; p++)
+                        for (int p = 0; p < kw1; p++)
                         {
-                            for (int q = 0; q < kwidth; q++)
+                            for (int q = 0; q < kw0; q++)
                             {
-                                sum += pimgr[i+q-off + (j+p-off)*n0 + (k+r-off)*n0*n1] * pkrnl[r*kwidth*kwidth + p*kwidth + q];
+                                sum += pimgr[i+q-off0 + (j+p-off1)*n0 + (k+r-off2)*n0*n1] * pkrnl[r*kw0*kw1 + p*kw0 + q];
                             };
                         };
                     };
@@ -2321,6 +2344,172 @@ void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
         };
     };
 };
+
+/*
+template <typename type>
+void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
+                                    typename vector_cpu<type>::pointer kernel,
+                                    typename vector_cpu<type>::pointer imgo,
+                                    std::vector<int> ref_size, std::vector<int> kernel_size)
+{
+    type * pimgr = imgr->data();
+    type * pkrnl = kernel->data();
+    type * pimgo = imgo->data();
+
+    if (ref_size.size() == 2)
+    {
+        int dataSizeX = ref_size[0]; int dataSizeY = ref_size[1];
+        int kernelSizeX = kernel_size[0]; int kernelSizeY = kernel_size[1];
+        
+        type *inPtr, *inPtr2, *outPtr, *kPtr;
+
+        int kCenterX, kCenterY;
+        int rowMin, rowMax;                             // to check boundary of input array
+        int colMin, colMax;                             //
+        
+        // find center position of kernel (half of kernel size)
+        kCenterX = kernelSizeX >> 1;
+        kCenterY = kernelSizeY >> 1;
+
+        // init working  pointers
+        inPtr = inPtr2 = &pimgr[dataSizeX * kCenterY + kCenterX];  // note that  it is shifted (kCenterX, kCenterY),
+        outPtr = pimgo;
+        kPtr = pkrnl;
+
+        // start convolution
+        #pragma omp parallel for collapse(2) if (dataSizeX*dataSizeY > IMART_OPENMP_VECTOR_MIN_SIZE)
+        for(int i = 0; i < dataSizeY; ++i)                   // number of rows
+        {
+            for(int j = 0; j < dataSizeX; ++j)              // number of columns
+            {
+                // compute the range of convolution, the current row of kernel should be between these
+                rowMax = i + kCenterY;
+                rowMin = i - dataSizeY + kCenterY;
+                
+                // compute the range of convolution, the current column of kernel should be between these
+                colMax = j + kCenterX;
+                colMin = j - dataSizeX + kCenterX;
+
+                *outPtr = 0;                            // set to 0 before accumulate
+
+                // flip the kernel and traverse all the kernel values
+                // multiply each kernel value with underlying input data
+                for(int m = 0; m < kernelSizeY; ++m)        // kernel rows
+                {
+                    // check if the index is out of bound of input array
+                    if(m <= rowMax && m > rowMin)
+                    {
+                        for(int n = 0; n < kernelSizeX; ++n)
+                        {
+                            // check the boundary of array
+                            if(n <= colMax && n > colMin)
+                                *outPtr += *(inPtr - n) * *kPtr;
+                            ++kPtr;                     // next kernel
+                        }
+                    }
+                    else
+                        kPtr += kernelSizeX;            // out of bound, move to next row of kernel
+
+                    inPtr -= dataSizeX;                 // move input data 1 raw up
+                }
+
+                kPtr = pkrnl;                          // reset kernel to (0,0)
+                inPtr = ++inPtr2;                       // next input
+                ++outPtr;                               // next output
+            }
+        };
+    }
+    else if (ref_size.size() == 3)
+    {
+        // printf("n0: %4d, n1: %4d, n2: %4d\n", n0, n1, n2);
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[2];
+        int kw0 = kernel_size[0]; int kw1 = kernel_size[1]; int kw2 = kernel_size[2];
+        int off0 = kw0>>1; int off1 = kw1>>1; int off2 = kw2>>1;
+        #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
+        for(int k = off2; k < n2-off2; k++)
+        {
+            for(int j = off1; j < n1-off1; j++)
+            {
+                for(int i = off0; i < n0-off0; i++)
+                {
+                    type sum = 0;
+                    for (int r = 0; r < kw2; r++)
+                    {
+                        for (int p = 0; p < kw1; p++)
+                        {
+                            for (int q = 0; q < kw0; q++)
+                            {
+                                sum += pimgr[i+q-off0 + (j+p-off1)*n0 + (k+r-off2)*n0*n1] * pkrnl[r*kw0*kw1 + p*kw0 + q];
+                            };
+                        };
+                    };
+                    pimgo[i + j*n0 + k*n0*n1] = sum;
+                };
+            };
+        };
+    };
+};*/
+
+// template <typename type>
+// void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
+//                                     typename vector_cpu<type>::pointer kernel,
+//                                     typename vector_cpu<type>::pointer imgo,
+//                                     std::vector<int> ref_size, int kwidth)
+// {
+//     type * pimgr = imgr->data();
+//     type * pkrnl = kernel->data();
+//     type * pimgo = imgo->data();
+
+//     int off = std::floor(kwidth/2.0);
+
+//     if (ref_size.size() == 2)
+//     {
+//         int n0 = ref_size[0]; int n1 = ref_size[1];
+//         #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
+//         for(int j = off; j < n1-off; j++)
+//         {
+//             for(int i = off; i < n0-off; i++)
+//             {
+//                 type sum = 0;
+//                 for (int p = 0; p < kwidth; p++)
+//                 {
+//                     for (int q = 0; q < kwidth; q++)
+//                     {
+//                         sum += pimgr[i+q-off + (j+p-off)*n0] * pkrnl[p*kwidth + q];
+//                     };
+//                 };
+//                 pimgo[i + j*n0] = sum;
+//             };
+//         };
+//     }
+//     else if (ref_size.size() == 3)
+//     {
+//         // printf("n0: %4d, n1: %4d, n2: %4d\n", n0, n1, n2);
+//         int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[2];
+//         #pragma omp parallel for collapse(3) if (n0*n1*n2 > IMART_OPENMP_VECTOR_MIN_SIZE)
+//         for(int k = off; k < n2-off; k++)
+//         {
+//             for(int j = off; j < n1-off; j++)
+//             {
+//                 for(int i = off; i < n0-off; i++)
+//                 {
+//                     type sum = 0;
+//                     for (int r = 0; r < kwidth; r++)
+//                     {
+//                         for (int p = 0; p < kwidth; p++)
+//                         {
+//                             for (int q = 0; q < kwidth; q++)
+//                             {
+//                                 sum += pimgr[i+q-off + (j+p-off)*n0 + (k+r-off)*n0*n1] * pkrnl[r*kwidth*kwidth + p*kwidth + q];
+//                             };
+//                         };
+//                     };
+//                     pimgo[i + j*n0 + k*n0*n1] = sum;
+//                 };
+//             };
+//         };
+//     };
+// };
 
 }; //end namespace
 

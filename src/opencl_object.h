@@ -82,6 +82,7 @@ public:
     // ===========================================
     // Set Functions
     // ===========================================
+    void set_platform_device(int num_platform, int num_device);
     // int set_device(cl::Device device);
     // int set_context(cl::Context context);
     void set_program(std::string code);
@@ -131,7 +132,7 @@ void opencl_object::init()
     std::vector<cl::Platform> platforms;
     _error_ = cl::Platform::get(&platforms);
     imart_assert_cl(_error_, "Error getting the platform");
-    assert(platforms.size() > 0);
+    imart_assert(platforms.size() > 0, "There are not OPENCL platforms");
     _platform_ = platforms.front();
 
     // Get the devices in the computer
@@ -139,7 +140,7 @@ void opencl_object::init()
     _error_ = _platform_.getDevices(CL_DEVICE_TYPE_GPU, &devices);
     // _error_ = _platform_.getDevices(CL_DEVICE_TYPE_CPU, &devices); // if cpu is desired
     imart_assert_cl(_error_, "Error getting devices");
-    assert(devices.size() > 0);
+    imart_assert(devices.size() > 0, "There are no OPENCL devices");
     _device_ = devices.front();
 
     // Create the context and the queue
@@ -206,6 +207,34 @@ cl_int opencl_object::get_work_group_size() const
 // ===========================================
 // Set Functions
 // ===========================================
+void opencl_object::set_platform_device(int num_platform, int num_device)
+{
+    // Get the platform
+    std::vector<cl::Platform> platforms;
+    _error_ = cl::Platform::get(&platforms);
+    imart_assert_cl(_error_, "Error getting the platform");
+    imart_assert(platforms.size() > 0, "There are not OPENCL platforms");
+    imart_assert(num_platform >= 0, "OPENCL platform number must be >= 0");
+    imart_assert(num_platform < platforms.size(), "OPENCL platform number greater than existing platforms");
+    _platform_ = platforms[num_platform];
+
+    // Get the devices in the computer
+    std::vector<cl::Device> devices;
+    _error_ = _platform_.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+    imart_assert_cl(_error_, "Error getting devices");
+    imart_assert(devices.size() > 0, "There are no OPENCL devices");
+    imart_assert(num_device >= 0, "OPENCL device number must be >= 0");
+    imart_assert(num_device < devices.size(), "OPENCL device number greater than existing platforms");
+    _device_ = devices[num_device];
+
+    // Create the context and the queue
+    _context_ = cl::Context(_device_);
+    _queue_ = cl::CommandQueue(_context_, _device_);
+
+    // print_device_name();
+};
+
+
 void opencl_object::set_program(std::string code)
 {
     // Reset error value

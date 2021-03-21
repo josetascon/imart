@@ -136,11 +136,11 @@ template<typename type>
 using transform_cpu = transform<type,vector_cpu<type>>;
 
 // template<typename type>
-// using transform_gpu = transform<type,vector_ocl<type>>;
+// using transform_gpu = transform<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using transform_ocl = transform<type,vector_ocl<type>>;
+using transform_opencl = transform<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA

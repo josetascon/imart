@@ -60,11 +60,11 @@ template<typename type>
 using affine_cpu = affine<type,vector_cpu<type>>;
 
 // template<typename type>
-// using affine_gpu = affine<type,vector_ocl<type>>;
+// using affine_gpu = affine<type,vector_opencl<type>>;
 
 #ifdef IMART_WITH_OPENCL
 template<typename type>
-using affine_ocl = affine<type,vector_ocl<type>>;
+using affine_opencl = affine<type,vector_opencl<type>>;
 #endif
 
 #ifdef IMART_WITH_CUDA
