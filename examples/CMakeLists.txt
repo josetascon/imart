@@ -34,10 +34,9 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/images/lpba_s02.nrrd
 #                  Build
 # ===========================================
 # Core
-option(ENABLE_SAMPLES "Enable Samples" OFF)
-
-
-if(ENABLE_SAMPLES)
+# Extra layer used during development
+# option(ENABLE_SAMPLES "Enable Samples" OFF) 
+# if(ENABLE_SAMPLES)
 
 add_executable(image2d_arithmetic image2d_arithmetic.cpp)
 target_link_libraries(image2d_arithmetic ${link_targets})
@@ -215,17 +214,19 @@ if (IMART_WITH_OPENCL)
     add_executable(image_reduction_opencl image_reduction_opencl.cpp)
     target_link_libraries(image_reduction_opencl ${link_targets} )
 
+    if (IMART_WITH_CLFFT)
     add_executable(image_fft_opencl image_fft_opencl.cpp)
     target_link_libraries(image_fft_opencl ${link_targets} )
+
+    add_executable(image_gradient_opencl_input image_gradient_opencl_input.cpp)
+    target_link_libraries(image_gradient_opencl_input ${link_targets} )
+    endif()
 
     add_executable(image_gradient_kernel_opencl image_gradient_kernel_opencl.cpp)
     target_link_libraries(image_gradient_kernel_opencl ${link_targets} )
 
     add_executable(image_gradient_opencl image_gradient_opencl.cpp)
     target_link_libraries(image_gradient_opencl ${link_targets} )
-
-    add_executable(image_gradient_opencl_input image_gradient_opencl_input.cpp)
-    target_link_libraries(image_gradient_opencl_input ${link_targets} )
 
     add_executable(image_meshgrid_opencl image_meshgrid_opencl.cpp)
     target_link_libraries(image_meshgrid_opencl ${link_targets} )
@@ -332,7 +333,7 @@ target_link_libraries(viewer ${link_targets})
 add_executable(tracking_video_ground tracking_video_ground.cpp)
 target_link_libraries(tracking_video_ground ${link_targets})
 
-endif()
+# endif()
 
 add_executable(tracking_video tracking_video.cpp)
 target_link_libraries(tracking_video ${link_targets})

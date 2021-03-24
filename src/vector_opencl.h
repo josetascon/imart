@@ -14,10 +14,6 @@
 #include <random>       // std::random
 #include <cassert>      // assert
 
-// opencl libs
-#include <CL/cl.hpp>
-#include <clFFT.h>
-
 // local libs
 #include "object.h"
 #include "kernels.h"
@@ -25,6 +21,12 @@
 #include "utils/type.h"
 #include "utils/timer.h"
 #include "vector_cpu.h"
+
+// opencl libs
+#include <CL/cl.hpp>
+#ifdef IMART_WITH_CLFFT
+#include <clFFT.h>
+#endif
 
 namespace imart
 {
@@ -1380,6 +1382,8 @@ void vector_opencl<type>::cubic3( typename vector_opencl<type>::pointer xo,
 template <typename type>
 void vector_opencl<type>::fft(std::vector<pointer> & input, std::vector<pointer> & output, std::vector<int> size, bool forward)
 {
+#ifdef IMART_WITH_CLFFT
+
     // timer t("ms");
     // t.start();
     // Dimension
@@ -1476,6 +1480,10 @@ void vector_opencl<type>::fft(std::vector<pointer> & input, std::vector<pointer>
 
     // Release clFFT library
     clfftTeardown();
+
+#else
+    imart_assert( false, "FFT in OpenCL is not implemented");
+#endif
 };
 
 template <typename type>

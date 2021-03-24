@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-13 14:27:18
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-02-21 21:02:14
+* @Last Modified time: 2021-03-24 18:41:10
 */
 
 // std libs
@@ -52,6 +52,7 @@ static void bm_fft_image_cpu_3d(benchmark::State& state)
 };
 
 #ifdef IMART_WITH_OPENCL
+#ifdef IMART_WITH_CLFFT
 // Function to be timed
 static void bm_fft_image_opencl_2d(benchmark::State& state)
 {
@@ -83,6 +84,7 @@ static void bm_fft_image_opencl_3d(benchmark::State& state)
     };
     // std::cout << "Image size: " << img1.get_total_elements() << std::endl;
 };
+#endif
 #endif
 
 #ifdef IMART_WITH_CUDA
@@ -146,8 +148,10 @@ BENCHMARK(bm_fft_image_cpu_2d)->Apply(CustomArguments2d);
 BENCHMARK(bm_fft_image_cpu_3d)->Apply(CustomArguments3d);
 
 #ifdef IMART_WITH_OPENCL
+#ifdef IMART_WITH_CLFFT
 BENCHMARK(bm_fft_image_opencl_2d)->Apply(CustomArguments2d);
 BENCHMARK(bm_fft_image_opencl_3d)->Apply(CustomArguments3d);
+#endif
 #endif
 
 #ifdef IMART_WITH_CUDA

@@ -128,12 +128,28 @@ void opencl_object::init()
     status_kernel = false;
     _error_ = 0;
 
+    int id_platform = 0;
+    int id_device = 0;
+
+    // Read environment variables
+    char* env_platform;
+    char* env_device;
+    env_platform = std::getenv("IMART_OPENCL_PLATFORM");
+    env_device = std::getenv("IMART_OPENCL_DEVICE");
+
+    if ( env_platform != NULL && env_device != NULL )
+    {
+        id_platform = atoi(env_platform);
+        id_device = atoi(env_device);
+    }
+
     // Get the platform
     std::vector<cl::Platform> platforms;
     _error_ = cl::Platform::get(&platforms);
     imart_assert_cl(_error_, "Error getting the platform");
     imart_assert(platforms.size() > 0, "There are not OPENCL platforms");
-    _platform_ = platforms.front();
+    // _platform_ = platforms.front();
+    _platform_ = platforms[id_platform];
 
     // Get the devices in the computer
     std::vector<cl::Device> devices;
@@ -141,7 +157,8 @@ void opencl_object::init()
     // _error_ = _platform_.getDevices(CL_DEVICE_TYPE_CPU, &devices); // if cpu is desired
     imart_assert_cl(_error_, "Error getting devices");
     imart_assert(devices.size() > 0, "There are no OPENCL devices");
-    _device_ = devices.front();
+    // _device_ = devices.front();
+    _device_ = devices[id_device];
 
     // Create the context and the queue
     _context_ = cl::Context(_device_);
