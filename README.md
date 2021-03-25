@@ -14,7 +14,7 @@ The aim is to achieve real-time deformable registration and reduce computational
 * VTK (visualize images)
 * Boost (program options)
 * OpenMP, OpenCL, CUDA
-* FFT libs: fftw3 (cpu), [clfft][https://github.com/clMathLibraries/clFFT]
+* FFT libs: fftw3 (cpu), [clfft](https://github.com/clMathLibraries/clFFT)
 
 ### Ubuntu
 
