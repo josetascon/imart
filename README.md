@@ -1,6 +1,6 @@
 # IMAge RegisTration Library (IMART)
 
-This is a registration library using cpu, gpu and any other parallel hardware supporting OpenCL.
+This is a registration library using cpu, gpu and any other parallel hardware supporting OpenMP, OpenCL or CUDA.
 The aim is to achieve real-time deformable registration and reduce computational time for deformable registration.
 
 ## Desing decisions:
