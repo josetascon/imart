@@ -17,42 +17,42 @@ The aim is to achieve real-time deformable registration and reduce computational
 
 ### Ubuntu
 
-Installing all dependencies in ubuntu.
+Installing all dependencies in ubuntu.\\
 
-General dependencies
-apt install -y cmake git wget
+General dependencies:\
+apt install -y cmake git wget\
 
-OpenCL dependencies:
-apt install -y opencl-headers opencl-c-headers opencl-clhpp-headers
-apt install -y clinfo ocl-icd-libopencl1 ocl-icd-opencl-dev beignet-opencl-icd
+OpenCL dependencies:\
+apt install -y opencl-headers opencl-c-headers opencl-clhpp-headers\
+apt install -y clinfo ocl-icd-libopencl1 ocl-icd-opencl-dev beignet-opencl-icd\
 
-Boost libraries:
-apt install -y libboost1.65-dev libboost-program-options1.65-dev
+Boost libraries:\
+apt install -y libboost1.65-dev libboost-program-options1.65-dev\
 
-ITK libraries:
-apt install -y libinsighttoolkit4.12 libinsighttoolkit4-dev insighttoolkit4-examples
+ITK libraries:\
+apt install -y libinsighttoolkit4.12 libinsighttoolkit4-dev insighttoolkit4-examples\
 
-VTK libraries:
-apt install -y tzdata libvtk7.1 libvtk7-dev vtk7 vtk7-examples
+VTK libraries:\
+apt install -y tzdata libvtk7.1 libvtk7-dev vtk7 vtk7-examples\
 
 ### Arch Linux
 
-Install all dependencies.
-pacman -S cmake git
-pacman -S opencl-headers
-pacman -S cuda
-pacman -S boost
-pacman -S vtk
+Install all dependencies.\
+pacman -S cmake git\
+pacman -S opencl-headers\
+pacman -S cuda\
+pacman -S boost\
+pacman -S vtk\
 
-Install form AUR packages:
-insight-toolkit
+Install form AUR packages:\
+insight-toolkit\
 
 ## Build
 
-In the project folder use cmake to build.
+In the project folder use cmake to build.\
 
-mkdir build
-cd build
-cmake .. -DBUILD_EXAMPLES=ON -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON -DIMART_WITH_OPENCL=ON -DIMART_WITH_CUDA=ON -DIMART_WITH_CLFFT=ON
+mkdir build\
+cd build\
+cmake .. -DBUILD_EXAMPLES=ON -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON -DIMART_WITH_OPENCL=ON -DIMART_WITH_CUDA=ON -DIMART_WITH_CLFFT=ON\
 
 Change ON or OFF depending on your dependencies.
