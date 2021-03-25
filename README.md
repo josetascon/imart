@@ -14,13 +14,14 @@ The aim is to achieve real-time deformable registration and reduce computational
 * VTK (visualize images)
 * Boost (program options)
 * OpenMP, OpenCL, CUDA
+* FFT libs: fftw3 (cpu), [clfft][https://github.com/clMathLibraries/clFFT]
 
 ### Ubuntu
 
-Installing all dependencies in ubuntu.\
+Installing all dependencies in ubuntu.
 
 General dependencies:\
-\# apt install -y cmake git wget\
+\# apt install -y cmake git wget libfftw3-dev\
 OpenCL dependencies:\
 \# apt install -y opencl-headers opencl-c-headers opencl-clhpp-headers\
 \# apt install -y clinfo ocl-icd-libopencl1 ocl-icd-opencl-dev beignet-opencl-icd\
@@ -33,11 +34,11 @@ VTK libraries:\
 
 ### Arch Linux
 
-Install all dependencies.\
+Install all dependencies.
 
-\# pacman -S cmake git opencl-headers cuda boost vtk
+\# pacman -S cmake git fftw opencl-headers cuda boost vtk
 
-Install form AUR packages:\
+Install from AUR:\
 insight-toolkit
 
 ## Build
@@ -46,6 +47,7 @@ In the project folder use cmake to build.
 
 mkdir build\
 cd build\
-cmake .. -DBUILD_EXAMPLES=ON -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON -DIMART_WITH_OPENCL=ON -DIMART_WITH_CUDA=ON -DIMART_WITH_CLFFT=ON
+cmake .. -DBUILD_EXAMPLES=ON -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=ON -DIMART_WITH_OPENCL=ON -DIMART_WITH_CUDA=ON
 
-Change ON or OFF depending on your dependencies.
+Change ON or OFF based on your dependencies and system capabilities. For instance, you can disable CLFFT with the option -DIMART_WITH_CLFFT=OFF 
+
