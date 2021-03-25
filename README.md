@@ -1,6 +1,6 @@
 # IMAge RegisTration Library (IMART)
 
-This is a registration library using cpu, and gpu.
+This is a registration library using cpu, gpu and any other parallel hardware supporting OpenCL.
 The aim is to achieve real-time deformable registration and reduce computational time for deformable registration.
 
 ## Desing decisions:
@@ -14,7 +14,7 @@ The aim is to achieve real-time deformable registration and reduce computational
 * VTK (visualize images)
 * Boost (program options)
 * OpenMP, OpenCL, CUDA
-* FFT libraries: fftw3 (cpu), [clfft](https://github.com/clMathLibraries/clFFT) (OpenCL)
+* FFT libraries: fftw3 (CPU), [clfft](https://github.com/clMathLibraries/clFFT) (OpenCL)
 
 ### Ubuntu
 
