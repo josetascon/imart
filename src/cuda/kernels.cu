@@ -1118,7 +1118,7 @@ void cuda_kernel_cast( std::vector<int> & grid, std::vector<int> & block,
 {
     dim3 grd(grid[0]);
     dim3 blk(block[0]);
-    kernel_cast<typein,typeout><<<grd,blk>>>(vin, vout, n);
+    kernel_cast <typein,typeout><<<grd,blk>>>(vin, vout, n);
     imart_assert_kernel( cudaPeekAtLastError(), "Fail to run kernel cast" );
     imart_assert_kernel( cudaDeviceSynchronize(), "Fail to sync kernel cast" );
 };
@@ -2044,69 +2044,69 @@ template <> void cuda_kernel_fft_3d<double>( std::vector<int> & grid, std::vecto
 // ===========================================
 
 // CASTINGS
-template void cuda_kernel_cast<float,double>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <float,double>( std::vector<int> & grid, std::vector<int> & block, 
                        const float * vin, double * vout, int n );
 
-template void cuda_kernel_cast<double,float>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <double,float>( std::vector<int> & grid, std::vector<int> & block, 
                        const double * vin, float * vout, int n );
 
 
-template void cuda_kernel_cast<int,float>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <int,float>( std::vector<int> & grid, std::vector<int> & block, 
                        const int * vin, float * vout, int n );
 
-template void cuda_kernel_cast<float,int>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <float,int>( std::vector<int> & grid, std::vector<int> & block, 
                        const float * vin, int * vout, int n );
 
-template void cuda_kernel_cast<int,double>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <int,double>( std::vector<int> & grid, std::vector<int> & block, 
                        const int * vin, double * vout, int n );
 
-template void cuda_kernel_cast<double,int>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <double,int>( std::vector<int> & grid, std::vector<int> & block, 
                        const double * vin, int * vout, int n );
 
 
-template void cuda_kernel_cast<float,unsigned short>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <float,unsigned short>( std::vector<int> & grid, std::vector<int> & block, 
                        const float * vin, unsigned short * vout, int n );
 
-template void cuda_kernel_cast<unsigned short,float>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <unsigned short,float>( std::vector<int> & grid, std::vector<int> & block, 
                        const unsigned short * vin, float * vout, int n );
 
-template void cuda_kernel_cast<double,unsigned short>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <double,unsigned short>( std::vector<int> & grid, std::vector<int> & block, 
                        const double * vin, unsigned short * vout, int n );
 
-template void cuda_kernel_cast<unsigned short,double>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <unsigned short,double>( std::vector<int> & grid, std::vector<int> & block, 
                        const unsigned short * vin, double * vout, int n );
 
 
-template void cuda_kernel_cast<float,unsigned int>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <float,unsigned int>( std::vector<int> & grid, std::vector<int> & block, 
                        const float * vin, unsigned int * vout, int n );
 
-template void cuda_kernel_cast<unsigned int,float>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <unsigned int,float>( std::vector<int> & grid, std::vector<int> & block, 
                        const unsigned int * vin, float * vout, int n );
 
-template void cuda_kernel_cast<double,unsigned int>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <double,unsigned int>( std::vector<int> & grid, std::vector<int> & block, 
                        const double * vin, unsigned int * vout, int n );
 
-template void cuda_kernel_cast<unsigned int,double>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <unsigned int,double>( std::vector<int> & grid, std::vector<int> & block, 
                        const unsigned int * vin, double * vout, int n );
 
 
-template void cuda_kernel_cast<float,unsigned char>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <float,unsigned char>( std::vector<int> & grid, std::vector<int> & block, 
                        const float * vin, unsigned char * vout, int n );
 
-template void cuda_kernel_cast<unsigned char,float>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <unsigned char,float>( std::vector<int> & grid, std::vector<int> & block, 
                        const unsigned char * vin, float * vout, int n );
 
-template void cuda_kernel_cast<double,unsigned char>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <double,unsigned char>( std::vector<int> & grid, std::vector<int> & block, 
                        const double * vin, unsigned char * vout, int n );
 
-template void cuda_kernel_cast<unsigned char,double>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <unsigned char,double>( std::vector<int> & grid, std::vector<int> & block, 
                        const unsigned char * vin, double * vout, int n );
 
 
-template void cuda_kernel_cast<float,float>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <float,float>( std::vector<int> & grid, std::vector<int> & block, 
                        const float * vin, float * vout, int n );
 
-template void cuda_kernel_cast<double,double>( std::vector<int> & grid, std::vector<int> & block, 
+template void cuda_kernel_cast <double,double>( std::vector<int> & grid, std::vector<int> & block, 
                        const double * vin, double * vout, int n );
 
 

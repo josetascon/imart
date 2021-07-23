@@ -2,7 +2,7 @@
 * @Author: jose
 * @Date:   2019-11-05 14:55:42
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-09-16 18:27:14
+* @Last Modified time: 2021-07-15 16:12:24
 */
 
 // File to test utilities such as: pad, unpad, normalize
@@ -22,7 +22,7 @@ int main()
     // ============================================
     //      Testing image condition function
     // ============================================
-    // test padding
+    // test condition
     auto img10 = image_cpu<type>::new_pointer(8,5);
     img10->random();
     img10->print();

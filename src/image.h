@@ -231,9 +231,14 @@ public:
     void replace(const image<type,container> & idxs, const image & input);
     void replace(const image<type,container> & idxs, type value);
 
+    // subregion
+    pointer region(std::vector<int> offset, std::vector<int> out_size);
+
     // ===========================================
     // Reduction Functions
     // ===========================================
+    int argmin();
+    int argmax();
     type min();
     type max();
     type sum();
@@ -944,6 +949,16 @@ void image<type,container>::replace(const image<type,container> & idxs, type val
     return;
 };
 
+template <typename type, typename container>
+typename image<type,container>::pointer image<type,container>::region(std::vector<int> offset, std::vector<int> out_size)
+{
+    auto output = image<type,container>::new_pointer(out_size);
+    std::vector<int> ref_size = this->get_size();
+    output->set_data( this->get_data()->region(ref_size, offset, out_size) );
+    return output;
+};
+
+
 // ===========================================
 // Functions
 // ===========================================
@@ -959,6 +974,18 @@ template <typename type, typename container>
 type image<type,container>::max()
 {
     return data->max();
+};
+
+template <typename type, typename container>
+int image<type,container>::argmin()
+{
+    return data->argmin();
+};
+
+template <typename type, typename container>
+int image<type,container>::argmax()
+{
+    return data->argmax();
 };
 
 template <typename type, typename container>

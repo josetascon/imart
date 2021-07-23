@@ -217,19 +217,24 @@ void horn_schunck<type,container>::optical_flow(std::shared_ptr<image<type,conta
 {
     // std::cout << "Init flow:" << std::endl;
     int d = img_fixed->get_dimension();
+
+    # DEFINE sigma and alpha
     
     if (d == 2)
     {
         auto ux_last = *transformation->get_parameters(0);
         auto uy_last = *transformation->get_parameters(1);
 
-        auto num = (*fx)*(*ux_last) + (*fy)*(*uy_last) + *ft;
-        auto den = (*fx)^2 + (*fy)^2 + alpha^2;
+        auto ux_avg = gaussian_filter(ux_last, sigma)
+        auto uy_avg = gaussian_filter(uy_last, sigma)
+
+        auto num = (*fx)*(ux_avg) + (*fy)*(uy_avg) + *ft;
+        auto den = (*fx)^2.0 + (*fy)^2.0 + alpha^2.0;
         auto der =  num / den;
 
         // horn_schunck derivative of dfield
-        auto ux = der*gx;
-        auto uy = der*gy;
+        auto ux = ux_avg - der*fx;
+        auto uy = uy_avg - der*fy;
 
         // return parameters
         *((*param)[0]) = ux;

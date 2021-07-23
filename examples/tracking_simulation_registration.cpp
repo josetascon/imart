@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-01-27 06:47:08
+* @Last Modified time: 2021-06-05 11:53:48
 */
 
 // std libs
@@ -64,40 +64,42 @@ int main(int argc, char *argv[])
     img_fixed->read(file_fixed);
     std::cout << "Read reference: " << file_fixed << std::endl;
 
-    std::string file_tumor = input_path + "/struct00/structure_" + "0000" + ext;
+    std::string file_tumor = input_path + "/tumor/tumor_" + "0000" + ext;
     img_tumor->read(file_tumor);
     std::cout << "Read tumor: " << file_tumor << std::endl;
 
-    std::string file_liver = input_path + "/struct01/structure_" + "0000" + ext;
+    std::string file_liver = input_path + "/liver/liver_" + "0000" + ext;
     img_liver->read(file_liver);
     std::cout << "Read liver: " << file_liver << std::endl;    
-
+    
     // Transform
-    auto trfm = dfield<type,vector_cpu<type>>::new_pointer();
-    double sigmaf = 1.0;
-    double sigmae = 3.0;
+    auto trfm = dfield<type,vector_cpu<type>>::new_pointer(img_fixed);
+    double sigmaf = 0.0;
+    double sigmae = 2.5;
     trfm->set_sigma_fluid(sigmaf);
     trfm->set_sigma_elastic(sigmae);
 
     // Registration
     auto demonsreg = demons<type,vector_cpu<type>>::new_pointer(img_fixed, img_moving, trfm);
     auto opt = gradient_descent<type,vector_cpu<type>>::new_pointer();
-    opt->set_tolerance(1e-7);
+    opt->set_tolerance(1e-6);
 
     auto registro = registration<type,vector_cpu<type>>::new_pointer(img_fixed, img_moving, trfm);
     registro->set_metric(demonsreg);
     registro->set_optimizer(opt);
-    registro->set_levels(4);
-    registro->set_levels_scales(std::vector<int>{8,4,2,1});
-    registro->set_levels_iterations(std::vector<int>{600,600,600,600});
+    registro->set_levels(3);
+    registro->set_levels_scales(std::vector<int>{4,2,1});
+    registro->set_levels_iterations(std::vector<int>{120,100,80});
 
     // Output folders
+    std::cout << "Creating output folders" << std::endl;
     std::filesystem::create_directories(output_path + "/image/");
     std::filesystem::create_directories(output_path + "/tumor/");
     std::filesystem::create_directories(output_path + "/liver/");
 
     for(size_t i = 1; i < num_images; i++ )
     {
+        mov = to_zero_lead(i,4);
 
         std::string file_moving = input_path + "/image/image_" + mov + ext;
         img_moving->read(file_moving);
@@ -132,10 +134,7 @@ int main(int argc, char *argv[])
 
         // update for next iteration
         // trfm = std::static_pointer_cast<dfield<type,vector_cpu<type>>>(transformation);
-        mov = to_zero_lead(i,4);
     };
-        
-
-
+    
     return 0;
 };

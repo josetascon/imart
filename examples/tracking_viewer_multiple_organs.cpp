@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-03-11 00:19:23
+* @Last Modified time: 2021-07-22 15:16:04
 */
 
 // std libs
@@ -31,6 +31,9 @@ std::string to_zero_lead(const int value, const unsigned precision)
      oss << std::setw(precision) << std::setfill('0') << value;
      return oss.str();
 }
+
+// ./examples/tracking_viewer_multiple_organs /home/jose/Public/workspace/medical_imaging/liver/video/patient01/patient01_inpaint/
+
 
 int main(int argc, char *argv[])
 {

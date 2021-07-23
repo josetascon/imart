@@ -162,6 +162,37 @@ std::shared_ptr<image<type,container>> unpad(std::shared_ptr<image<type,containe
     return output;
 };
 
+template<typename type, typename container>
+std::vector<std::vector<int>> bounding_box(std::shared_ptr<image<type,container>> input, int extra_pixels = 0)
+{
+    auto bbox = container::bounding_box( input->get_data(), input->get_size() );
+    
+    if (extra_pixels > 0)
+    {
+        for (int k = 0; k < bbox[0].size(); k++)
+        {
+            bbox[0][k] = bbox[0][k] - extra_pixels;
+            bbox[1][k] = bbox[1][k] + 2*extra_pixels;
+        }
+    }
+    return bbox;
+};
+
+template<typename type, typename container>
+type cross_correlation(std::shared_ptr<image<type,container>> fixed, std::shared_ptr<image<type,container>> moving)
+{
+    imart_assert(fixed->get_total_elements() == moving->get_total_elements(), "Images with different number of elements");
+    
+    auto f_dif = *fixed - fixed->mean();
+    auto m_dif = *moving - moving->mean();
+
+    type num = (f_dif*m_dif).sum();
+    type den = sqrt(((f_dif^2.0).sum())*((m_dif^2.0).sum()));
+    type cost_value = num/den;
+    
+    return cost_value;
+};
+
 // template<typename type>
 // image<type> complex2real(const image<std::complex<type>> & input)
 // {
