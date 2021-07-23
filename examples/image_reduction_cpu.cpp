@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2020-01-28 09:41:41
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2020-07-20 15:17:12
+* @Last Modified time: 2021-07-20 13:39:20
 */
 
 // std libs
@@ -46,9 +46,15 @@ int main()
     min1 = image1.min();
     max1 = image1.max();
     sum1 = image1.sum();
+    int idx_min1 = image1.argmin();
+    int idx_max1 = image1.argmax();
     // prod1 = image1.prod();
     std::cout << "Image1 min: " << min1 << std::endl;
+    std::cout << "Image1 argmin: " << idx_min1 << std::endl;
+    std::cout << "Image1 (argmin): " << image1[idx_min1] << std::endl;
     std::cout << "Image1 max: " << max1 << std::endl;
+    std::cout << "Image1 argmax: " << idx_max1 << std::endl;
+    std::cout << "Image1 (argmax): " << image1[idx_max1] << std::endl;
     std::cout << "Image1 sum: " << sum1 << std::endl;
     // std::cout << "Image1 prod: " << prod1 << std::endl;
 

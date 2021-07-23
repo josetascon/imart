@@ -159,10 +159,14 @@ public:
 
     void replace(const vector_cpu<type> & idxs, const vector_cpu<type> & input);
     void replace(const vector_cpu<type> & idxs, type value);
+
+    pointer region(std::vector<int> & ref_size, std::vector<int> & offset, std::vector<int> & out_size);
     
     // ===========================================
     // Reduction functions
     // ===========================================
+    int argmin();
+    int argmax();
     type min();
     type max();
     type sum();
@@ -254,6 +258,8 @@ public:
                              typename vector_cpu<type>::pointer imgo,
                              std::vector<int> ref_size, std::vector<int> kernel_size);
 
+    static std::vector<std::vector<int>> bounding_box( typename vector_cpu<type>::pointer img,
+                              std::vector<int> ref_size);
 };
 
 // ===========================================
@@ -959,6 +965,54 @@ void vector_cpu<type>::replace(const vector_cpu<type> & idxs, type value)
     return;
 };
 
+template <typename type>
+typename vector_cpu<type>::pointer vector_cpu<type>::region(std::vector<int> & ref_size, std::vector<int> & offset, std::vector<int> & out_size)
+{
+    // init a vector_cpu with output size
+    int size = 1;
+    for(int i = 0; i < out_size.size(); i++) { size *= out_size[i]; };
+    auto output = vector_cpu<type>::new_pointer(size);
+
+    type * p1 = this->data();
+    type * p2 = output->data();
+
+    if (ref_size.size() == 2)
+    {
+        int w = out_size[0]; int h = out_size[1];
+        int n0 = ref_size[0]; int n1 = ref_size[1];
+        int off0 = offset[0]; int off1 = offset[1];
+
+        #pragma omp parallel for collapse(2) if (w*h > IMART_OPENMP_VECTOR_MIN_SIZE)
+        for(int j = 0; j < h; j++)
+        {
+            for(int i = 0; i < w; i++)
+            {
+                p2[i + j*w] = p1[(i + off0) + (j + off1)*n0];
+            }
+        }
+    }
+    else if (ref_size.size() == 3)
+    {
+        int w = out_size[0]; int h = out_size[1]; int l = out_size[2];
+        int n0 = ref_size[0]; int n1 = ref_size[1]; int n2 = ref_size[2];
+        int off0 = offset[0]; int off1 = offset[1]; int off2 = offset[2];
+
+        #pragma omp parallel for collapse(3) if (w*h*l > IMART_OPENMP_VECTOR_MIN_SIZE)
+        for(int k = 0; k < l; k++)
+        {
+            for(int j = 0; j < h; j++)
+            {
+                for(int i = 0; i < w; i++)
+                {
+                    p2[i + j*w + k*w*h] = p1[(i + off0) + (j + off1)*n0 + (k + off2)*n0*n1];
+                }
+            }
+        }
+    }
+
+    return output;
+}
+
 // ===========================================
 // Reduction Functions
 // ===========================================
@@ -971,12 +1025,35 @@ type vector_cpu<type>::min()
 
     if (size > 0) { x = p1[0]; };
 
-    #pragma omp parallel for reduction(min:x)
+    #pragma omp parallel for reduction(min:x) if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=1; k<size; k++)
     {
         x = std::min(x,p1[k]);
     };
     return x;
+};
+
+template <typename type>
+int vector_cpu<type>::argmin()
+{
+    int idx = 0;
+    type x = 0;
+    type * p1 = this->data();
+    int size = this->size();
+
+    if (size > 0) { x = p1[0]; };
+
+    // #pragma omp for nowait
+    for(int k=1; k<size; k++)
+    {
+        if (p1[k] < x)
+        {
+            // #pragma omp critical
+            x = p1[k];
+            idx = k;
+        }
+    };
+    return idx;
 };
 
 template <typename type>
@@ -988,12 +1065,35 @@ type vector_cpu<type>::max()
 
     if (size > 0) { x = p1[0]; };
 
-    #pragma omp parallel for reduction(max:x)
+    #pragma omp parallel for reduction(max:x) if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=1; k<size; k++)
     {
         x = std::max(x,p1[k]);
     };
     return x;
+};
+
+template <typename type>
+int vector_cpu<type>::argmax()
+{
+    int idx = 0;
+    type x = 0;
+    type * p1 = this->data();
+    int size = this->size();
+
+    if (size > 0) { x = p1[0]; };
+
+    // #pragma omp for nowait
+    for(int k=1; k<size; k++)
+    {
+        if (p1[k] > x)
+        {
+            // #pragma omp critical
+            x = p1[k];
+            idx = k;
+        }
+    };
+    return idx;
 };
 
 template <typename type>
@@ -1003,7 +1103,7 @@ type vector_cpu<type>::sum()
     type * p1 = this->data();
     int size = this->size();    
 
-    #pragma omp parallel for reduction(+:x)
+    #pragma omp parallel for reduction(+:x) if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         x += p1[k];
@@ -1036,7 +1136,7 @@ type vector_cpu<type>::dot(const vector_cpu<type> & input)
     type * p2 = input.data();
     int size = this->size();
 
-    #pragma omp parallel for reduction(+:x)
+    #pragma omp parallel for reduction(+:x) if (size > IMART_OPENMP_VECTOR_MIN_SIZE)
     for(int k=0; k<size; k++)
     {
         x += p1[k]*p2[k];
@@ -2510,6 +2610,59 @@ void vector_cpu<type>::convolution( typename vector_cpu<type>::pointer imgr,
 //         };
 //     };
 // };
+
+template <typename type>
+std::vector<std::vector<int>> vector_cpu<type>::bounding_box( typename vector_cpu<type>::pointer img,
+                                     std::vector<int> ref_size)
+{
+    type * p = img->data();
+    std::vector<std::vector<int>> bbox(2);
+    // std::vector<int> bbox;
+
+    if (ref_size.size() == 2)
+    {
+        int x,y,w,h = 0;
+        int n0 = ref_size[0]; int n1 = ref_size[1];
+        
+        // sum values over each dimension
+        auto sumx = vector_cpu<type>::new_pointer(n0,0); // add over width
+        auto sumy = vector_cpu<type>::new_pointer(n1,0); // add over height
+        type * px = sumx->data();
+        type * py = sumy->data();
+
+        // #pragma omp parallel for collapse(2) if (n0*n1 > IMART_OPENMP_VECTOR_MIN_SIZE)
+        for(int j = 0; j < n1; j++)
+        {
+            for(int i = 0; i < n0; i++)
+            {
+                px[i] += p[i + j*n0];
+                py[j] += p[i + j*n0];
+            }
+        }
+
+        // check values greater than zeros
+        bool not_start = true;
+        for(int j = 0; j < n1; j++)
+        {
+            if (not_start){ if (py[j] > 0) {y = j; not_start = false; }; }
+            else{ if (py[j] <= 0) {h = j - y - 1; break; }; };
+        }
+
+        not_start = true;
+        for(int i = 0; i < n0; i++)
+        {
+            if (not_start){ if (px[i] > 0) {x = i; not_start = false; }; }
+            else{ if (px[i] <= 0) {w = i - x - 1; break; }; };
+        }
+
+        bbox[0] = std::vector<int>{x,y};
+        bbox[1] = std::vector<int>{w,h};
+        // bbox = std::vector<int>{x,y,w,h};
+    }
+
+    return bbox;
+};
+
 
 }; //end namespace
 

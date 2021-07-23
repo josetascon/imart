@@ -35,8 +35,8 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/images/lpba_s02.nrrd
 # ===========================================
 # Core
 # Extra layer used during development
-# option(ENABLE_SAMPLES "Enable Samples" OFF) 
-# if(ENABLE_SAMPLES)
+option(ENABLE_SAMPLES "Enable Samples" OFF) 
+if(ENABLE_SAMPLES)
 
 add_executable(image2d_arithmetic image2d_arithmetic.cpp)
 target_link_libraries(image2d_arithmetic ${link_targets})
@@ -79,9 +79,14 @@ add_executable(image_conditions_cpu image_conditions_cpu.cpp)
 target_link_libraries(image_conditions_cpu ${link_targets})
 
 
-
 add_executable(image_reduction_cpu image_reduction_cpu.cpp)
 target_link_libraries(image_reduction_cpu ${link_targets})
+
+add_executable(image_region image_region.cpp)
+target_link_libraries(image_region ${link_targets})
+
+add_executable(image_bounding_box image_bounding_box.cpp)
+target_link_libraries(image_bounding_box ${link_targets})
 
 # add_executable(image2d_fft image2d_fft.cpp)
 # target_link_libraries(image2d_fft ${link_targets})
@@ -176,9 +181,6 @@ target_link_libraries(registration_demons_input ${link_targets})
 
 add_executable(registration_demonsloi_input registration_demonsloi_input.cpp)
 target_link_libraries(registration_demonsloi_input ${link_targets})
-
-add_executable(registration_video registration_video.cpp)
-target_link_libraries(registration_video ${link_targets})
 
 add_executable(registration_lddmm_prototype registration_lddmm_prototype.cpp)
 target_link_libraries(registration_lddmm_prototype ${link_targets})
@@ -330,11 +332,23 @@ endif()
 add_executable(viewer viewer.cpp)
 target_link_libraries(viewer ${link_targets})
 
-add_executable(tracking_video_ground tracking_video_ground.cpp)
-target_link_libraries(tracking_video_ground ${link_targets})
+add_executable(tracking_viewer tracking_viewer.cpp)
+target_link_libraries(tracking_viewer ${link_targets})
 
-# endif()
+endif()
 
-add_executable(tracking_video tracking_video.cpp)
-target_link_libraries(tracking_video ${link_targets})
+# add_executable(registration_horn_schunck_input registration_horn_schunck_input.cpp)
+# target_link_libraries(registration_horn_schunck_input ${link_targets})
+
+add_executable(tracking_simulation_registration tracking_simulation_registration.cpp)
+target_link_libraries(tracking_simulation_registration ${link_targets})
+
+add_executable(tracking_viewer_multiple_organs tracking_viewer_multiple_organs.cpp)
+target_link_libraries(tracking_viewer_multiple_organs ${link_targets})
+
+add_executable(tracking_template_matching tracking_template_matching.cpp)
+target_link_libraries(tracking_template_matching ${link_targets})
+
+add_executable(tracking_template_matching_and_registration tracking_template_matching_and_registration.cpp)
+target_link_libraries(tracking_template_matching_and_registration ${link_targets})
 
