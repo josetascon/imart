@@ -352,3 +352,11 @@ target_link_libraries(tracking_template_matching ${link_targets})
 add_executable(tracking_template_matching_and_registration tracking_template_matching_and_registration.cpp)
 target_link_libraries(tracking_template_matching_and_registration ${link_targets})
 
+add_executable(tracking_video_registration tracking_video_registration.cpp)
+target_link_libraries(tracking_video_registration ${link_targets})
+
+add_executable(tracking_video_template_matching tracking_video_template_matching.cpp)
+target_link_libraries(tracking_video_template_matching ${link_targets})
+
+add_executable(tracking_video_template_matching_and_registration tracking_video_template_matching_and_registration.cpp)
+target_link_libraries(tracking_video_template_matching_and_registration ${link_targets})
