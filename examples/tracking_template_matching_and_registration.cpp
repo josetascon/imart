@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-07-22 13:09:15
+* @Last Modified time: 2021-07-29 15:57:08
 */
 
 // std libs
@@ -24,7 +24,6 @@
 #include "../src/demons.h"
 #include "../src/gradient_descent.h"
 #include "../src/registration.h"
-#include "../src/viewer.h"
 
 using namespace imart;
 
@@ -71,7 +70,7 @@ int main(int argc, char *argv[])
     trfm->set_sigma_fluid(sigmaf);
     trfm->set_sigma_elastic(sigmae);
     
-    auto demonsreg = demons<type,vector_cpu<type>>::new_pointer(img_fixed, img_moving, trfm);
+    auto demonsreg = demons<type,vector_cpu<type>>::new_pointer(img_fixed_region, img_fixed_region, trfm);
     auto opt = gradient_descent<type,vector_cpu<type>>::new_pointer();
     opt->set_tolerance(1e-6);
     

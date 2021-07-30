@@ -99,6 +99,10 @@ std::vector<int> template_matching<type,container>::sliding_window(typename imag
     int si = slide[0];
     int sj = slide[1];
 
+    // Verify if sliding window is within the image coordinates
+    if (corner[0] - si < 0) si = corner[0];
+    if (corner[1] - sj < 0) sj = corner[1];
+
     int w = 2*si + 1;
     int h = 2*sj + 1;
 
@@ -123,7 +127,7 @@ std::vector<int> template_matching<type,container>::sliding_window(typename imag
     int y = (int)max_idx / w;
     int x = max_idx % w;
 
-    return std::vector<int>{x-slide[0]+corner[0], y-slide[1]+corner[1]};
+    return std::vector<int>{x - si + corner[0], y - sj + corner[1]};
 };
 
 }; //end namespace
