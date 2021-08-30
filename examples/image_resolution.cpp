@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-02-10 16:17:33
+* @Last Modified time: 2021-08-27 12:10:36
 */
 
 
@@ -50,6 +50,19 @@ int main()
     image2->print_data();
     image3->print();
     image3->print_data();
+
+    // Create small imame
+    auto image10 = image_cpu<type>::new_pointer(10,8);
+    image10->set_spacing(std::vector<double>{2.0,1.5});
+    image10->ones();
+    
+    auto mresolution3 = resolution<type,vector_cpu<type>>::new_pointer(image10);
+    auto image11 = mresolution3->apply(std::vector<int>{8,5});
+
+    image10->print();
+    image10->print_data();
+    image11->print();
+    image11->print_data();
 
     return 0;
 };

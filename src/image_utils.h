@@ -179,6 +179,18 @@ std::vector<std::vector<int>> bounding_box(std::shared_ptr<image<type,container>
 };
 
 template<typename type, typename container>
+type sum_squared_difference(std::shared_ptr<image<type,container>> fixed, std::shared_ptr<image<type,container>> moving)
+{
+    imart_assert(fixed->get_total_elements() == moving->get_total_elements(), "Images with different number of elements");
+    
+    type N = (type)fixed->get_total_elements();
+    image<type,container> dif = *fixed - *moving;
+    type cost_value = (0.5/N)*( (dif*dif).sum() );
+    
+    return cost_value;
+};
+
+template<typename type, typename container>
 type cross_correlation(std::shared_ptr<image<type,container>> fixed, std::shared_ptr<image<type,container>> moving)
 {
     imart_assert(fixed->get_total_elements() == moving->get_total_elements(), "Images with different number of elements");

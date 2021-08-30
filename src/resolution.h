@@ -71,6 +71,7 @@ public:
     // !apply the scale
     typename image<type,container>::pointer apply();
     typename image<type,container>::pointer apply(double scalar);
+    typename image<type,container>::pointer apply(std::vector<int> sz);
     typename transform<type,container>::pointer apply(double scalar, typename transform<type,container>::pointer trfm);
     typename transform<type,container>::pointer apply(std::vector<int> sz, std::vector<double> space, typename transform<type,container>::pointer trfm);
 };
@@ -197,6 +198,32 @@ typename image<type,container>::pointer resolution<type,container>::apply(double
 };
 
 template <typename type, typename container>
+typename image<type,container>::pointer resolution<type,container>::apply(std::vector<int> sz)
+{
+    std::vector<int> sz_base = in->get_size();
+    std::vector<double> space = in->get_spacing();
+    
+    for(int i = 0; i < sz.size(); i++)
+    {
+        double scale = (double)sz_base[i]/((double)sz[i]);
+        space[i] = space[i]*scale;
+    };
+
+    out = image<type,container>::new_pointer(sz);
+    out->set_spacing(space);
+    out->set_origin(in->get_origin());
+    out->set_direction(in->get_direction());
+    // out->print();
+
+    auto x = grid<type,container>::new_pointer(out);
+    // x->ptr()[0]->print_data();
+    // std::cout << "interpolation" << std::endl;
+    return interpolation->apply(x);
+};
+
+
+// Scale transformations
+template <typename type, typename container>
 typename transform<type,container>::pointer resolution<type,container>::apply(double scalar, typename transform<type,container>::pointer trfm)
 {
     set_scale(scalar);
@@ -213,6 +240,7 @@ typename transform<type,container>::pointer resolution<type,container>::apply(do
     return apply(sz,space,trfm);
 };
 
+// Scale transformations
 template <typename type, typename container>
 typename transform<type,container>::pointer resolution<type,container>::apply(std::vector<int> sz, std::vector<double> space, typename transform<type,container>::pointer trfm)
 {

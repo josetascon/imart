@@ -34,8 +34,12 @@ protected:
     // ===========================================
     typename image<type,container>::pointer fixed;
     typename image<type,container>::pointer moving;
+    typename image<type,container>::pointer current;
     std::vector<std::vector<int>> box_fixed;
     std::vector<std::vector<int>> box_moving;
+    std::vector<std::vector<int>> box_current;
+    bool current_mode;
+    int count_current;
 
     // ===========================================
     // Functions
@@ -60,16 +64,22 @@ public:
     // ===========================================
     typename image<type,container>::pointer get_fixed() const;
     typename image<type,container>::pointer get_moving() const;
+    typename image<type,container>::pointer get_current() const;
     std::vector<std::vector<int>> get_box_fixed() const;
     std::vector<std::vector<int>> get_box_moving() const;
+    std::vector<std::vector<int>> get_box_current() const;
+    bool get_current_mode() const;
     
     // ===========================================
     // Set Functions
     // ===========================================
     virtual void set_fixed(typename image<type,container>::pointer fixed_image);
     virtual void set_moving(typename image<type,container>::pointer moving_image);
+    virtual void set_current(typename image<type,container>::pointer current_image);
     virtual void set_box_fixed(std::vector<std::vector<int>> bbox_fixed);
     virtual void set_box_moving(std::vector<std::vector<int>> bbox_moving);
+    virtual void set_box_current(std::vector<std::vector<int>> bbox_current);
+    virtual void set_current_mode(bool mode);
     
     // ===========================================
     // Print Functions
@@ -136,10 +146,15 @@ void tracker<type,container>::init( typename image<type,container>::pointer fixe
     assert(fixed_image->get_dimension() == moving_image->get_dimension());
     int d = fixed_image->get_dimension();
 
+    current_mode = false;
+
     fixed = fixed_image;
     moving = moving_image;
+    current = fixed_image->clone();
+    count_current = 0;
     box_fixed = bbox_fixed;
     box_moving = std::vector<std::vector<int>>{std::vector<int>(d,0),std::vector<int>(d,0)};
+    box_current = bbox_fixed;
     
     this->set_total_inputs(2);      //process_object::init
     this->set_total_outputs(0);     //process_object::init
@@ -165,6 +180,12 @@ typename image<type,container>::pointer tracker<type,container>::get_moving() co
 };
 
 template <typename type, typename container>
+typename image<type,container>::pointer tracker<type,container>::get_current() const
+{
+    return current;
+};
+
+template <typename type, typename container>
 std::vector<std::vector<int>> tracker<type,container>::get_box_fixed() const
 {
     return box_fixed;
@@ -174,6 +195,18 @@ template <typename type, typename container>
 std::vector<std::vector<int>> tracker<type,container>::get_box_moving() const
 {
     return box_moving;
+};
+
+template <typename type, typename container>
+std::vector<std::vector<int>> tracker<type,container>::get_box_current() const
+{
+    return box_current;
+};
+
+template <typename type, typename container>
+bool tracker<type,container>::get_current_mode() const
+{
+    return current_mode;
 };
 
 // ===========================================
@@ -194,6 +227,12 @@ void tracker<type,container>::set_moving(typename image<type,container>::pointer
 };
 
 template <typename type, typename container>
+void tracker<type,container>::set_current(typename image<type,container>::pointer current_image)
+{
+    current = current_image;
+};
+
+template <typename type, typename container>
 void tracker<type,container>::set_box_fixed(std::vector<std::vector<int>> bbox_fixed)
 {
     box_fixed = bbox_fixed;
@@ -203,6 +242,18 @@ template <typename type, typename container>
 void tracker<type,container>::set_box_moving(std::vector<std::vector<int>> bbox_moving)
 {
     box_moving = bbox_moving;
+};
+
+template <typename type, typename container>
+void tracker<type,container>::set_box_current(std::vector<std::vector<int>> bbox_current)
+{
+    box_current = bbox_current;
+};
+
+template <typename type, typename container>
+void tracker<type,container>::set_current_mode(bool mode)
+{
+    current_mode = mode;
 };
 
 // ===========================================
