@@ -152,11 +152,14 @@ endif()
 # ===========================================
 #                  Install
 # ===========================================
+# Binaries
+# install(TARGETS tracking_video_registration DESTINATION bin)
 
-# to include image utils in the future
-# install(TARGETS image_info DESTINATION bin)
-# install(TARGETS image_register DESTINATION bin)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/imart_config.h" DESTINATION "/usr/include/imart")
 
-# this ones require vtk
-# install(TARGETS image_show2d DESTINATION bin)
-# install(TARGETS image_show3d DESTINATION bin)
+# Headers
+install(DIRECTORY "src/" # source directory
+        DESTINATION "/usr/include/imart" # target directory
+        FILES_MATCHING # install only matched files
+        PATTERN "*.h" # select header files
+)

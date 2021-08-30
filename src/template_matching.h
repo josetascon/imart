@@ -26,8 +26,10 @@ public:
     // Inherited variables
     using tracker<type,container>::fixed; //Parent class properties to be used here (avoid use "this->")
     using tracker<type,container>::moving;
+    using tracker<type,container>::current;
     using tracker<type,container>::box_fixed;
     using tracker<type,container>::box_moving;
+    using tracker<type,container>::box_current;
 
     using inherit<template_matching<type,container>, tracker<type,container>>::inherit;
 
@@ -81,13 +83,47 @@ template <typename type, typename container>
 std::vector<std::vector<int>> template_matching<type,container>::apply(typename image<type,container>::pointer moving_image)
 {
     moving = moving_image;
+    typename image<type,container>::pointer img_box;
+    std::vector<int> corner, rsize;
     
-    auto corner = box_fixed[0];
-    auto rsize = box_fixed[1];
-    auto img_box = fixed->region(corner, rsize);
-    auto new_corner = sliding_window(img_box, corner);
+    bool run_fixed = true;
+    if (this->current_mode)
+    {
+        run_fixed = false;
 
+        // type ds1 = sum_squared_difference(fixed, moving);
+        // type ds2 = sum_squared_difference(fixed, current);
+        // printf("f-m %f, f-c %f\n",ds1, ds2);
+
+        bool diff = true;
+        type ccfm = cross_correlation(fixed, moving);
+        // printf("cc %f\n",ccfm);
+        if (ccfm > 0.9989){ diff = false; };
+
+        if (diff)
+        {
+            // printf("Current\n");
+            corner = box_current[0];
+            rsize = box_current[1];
+            img_box = current->region(corner, rsize);
+        }
+        else
+            run_fixed = true;
+    }
+    if (run_fixed)
+    {
+        // printf("Fixed\n");
+        corner = box_fixed[0];
+        rsize = box_fixed[1];
+        img_box = fixed->region(corner, rsize);
+    }
+    
+    auto new_corner = sliding_window(img_box, corner);
     box_moving = std::vector<std::vector<int>>{new_corner, rsize};
+
+    // update current image and box
+    current = moving_image->clone();
+    box_current = box_moving;
 
     return box_moving;
 };
@@ -102,6 +138,8 @@ std::vector<int> template_matching<type,container>::sliding_window(typename imag
     // Verify if sliding window is within the image coordinates
     if (corner[0] - si < 0) si = corner[0];
     if (corner[1] - sj < 0) sj = corner[1];
+    // if (corner[0] + si > img_box->get_width() ) si = img_box->get_width()  - corner[0];
+    // if (corner[1] + sj > img_box->get_height()) sj = img_box->get_height() - corner[1];
 
     int w = 2*si + 1;
     int h = 2*sj + 1;

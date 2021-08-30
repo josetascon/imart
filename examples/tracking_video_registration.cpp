@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-07-28 22:37:45
+* @Last Modified time: 2021-08-30 21:10:02
 */
 
 // std libs
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
     std::string path_input;
     std::string path_output = "";
-    bool verbose, plot, write;
+    bool verbose, plot, write, cine, continuous;
     double fps, tf;
     double tolerance, step;
     double sigmaf, sigmae;
@@ -57,17 +57,19 @@ int main(int argc, char *argv[])
     std::vector<int> level_iterations({120,100,80});
 
     // Program options
-    po::options_description desc("Tracking 2D CineMR images with deformanble image registration. Options");
+    po::options_description desc("Tracking 2D CineMR images with deformable image registration. Options");
     desc.add_options()
     ("help,h", "Help message")
     ("input,i", po::value<std::string>(&path_input), "Input folder")
     ("output,o", po::value<std::string>(&path_output), "Output folder")
     ("verbose,v", po::bool_switch(&verbose), "Enable verbose")
     ("plot,p", po::bool_switch(&plot), "Enable plot")
-    ("frame_per_second,f", po::value<double>(&fps)->default_value(4.0), "Images frames per second")
+    ("cine", po::bool_switch(&cine), "Main folder with input images sequence is cine/ instead of image/")
+    ("continuous,c", po::bool_switch(&continuous), "Enable tracking with continuous mode")
+    ("frame-per-second,f", po::value<double>(&fps)->default_value(4.0), "Images frames per second")
     ("opt-step,l", po::value<double>(&step)->default_value(1.0), "Optimizer step")
-    ("opt-level-scales,s", po::value<std::vector<int> >(&level_scales)->multitoken(), "Optimizer multilevel scales")
-    ("opt-level-iterations,k", po::value<std::vector<int> >(&level_iterations)->multitoken(), "Optimizer multilevel iterations")
+    ("opt-level-scales,s", po::value<std::vector<int>>(&level_scales)->multitoken(), "Optimizer multilevel scales")
+    ("opt-level-iterations,k", po::value<std::vector<int>>(&level_iterations)->multitoken(), "Optimizer multilevel iterations")
     ("opt-tolerance,t", po::value<double>(&tolerance)->default_value(1e-6), "Optimizer tolerance")
     ("sigma-fluid,u", po::value<double>(&sigmaf)->default_value(0.0), "Deformation field sigma fluid")
     ("sigma-elastic,e", po::value<double>(&sigmae)->default_value(2.5), "Deformation field sigma elastic");
@@ -105,7 +107,13 @@ int main(int argc, char *argv[])
         if (relative == "boundary")
             continue;
         else if (relative.find("image") != std::string::npos)
-            path_image = folder;
+        {
+            if (not cine) { path_image = folder; };
+        }
+        else if (relative.find("cine") != std::string::npos)
+        {
+            if (cine) { path_image = folder; };
+        }
         else if ( not fs::is_directory(folder) )
             ;
         else
@@ -117,6 +125,8 @@ int main(int argc, char *argv[])
     auto img_input = image_cpu<type>::new_pointer();
     std::vector<image_cpu<type>::pointer> img_organs(path_organs.size());
     std::vector<image_cpu<type>::pointer> img_organs_warped(path_organs.size());
+    std::vector<ilinear_cpu<type>::pointer> interpol_organs(path_organs.size());
+
     for (int k = 0; k < path_organs.size(); k++)
     {
         img_organs[k] = image_cpu<type>::new_pointer();
@@ -133,6 +143,7 @@ int main(int argc, char *argv[])
     {
         auto list_files_organ = list_directory(path_organs[k]);
         img_organs[k]->read(list_files_organ.front());
+        interpol_organs[k] = ilinear_cpu<type>::new_pointer(img_organs[k]);
         std::cout << "Read " << std::string(fs::path(path_organs[k]).filename()) 
             << ": " << list_files_organ.front() << std::endl;
     }
@@ -164,10 +175,10 @@ int main(int argc, char *argv[])
 
     // Plot
     auto view = viewer_track<image_type>::new_pointer();
-    auto img_view_input = img_fixed->copy();
+    auto img_view_input = img_fixed->clone();
     std::vector<image_cpu<type>::pointer> img_view_organs(path_organs.size());
     for(int k = 0; k < path_organs.size(); k++)
-        img_view_organs[k] = img_organs[k]->copy();
+        img_view_organs[k] = img_organs[k]->clone();
     
     // Setup viewer
     if (plot)
@@ -197,6 +208,9 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
     }
 
+    // continuous variables
+    // auto img_previous = image_cpu<type>::new_pointer();
+
     // Main Loop
     for(size_t i = 1; i < list_files_images.size(); i++ )
     {
@@ -221,6 +235,7 @@ int main(int argc, char *argv[])
         trfm = dfield<type,vector_cpu<type>>::new_pointer(img_fixed);
         trfm->set_sigma_fluid(sigmaf);
         trfm->set_sigma_elastic(sigmae);
+        registro->set_fixed(img_fixed);
         registro->set_moving(img_input);
         registro->set_transform(trfm);
         registro->apply();
@@ -237,8 +252,9 @@ int main(int argc, char *argv[])
         auto transformation = registro->get_transform()->inverse();
         for(size_t k = 0; k < img_organs.size(); k++)
         {
-            auto interpol_organ = ilinear_cpu<type>::new_pointer(img_organs[k]);
-            img_organs_warped[k] = interpol_organ->apply(transformation->apply(xi));
+            // auto interpol_organ = ilinear_cpu<type>::new_pointer(img_organs[k]);
+            // img_organs_warped[k] = interpol_organ->apply(transformation->apply(xi));
+            img_organs_warped[k] = interpol_organs[k]->apply(transformation->apply(xi));
             // std::cout << k << " " << std::endl;
             std::string base = fs::path(path_organs[k]).filename();
             std::string file_output = folders_output[k] + "/" + base + "_" + num + ext;

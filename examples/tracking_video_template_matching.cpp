@@ -2,7 +2,7 @@
 * @Author: Jose Tascon
 * @Date:   2019-11-18 13:30:52
 * @Last Modified by:   Jose Tascon
-* @Last Modified time: 2021-07-30 10:33:03
+* @Last Modified time: 2021-08-26 11:26:59
 */
 
 // std libs
@@ -38,9 +38,10 @@ int main(int argc, char *argv[])
     std::string path_input;
     std::string path_output = "";
     std::string file_mask;
-    bool verbose, plot, write;
+    bool verbose, plot, write, continuous;
     double fps, tf;
     int slide, extra_pixels;
+    std::vector<int> write_vector;
 
     // Program options
     po::options_description desc("Tracking 2D CineMR images with template matching. Options");
@@ -49,9 +50,11 @@ int main(int argc, char *argv[])
     ("input,i", po::value<std::string>(&path_input), "Input folder")
     ("mask,m", po::value<std::string>(&file_mask), "Mask image used for tracking")
     ("output,o", po::value<std::string>(&path_output), "Output folder")
+    ("continuous,c", po::bool_switch(&continuous), "Enable tracking with continuous mode")
+    ("write-vector,y", po::value<std::vector<int>>(&write_vector)->multitoken(), "Write vector")
     ("verbose,v", po::bool_switch(&verbose), "Enable verbose")
     ("plot,p", po::bool_switch(&plot), "Enable plot")
-    ("frame_per_second,f", po::value<double>(&fps)->default_value(4.0), "Images frames per second")
+    ("frame-per-second,f", po::value<double>(&fps)->default_value(4.0), "Images frames per second")
     ("slide,w", po::value<int>(&slide)->default_value(10), "Sliding window search in pixels")
     ("extra-pixels,x", po::value<int>(&extra_pixels)->default_value(4), "Extra pixels of bounding box");
 
@@ -97,6 +100,7 @@ int main(int argc, char *argv[])
     auto img_mask_region = img_mask->region(bbox_fixed[0], bbox_fixed[1]);
     auto tm = template_matching<type, vector_cpu<type>>::new_pointer(img_fixed, bbox_fixed);
     tm->set_slide(std::vector<int>{slide,slide});
+    tm->set_current_mode(continuous);
 
     // Plot
     auto view = viewer_track<image_type>::new_pointer();
@@ -126,6 +130,8 @@ int main(int argc, char *argv[])
         fs::create_directories(folder_output);
     }
 
+    int ww = 0;
+
     // Main Loop
     for(size_t i = 1; i < list_files_images.size(); i++ )
     {
@@ -147,9 +153,14 @@ int main(int argc, char *argv[])
         }
 
         // Template matching
+        // tm->get_current()->print();
         auto bbox_moving = tm->apply(img_input);
-        tm->set_fixed(img_input->clone());
-        tm->set_box_fixed(bbox_moving);
+        // img_input->print();
+        // tm->get_current()->print();
+        // tm->set_fixed(img_input->clone());
+        // tm->set_box_fixed(bbox_moving);
+
+        // return 0;
 
         if (verbose)
         {
@@ -176,8 +187,21 @@ int main(int argc, char *argv[])
         std::string file_output = folder_output + "/" + base + "_" + num + ext;
         if (write)
         {
-            std::cout << "Write output: " << file_output << std::endl;
-            img_mask_warped->write(file_output);
+            bool valid = true;
+            if ((write_vector.size() > 0) or (write_vector.size() < ww))
+            {
+                valid = false;
+                if (i == write_vector[ww])
+                {
+                    ww += 1;
+                    valid = true;
+                }
+            }
+            if (valid)
+            {
+                std::cout << "Write output: " << file_output << std::endl;
+                img_mask_warped->write(file_output);
+            }
         }
 
         if (verbose)
